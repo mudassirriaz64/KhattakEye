@@ -41,6 +41,21 @@ import { ChangePasswordPage } from "@/pages/account/ChangePasswordPage";
 import { ReviewsPage } from "@/pages/account/ReviewsPage";
 import { NotificationsPage } from "@/pages/account/NotificationsPage";
 import { AccountSettingsPage } from "@/pages/account/AccountSettingsPage";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminLoginPage } from "@/pages/admin/AdminLoginPage";
+import { AdminDashboardPage } from "@/pages/admin/DashboardPage";
+import { AdminProductsPage } from "@/pages/admin/ProductsPage";
+import { AddEditProductPage } from "@/pages/admin/AddEditProductPage";
+import { AdminCategoriesPage } from "@/pages/admin/CategoriesPage";
+import { AdminBrandsPage } from "@/pages/admin/BrandsPage";
+import { AdminOrdersListPage } from "@/pages/admin/OrdersListPage";
+import { AdminOrderDetailsPage } from "@/pages/admin/OrderDetailsPage";
+import { AdminPaymentVerificationPage } from "@/pages/admin/PaymentVerificationPage";
+import { AdminCustomersListPage } from "@/pages/admin/CustomersListPage";
+import { AdminCustomerDetailPage } from "@/pages/admin/CustomerDetailPage";
+import { AdminReviewsManagePage } from "@/pages/admin/ReviewsManagePage";
+import { AdminTestimonialsPage } from "@/pages/admin/TestimonialsPage";
+import { AdminInventoryPage } from "@/pages/admin/InventoryPage";
 
 export function DesignSystemRoutes() {
   return (
@@ -96,6 +111,25 @@ export default function App() {
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/email-verification" element={<EmailVerificationPage />} />
         <Route path="/auth/otp-verification" element={<OTPVerificationPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
+        <Route path="/admin/products" element={<AdminLayout><AdminProductsPage /></AdminLayout>} />
+        <Route path="/admin/products/add" element={<AdminLayout><AddEditProductPage /></AdminLayout>} />
+        <Route path="/admin/products/:id/edit" element={<AdminLayout><AddEditProductPage /></AdminLayout>} />
+        <Route path="/admin/products/:id" element={<AdminLayout><AddEditProductPage /></AdminLayout>} />
+        <Route path="/admin/categories" element={<AdminLayout><AdminCategoriesPage /></AdminLayout>} />
+        <Route path="/admin/brands" element={<AdminLayout><AdminBrandsPage /></AdminLayout>} />
+        <Route path="/admin/orders" element={<AdminLayout><AdminOrdersListPage /></AdminLayout>} />
+        <Route path="/admin/orders/:id" element={<AdminLayout><AdminOrderDetailsPage /></AdminLayout>} />
+        <Route path="/admin/payments" element={<AdminLayout><AdminPaymentVerificationPage /></AdminLayout>} />
+        <Route path="/admin/inventory" element={<AdminLayout><AdminInventoryPage /></AdminLayout>} />
+        <Route path="/admin/customers" element={<AdminLayout><AdminCustomersListPage /></AdminLayout>} />
+        <Route path="/admin/customers/:id" element={<AdminLayout><AdminCustomerDetailPage /></AdminLayout>} />
+        <Route path="/admin/reviews" element={<AdminLayout><AdminReviewsManagePage /></AdminLayout>} />
+        <Route path="/admin/testimonials" element={<AdminLayout><AdminTestimonialsPage /></AdminLayout>} />
+        <Route path="/admin/cms" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
+        <Route path="/admin/reports" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
+        <Route path="/admin/settings" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
         <Route path="/design-system/*" element={<DesignSystemRoutes />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
