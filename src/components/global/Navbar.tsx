@@ -61,6 +61,7 @@ const megaColumns = [
 
 export function Navbar() {
   const { isScrolled } = useScrollPosition();
+  const announcementDismissed = useUiStore((s) => s.announcementDismissed);
   const setMobileNavOpen = useUiStore((state) => state.setMobileNavOpen);
   const setSearchOpen = useUiStore((state) => state.setSearchOpen);
   const setWishlistOpen = useUiStore((state) => state.setWishlistOpen);
@@ -87,25 +88,19 @@ export function Navbar() {
     <header
       ref={navRef}
       className={cn(
-        "fixed left-0 right-0 top-0 z-50 transition-all duration-300",
+        "fixed left-0 right-0 z-50 transition-all duration-300",
+        announcementDismissed ? "top-0" : "top-10",
         isScrolled
-          ? "bg-[color:var(--color-app-bg)]/90 shadow-[var(--shadow-soft)] backdrop-blur-xl"
+          ? "bg-[color:var(--color-brand-primary)]/85 shadow-[var(--shadow-soft)] backdrop-blur-xl"
           : "bg-transparent",
       )}
     >
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-4 md:px-8">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--color-brand-primary)] text-white">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[color:var(--color-brand-primary)]">
             <Glasses className="h-4 w-4" />
           </div>
-          <span
-            className={cn(
-              "font-display text-xl transition-colors",
-              isScrolled
-                ? "text-[color:var(--color-text-primary)]"
-                : "text-white",
-            )}
-          >
+          <span className="font-display text-xl text-white">
             Khattak
           </span>
         </Link>
@@ -128,14 +123,12 @@ export function Navbar() {
                 to={link.path}
                 className={cn(
                   "group relative flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                  isScrolled
-                    ? "text-[color:var(--color-text-secondary)] hover:text-[color:var(--color-text-primary)]"
-                    : "text-white/80 hover:text-white",
+                  "text-white/80 hover:text-white",
                 )}
               >
                 {link.label}
                 {link.hasMega && <ChevronDown className="h-3 w-3" />}
-                <span className="absolute bottom-0 left-4 right-4 h-0.5 origin-left scale-x-0 rounded-full bg-current transition-transform duration-200 group-hover:scale-x-100" />
+                <span className="absolute bottom-0 left-4 right-4 h-0.5 origin-left scale-x-0 rounded-full bg-white transition-transform duration-200 group-hover:scale-x-100" />
               </Link>
             </div>
           ))}
@@ -152,12 +145,7 @@ export function Navbar() {
               key={label}
               type="button"
               onClick={action}
-              className={cn(
-                "relative flex h-10 w-10 items-center justify-center rounded-full transition-all hover:scale-105",
-                isScrolled
-                  ? "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]"
-                  : "text-white/80 hover:bg-white/10 hover:text-white",
-              )}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:scale-105 hover:bg-white/10 hover:text-white"
               aria-label={label}
             >
               <Icon className="h-4 w-4" />
@@ -171,12 +159,7 @@ export function Navbar() {
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
-            className={cn(
-              "ml-2 flex h-10 w-10 items-center justify-center rounded-full xl:hidden",
-              isScrolled
-                ? "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)]"
-                : "text-white/80 hover:bg-white/10",
-            )}
+            className="ml-2 flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:bg-white/10 hover:text-white xl:hidden"
             aria-label="Open menu"
           >
             <Menu className="h-4 w-4" />

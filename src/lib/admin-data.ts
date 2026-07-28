@@ -436,6 +436,355 @@ export const inventoryHistory: InventoryHistory[] = [
   { id: "ih-007", product: "Noir Line Titanium", sku: "KT-AT-001", type: "sale", quantity: -1, before: 16, after: 15, date: "Jul 28, 2026 - 02:30 PM", user: "System", note: "Order KT-2A3F9C" },
 ];
 
+export type CmsBanner = { id: string; title: string; subtitle: string; image: string; link: string; active: boolean; type: "slider" | "offer" | "popup" | "seasonal"; position: number };
+export type CmsCoupon = { id: string; code: string; description: string; discount: number; type: "percentage" | "fixed"; minOrder: number; usageLimit: number; used: number; expiresAt: string; active: boolean };
+export type CmsSubscriber = { id: string; email: string; name: string; subscribedAt: string; status: "active" | "unsubscribed" };
+export type CmsMediaItem = { id: string; name: string; url: string; folder: string; type: "image" | "document"; size: string; uploadedAt: string; alt: string };
+export type CmsPageContent = { id: string; slug: string; title: string; content: string; status: "published" | "draft"; updatedAt: string };
+export type CmsHomepageSection = { id: string; section: string; title: string; subtitle: string; visible: boolean; order: number };
+export type CmsFaq = { id: string; question: string; answer: string; category: string; order: number; active: boolean };
+
+export const cmsHomepageSections: CmsHomepageSection[] = [
+  { id: "hp-1", section: "hero", title: "Precision Crafted For Your Vision", subtitle: "Discover premium handcrafted eyewear", visible: true, order: 1 },
+  { id: "hp-2", section: "brand-trust", title: "Trusted by Thousands", subtitle: "Premium quality across Pakistan", visible: true, order: 2 },
+  { id: "hp-3", section: "categories", title: "Shop by Category", subtitle: "Find your perfect pair", visible: true, order: 3 },
+  { id: "hp-4", section: "featured-collection", title: "Featured Collection", subtitle: "Curated for you", visible: true, order: 4 },
+  { id: "hp-5", section: "virtual-try-on", title: "Virtual Try-On", subtitle: "See how they look on you", visible: true, order: 5 },
+  { id: "hp-6", section: "premium-collection", title: "Premium Collection", subtitle: "Our finest materials", visible: true, order: 6 },
+  { id: "hp-7", section: "brands", title: "Featured Brands", subtitle: "Explore our brands", visible: true, order: 7 },
+  { id: "hp-8", section: "why-choose-us", title: "Why Choose Us", subtitle: "The Khattak difference", visible: true, order: 8 },
+  { id: "hp-9", section: "testimonials", title: "What Our Customers Say", subtitle: "Real stories from real people", visible: true, order: 9 },
+  { id: "hp-10", section: "instagram", title: "Follow Us", subtitle: "@khattak_eyewear", visible: false, order: 10 },
+  { id: "hp-11", section: "newsletter", title: "Stay in the Loop", subtitle: "Subscribe for exclusive offers", visible: true, order: 11 },
+];
+
+export const cmsBanners: CmsBanner[] = [
+  { id: "bn-1", title: "Summer Collection 2026", subtitle: "Up to 30% off on premium sunglasses", image: "", link: "/shop/sunglasses", active: true, type: "slider", position: 1 },
+  { id: "bn-2", title: "New Titanium Arrivals", subtitle: "Ultra-light frames, maximum comfort", image: "", link: "/shop?material=titanium", active: true, type: "slider", position: 2 },
+  { id: "bn-3", title: "Free Shipping Over Rs. 3,000", subtitle: "Nationwide delivery", image: "", link: "/shop", active: true, type: "offer", position: 1 },
+  { id: "bn-4", title: "First Purchase Discount", subtitle: "Get 10% off using code KHATTAK10", image: "", link: "/shop", active: true, type: "popup", position: 1 },
+  { id: "bn-5", title: "Eid Collection", subtitle: "Limited edition frames", image: "", link: "/shop", active: false, type: "seasonal", position: 1 },
+];
+
+export const cmsPages: CmsPageContent[] = [
+  { id: "pg-1", slug: "about", title: "About Us", content: "<h2>Our Story</h2><p>Khattak Eyewear was founded with a vision to provide premium, handcrafted eyewear that combines traditional craftsmanship with modern design. Each frame tells a story of heritage, precision, and the pursuit of perfection.</p><p>Our team of skilled artisans works with the finest materials — from Japanese titanium to Italian acetate — to create eyewear that not only looks exceptional but feels comfortable for all-day wear.</p>", status: "published", updatedAt: "Jul 28, 2026" },
+  { id: "pg-2", slug: "privacy", title: "Privacy Policy", content: "<h2>Privacy Policy</h2><p>At Khattak Eyewear, we take your privacy seriously. This policy describes how we collect, use, and protect your personal information when you use our website and services.</p><h3>Information We Collect</h3><p>We collect information you provide directly to us, such as your name, email address, phone number, shipping address, and payment information when you make a purchase.</p>", status: "published", updatedAt: "Jul 25, 2026" },
+  { id: "pg-3", slug: "shipping", title: "Shipping Policy", content: "<h2>Shipping Policy</h2><p>We offer free shipping on all orders over Rs. 3,000. Standard delivery takes 3-5 business days within Pakistan. Express shipping is available at an additional cost.</p><p>Orders are processed within 24 hours of payment confirmation. You will receive a tracking number once your order is shipped.</p>", status: "published", updatedAt: "Jul 20, 2026" },
+  { id: "pg-4", slug: "returns", title: "Returns & Exchanges", content: "<h2>Returns & Exchanges</h2><p>We want you to love your eyewear. If you're not satisfied, you can return or exchange your frames within 14 days of delivery. Items must be in original condition with all packaging.</p><p>For prescription eyewear, please allow 7-10 business days for customization before dispatch.</p>", status: "published", updatedAt: "Jul 18, 2026" },
+  { id: "pg-5", slug: "terms", title: "Terms of Service", content: "<h2>Terms of Service</h2><p>By using the Khattak Eyewear website, you agree to these terms. Please read them carefully. We reserve the right to update these terms at any time.</p>", status: "published", updatedAt: "Jul 15, 2026" },
+  { id: "pg-6", slug: "faqs", title: "Frequently Asked Questions", content: "<h2>FAQs</h2><p>Find answers to common questions about our products, ordering process, shipping, and more.</p>", status: "published", updatedAt: "Jul 10, 2026" },
+  { id: "pg-7", slug: "eye-care-tips", title: "Eye Care Tips", content: "<h2>Eye Care Tips</h2><p>Taking care of your eyes is essential for maintaining good vision and overall health. Here are our top tips for keeping your eyes healthy.</p><h3>Regular Check-ups</h3><p>Visit your eye care professional annually for comprehensive eye exams.</p><h3>Blue Light Protection</h3><p>Consider blue light blocking lenses if you spend long hours in front of digital screens.</p>", status: "draft", updatedAt: "Jul 5, 2026" },
+];
+
+export const cmsFaqs: CmsFaq[] = [
+  { id: "faq-1", question: "How do I find my frame size?", answer: "Check the inside of your current frames for measurements (e.g., 52-18-145). The first number is lens width, second is bridge width, third is temple length.", category: "Products", order: 1, active: true },
+  { id: "faq-2", question: "Do you offer prescription lenses?", answer: "Yes! Most of our frames can be fitted with prescription lenses. Simply select your prescription type during checkout or visit our store.", category: "Products", order: 2, active: true },
+  { id: "faq-3", question: "What payment methods do you accept?", answer: "We accept Bank Transfer, JazzCash, EasyPaisa, and Cash on Delivery. For online payments, use the transaction ID from your payment app.", category: "Orders", order: 3, active: true },
+  { id: "faq-4", question: "How long does shipping take?", answer: "Standard shipping takes 3-5 business days within Pakistan. Express shipping (1-2 days) is available at checkout.", category: "Shipping", order: 4, active: true },
+  { id: "faq-5", question: "Can I return or exchange my frames?", answer: "Yes, you can return or exchange within 14 days of delivery. Items must be unused and in original packaging.", category: "Returns", order: 5, active: true },
+  { id: "faq-6", question: "How do I use a coupon code?", answer: "Enter your coupon code at checkout in the 'Coupon' field. The discount will be applied to your order total automatically.", category: "Orders", order: 6, active: true },
+];
+
+export const cmsCoupons: CmsCoupon[] = [
+  { id: "cp-1", code: "KHATTAK10", description: "10% off on your first order", discount: 10, type: "percentage", minOrder: 0, usageLimit: 500, used: 128, expiresAt: "Dec 31, 2026", active: true },
+  { id: "cp-2", code: "SUMMER20", description: "20% off on sunglasses", discount: 20, type: "percentage", minOrder: 5000, usageLimit: 200, used: 45, expiresAt: "Sep 30, 2026", active: true },
+  { id: "cp-3", code: "FREESHIP", description: "Free shipping on all orders", discount: 350, type: "fixed", minOrder: 3000, usageLimit: 1000, used: 312, expiresAt: "Dec 31, 2026", active: true },
+  { id: "cp-4", code: "VIP500", description: "Rs. 500 off on premium frames", discount: 500, type: "fixed", minOrder: 15000, usageLimit: 100, used: 18, expiresAt: "Aug 31, 2026", active: true },
+  { id: "cp-5", code: "WELCOME15", description: "15% off for new customers", discount: 15, type: "percentage", minOrder: 0, usageLimit: 300, used: 0, expiresAt: "Dec 31, 2026", active: false },
+];
+
+export const cmsSubscribers: CmsSubscriber[] = [
+  { id: "sub-001", email: "ayesha@example.com", name: "Ayesha Khan", subscribedAt: "Jul 28, 2026", status: "active" },
+  { id: "sub-002", email: "ali@example.com", name: "Ali Raza", subscribedAt: "Jul 25, 2026", status: "active" },
+  { id: "sub-003", email: "sara@example.com", name: "Sara Ahmed", subscribedAt: "Jul 20, 2026", status: "active" },
+  { id: "sub-004", email: "usman@example.com", name: "Usman Malik", subscribedAt: "Jul 15, 2026", status: "active" },
+  { id: "sub-005", email: "fatima@example.com", name: "Fatima Bibi", subscribedAt: "Jul 10, 2026", status: "unsubscribed" },
+  { id: "sub-006", email: "bilal@example.com", name: "Bilal Hussain", subscribedAt: "Jul 8, 2026", status: "active" },
+  { id: "sub-007", email: "zainab@example.com", name: "Zainab Ali", subscribedAt: "Jul 5, 2026", status: "active" },
+  { id: "sub-008", email: "tariq@example.com", name: "Tariq Khan", subscribedAt: "Jul 1, 2026", status: "active" },
+];
+
+export const cmsMediaItems: CmsMediaItem[] = [
+  { id: "med-001", name: "hero-banner.jpg", url: "", folder: "Banners", type: "image", size: "2.4 MB", uploadedAt: "Jul 28, 2026", alt: "Hero banner" },
+  { id: "med-002", name: "logo-dark.png", url: "", folder: "Brand", type: "image", size: "128 KB", uploadedAt: "Jul 20, 2026", alt: "Logo dark" },
+  { id: "med-003", name: "product-noir.jpg", url: "", folder: "Products", type: "image", size: "1.8 MB", uploadedAt: "Jul 15, 2026", alt: "Noir Line Titanium" },
+  { id: "med-004", name: "summer-sale-banner.jpg", url: "", folder: "Banners", type: "image", size: "3.1 MB", uploadedAt: "Jul 10, 2026", alt: "Summer sale" },
+  { id: "med-005", name: "about-team.jpg", url: "", folder: "Pages", type: "image", size: "2.0 MB", uploadedAt: "Jul 5, 2026", alt: "Team photo" },
+  { id: "med-006", name: "shipping-policy.pdf", url: "", folder: "Documents", type: "document", size: "450 KB", uploadedAt: "Jun 28, 2026", alt: "" },
+];
+
+export const cmsWebsiteSettings = {
+  logo: "/logo.png",
+  favicon: "/favicon.ico",
+  siteTitle: "Khattak Eyewear",
+  tagline: "Precision Crafted For Your Vision",
+  theme: { primaryColor: "#111111", accentColor: "#0f766e", borderRadius: "16px" },
+  contact: { email: "hello@khattak.com", phone: "+92 300 111 2222", address: "57-E, Gulberg III, Lahore, Pakistan" },
+  social: { facebook: "https://facebook.com/khattakeyewear", instagram: "https://instagram.com/khattak_eyewear", twitter: "https://twitter.com/khattak_eye", youtube: "https://youtube.com/@khattakeyewear" },
+  whatsapp: { number: "+923001112222", message: "Hi! I have a question about your products." },
+  emails: { orderConfirmation: "orders@khattak.com", support: "support@khattak.com", noreply: "noreply@khattak.com" },
+  shipping: { freeThreshold: 3000, standardRate: 350, expressRate: 750, estimatedDays: "3-5 business days" },
+  bankDetails: { bankName: "HBL", accountTitle: "Khattak Eyewear Pvt Ltd", accountNumber: "1234-5678-9012-3456", iban: "PK36HBLB1234567890123456" },
+  jazzcash: { number: "+92 300 111 2222", accountTitle: "Khattak Eyewear" },
+  easypaisa: { number: "+92 300 111 2222", accountTitle: "Khattak Eyewear" },
+  seo: { metaTitle: "Khattak Eyewear — Premium Handcrafted Eyewear in Pakistan", metaDescription: "Discover premium handcrafted eyewear at Khattak Eyewear. Shop titanium, acetate, and luxury frames with free shipping across Pakistan.", metaKeywords: "eyewear, sunglasses, eyeglasses, premium frames, Pakistan, Khattak" },
+  analytics: { googleAnalyticsId: "G-XXXXXXXXXX", facebookPixelId: "1234567890", googleTagManagerId: "GTM-XXXXXXX" },
+};
+
+// ─── Phase 6D: Enterprise Modules ────────────────────────────────────────────
+
+export type ReportPeriod = "daily" | "weekly" | "monthly" | "yearly";
+export type ReportMetric = { label: string; value: number; change: number; positive: boolean };
+export type ReportDataPoint = { label: string; revenue: number; orders: number; products: number; customers: number };
+export type SalesFunnelStage = { stage: string; count: number; dropRate: number };
+export type ConversionMetric = { source: string; visitors: number; conversions: number; rate: number; revenue: number };
+export type TopProduct = { name: string; image: string; sales: number; revenue: number; growth: number };
+export type CustomerGrowthPoint = { month: string; newCustomers: number; totalCustomers: number };
+
+export type AdminRole = { id: string; name: string; description: string; users: number; permissions: string[]; color: string };
+export type Permission = { id: string; module: string; actions: { key: string; label: string }[] };
+
+export type AdminUserManage = { id: string; name: string; email: string; role: string; avatar: string | null; status: "active" | "inactive"; lastLogin: string; createdAt: string };
+
+export type ActivityLog = { id: string; user: string; avatar: string | null; action: string; resource: string; details: string; ip: string; timestamp: string; severity: "info" | "warning" | "critical" };
+
+export type SystemNotification = { id: string; type: "email" | "order" | "alert"; title: string; message: string; recipient?: string; status: "sent" | "failed" | "pending"; timestamp: string; read: boolean };
+
+export type SessionInfo = { id: string; device: string; browser: string; ip: string; location: string; lastActive: string; current: boolean };
+export type LoginHistoryEntry = { id: string; user: string; ip: string; device: string; location: string; timestamp: string; success: boolean; reason?: string };
+export type PasswordPolicy = { key: string; label: string; enabled: boolean; value: string };
+
+export type AuditLog = { id: string; user: string; role: string; action: string; resource: string; resourceId: string; details: string; ip: string; timestamp: string; severity: "low" | "medium" | "high" | "critical" };
+
+// ── Reports ──
+
+export const reportPeriods: ReportPeriod[] = ["daily", "weekly", "monthly", "yearly"];
+
+export const reportMetrics: Record<ReportPeriod, ReportMetric[]> = {
+  daily: [
+    { label: "Revenue", value: 128500, change: 5.7, positive: true },
+    { label: "Orders", value: 24, change: 8.3, positive: true },
+    { label: "Products Sold", value: 38, change: 2.1, positive: true },
+    { label: "New Customers", value: 7, change: -12.5, positive: false },
+    { label: "Inventory Issues", value: 3, change: 0, positive: true },
+  ],
+  weekly: [
+    { label: "Revenue", value: 892000, change: 12.3, positive: true },
+    { label: "Orders", value: 168, change: 15.7, positive: true },
+    { label: "Products Sold", value: 245, change: 9.8, positive: true },
+    { label: "New Customers", value: 52, change: 6.4, positive: true },
+    { label: "Inventory Issues", value: 8, change: -20, positive: true },
+  ],
+  monthly: [
+    { label: "Revenue", value: 3450000, change: 8.9, positive: true },
+    { label: "Orders", value: 685, change: 11.2, positive: true },
+    { label: "Products Sold", value: 1020, change: 7.5, positive: true },
+    { label: "New Customers", value: 210, change: 4.8, positive: true },
+    { label: "Inventory Issues", value: 15, change: -25, positive: true },
+  ],
+  yearly: [
+    { label: "Revenue", value: 28560000, change: 24.7, positive: true },
+    { label: "Orders", value: 5840, change: 31.2, positive: true },
+    { label: "Products Sold", value: 8900, change: 22.4, positive: true },
+    { label: "New Customers", value: 1840, change: 35.1, positive: true },
+    { label: "Inventory Issues", value: 42, change: -18, positive: true },
+  ],
+};
+
+export const reportDataDaily: ReportDataPoint[] = [
+  { label: "Mon", revenue: 18500, orders: 4, products: 6, customers: 1 },
+  { label: "Tue", revenue: 22400, orders: 5, products: 8, customers: 2 },
+  { label: "Wed", revenue: 16800, orders: 3, products: 5, customers: 0 },
+  { label: "Thu", revenue: 31200, orders: 6, products: 10, customers: 2 },
+  { label: "Fri", revenue: 25600, orders: 4, products: 7, customers: 1 },
+  { label: "Sat", revenue: 9800, orders: 2, products: 2, customers: 1 },
+  { label: "Sun", revenue: 4200, orders: 0, products: 0, customers: 0 },
+];
+
+export const reportDataWeekly: ReportDataPoint[] = [
+  { label: "Week 1", revenue: 210000, orders: 42, products: 62, customers: 14 },
+  { label: "Week 2", revenue: 245000, orders: 48, products: 71, customers: 16 },
+  { label: "Week 3", revenue: 198000, orders: 38, products: 55, customers: 11 },
+  { label: "Week 4", revenue: 239000, orders: 40, products: 57, customers: 11 },
+];
+
+export const reportDataMonthly: ReportDataPoint[] = [
+  { label: "Jan", revenue: 145000, orders: 28, products: 42, customers: 12 },
+  { label: "Feb", revenue: 162000, orders: 32, products: 48, customers: 15 },
+  { label: "Mar", revenue: 188000, orders: 35, products: 52, customers: 18 },
+  { label: "Apr", revenue: 174000, orders: 30, products: 45, customers: 14 },
+  { label: "May", revenue: 210000, orders: 40, products: 60, customers: 20 },
+  { label: "Jun", revenue: 245000, orders: 45, products: 68, customers: 22 },
+  { label: "Jul", revenue: 232000, orders: 42, products: 62, customers: 19 },
+  { label: "Aug", revenue: 268000, orders: 48, products: 72, customers: 24 },
+  { label: "Sep", revenue: 256000, orders: 44, products: 66, customers: 21 },
+  { label: "Oct", revenue: 290000, orders: 52, products: 78, customers: 26 },
+  { label: "Nov", revenue: 275000, orders: 50, products: 75, customers: 23 },
+  { label: "Dec", revenue: 320000, orders: 58, products: 85, customers: 28 },
+];
+
+export const reportDataYearly: ReportDataPoint[] = [
+  { label: "2022", revenue: 12400000, orders: 2400, products: 3600, customers: 780 },
+  { label: "2023", revenue: 16800000, orders: 3200, products: 4800, customers: 1050 },
+  { label: "2024", revenue: 21500000, orders: 4200, products: 6200, customers: 1380 },
+  { label: "2025", revenue: 25600000, orders: 5100, products: 7600, customers: 1650 },
+  { label: "2026", revenue: 28560000, orders: 5840, products: 8900, customers: 1840 },
+];
+
+// ── Analytics ──
+
+export const salesFunnel: SalesFunnelStage[] = [
+  { stage: "Visitors", count: 45280, dropRate: 0 },
+  { stage: "Product Views", count: 18240, dropRate: 59.7 },
+  { stage: "Add to Cart", count: 6240, dropRate: 65.8 },
+  { stage: "Checkout Started", count: 2850, dropRate: 54.3 },
+  { stage: "Payment Completed", count: 1890, dropRate: 33.7 },
+  { stage: "Order Delivered", count: 1720, dropRate: 9.0 },
+];
+
+export const conversionMetrics: ConversionMetric[] = [
+  { source: "Direct", visitors: 12450, conversions: 498, rate: 4.0, revenue: 4980000 },
+  { source: "Organic Search", visitors: 15820, conversions: 712, rate: 4.5, revenue: 7120000 },
+  { source: "Social Media", visitors: 9850, conversions: 345, rate: 3.5, revenue: 3450000 },
+  { source: "Email", visitors: 4200, conversions: 252, rate: 6.0, revenue: 2520000 },
+  { source: "Paid Ads", visitors: 2960, conversions: 83, rate: 2.8, revenue: 830000 },
+];
+
+export const bestProducts: TopProduct[] = [
+  { name: "Aviator Classic Gold", image: "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?image_size=portrait_4_3&prompt=gold+aviator+sunglasses+front+view", sales: 210, revenue: 3339000, growth: 18.5 },
+  { name: "Verde Artisan Acetate", image: "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?image_size=portrait_4_3&prompt=emerald+acetate+eyewear+front+view", sales: 156, revenue: 3104400, growth: 12.3 },
+  { name: "Noir Line Titanium", image: "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?image_size=portrait_4_3&prompt=luxury+black+titanium+eyewear+front+view", sales: 128, revenue: 3648000, growth: 22.1 },
+  { name: "Rose Gold Aviator", image: "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?image_size=portrait_4_3&prompt=rose+gold+aviator+sunglasses+front+view", sales: 95, revenue: 3040000, growth: 8.7 },
+  { name: "Carbon Fiber Sport", image: "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?image_size=portrait_4_3&prompt=carbon+fiber+sport+eyewear+front+view", sales: 64, revenue: 1408000, growth: -2.4 },
+];
+
+export const customerGrowth: CustomerGrowthPoint[] = [
+  { month: "Jan", newCustomers: 120, totalCustomers: 120 },
+  { month: "Feb", newCustomers: 145, totalCustomers: 265 },
+  { month: "Mar", newCustomers: 168, totalCustomers: 433 },
+  { month: "Apr", newCustomers: 132, totalCustomers: 565 },
+  { month: "May", newCustomers: 190, totalCustomers: 755 },
+  { month: "Jun", newCustomers: 210, totalCustomers: 965 },
+  { month: "Jul", newCustomers: 185, totalCustomers: 1150 },
+  { month: "Aug", newCustomers: 220, totalCustomers: 1370 },
+  { month: "Sep", newCustomers: 195, totalCustomers: 1565 },
+  { month: "Oct", newCustomers: 240, totalCustomers: 1805 },
+  { month: "Nov", newCustomers: 215, totalCustomers: 2020 },
+  { month: "Dec", newCustomers: 260, totalCustomers: 2280 },
+];
+
+// ── Roles & Permissions ──
+
+export const adminRoles: AdminRole[] = [
+  { id: "role-1", name: "Super Admin", description: "Full access to all modules and settings", users: 2, permissions: ["all"], color: "from-red-500 to-rose-600" },
+  { id: "role-2", name: "Manager", description: "Can manage orders, products, customers, and reports", users: 5, permissions: ["orders", "products", "customers", "reports", "inventory", "cms"], color: "from-[color:var(--color-accent-blue)] to-blue-600" },
+  { id: "role-3", name: "Staff", description: "Limited access to orders and basic operations", users: 8, permissions: ["orders-read", "products-read", "customers-read"], color: "from-[color:var(--color-accent-teal)] to-emerald-600" },
+];
+
+export const allPermissions: Permission[] = [
+  { id: "perm-1", module: "Dashboard", actions: [{ key: "dashboard-view", label: "View" }] },
+  { id: "perm-2", module: "Orders", actions: [{ key: "orders-view", label: "View" }, { key: "orders-create", label: "Create" }, { key: "orders-edit", label: "Edit" }, { key: "orders-delete", label: "Delete" }, { key: "orders-status", label: "Update Status" }] },
+  { id: "perm-3", module: "Products", actions: [{ key: "products-view", label: "View" }, { key: "products-create", label: "Create" }, { key: "products-edit", label: "Edit" }, { key: "products-delete", label: "Delete" }] },
+  { id: "perm-4", module: "Customers", actions: [{ key: "customers-view", label: "View" }, { key: "customers-edit", label: "Edit" }, { key: "customers-block", label: "Block/Unblock" }] },
+  { id: "perm-5", module: "Inventory", actions: [{ key: "inventory-view", label: "View" }, { key: "inventory-adjust", label: "Adjust Stock" }, { key: "inventory-restock", label: "Bulk Restock" }] },
+  { id: "perm-6", module: "Reports", actions: [{ key: "reports-view", label: "View" }, { key: "reports-export", label: "Export" }] },
+  { id: "perm-7", module: "CMS", actions: [{ key: "cms-view", label: "View" }, { key: "cms-edit", label: "Edit" }] },
+  { id: "perm-8", module: "Settings", actions: [{ key: "settings-view", label: "View" }, { key: "settings-edit", label: "Edit" }] },
+  { id: "perm-9", module: "Admin Users", actions: [{ key: "admin-users-view", label: "View" }, { key: "admin-users-create", label: "Create" }, { key: "admin-users-edit", label: "Edit" }, { key: "admin-users-delete", label: "Delete" }] },
+  { id: "perm-10", module: "Security", actions: [{ key: "security-view", label: "View" }, { key: "security-edit", label: "Edit" }] },
+];
+
+// ── Admin Users ──
+
+export const adminUsers: AdminUserManage[] = [
+  { id: "au-001", name: "Admin Khattak", email: "admin@khattak.com", role: "Super Admin", avatar: null, status: "active", lastLogin: "Just now", createdAt: "Jan 1, 2026" },
+  { id: "au-002", name: "Ahmed Raza", email: "ahmed@khattak.com", role: "Manager", avatar: null, status: "active", lastLogin: "2 hours ago", createdAt: "Feb 15, 2026" },
+  { id: "au-003", name: "Sana Malik", email: "sana@khattak.com", role: "Manager", avatar: null, status: "active", lastLogin: "1 day ago", createdAt: "Mar 1, 2026" },
+  { id: "au-004", name: "Usman Khan", email: "usman@khattak.com", role: "Staff", avatar: null, status: "active", lastLogin: "3 hours ago", createdAt: "Apr 10, 2026" },
+  { id: "au-005", name: "Fatima Ali", email: "fatima@khattak.com", role: "Staff", avatar: null, status: "active", lastLogin: "5 hours ago", createdAt: "Apr 15, 2026" },
+  { id: "au-006", name: "Bilal Ahmed", email: "bilal@khattak.com", role: "Staff", avatar: null, status: "inactive", lastLogin: "2 weeks ago", createdAt: "May 1, 2026" },
+  { id: "au-007", name: "Zainab Noor", email: "zainab@khattak.com", role: "Staff", avatar: null, status: "active", lastLogin: "1 hour ago", createdAt: "Jun 5, 2026" },
+  { id: "au-008", name: "Tariq Hussain", email: "tariq@khattak.com", role: "Manager", avatar: null, status: "inactive", lastLogin: "1 month ago", createdAt: "Mar 20, 2026" },
+];
+
+// ── Activity Logs ──
+
+export const activityLogs: ActivityLog[] = [
+  { id: "al-001", user: "Admin Khattak", avatar: null, action: "Updated Order Status", resource: "Order KT-2A3F9C", details: "Status changed from Processing to Shipped", ip: "192.168.1.100", timestamp: "2 minutes ago", severity: "info" },
+  { id: "al-002", user: "Ahmed Raza", avatar: null, action: "Added Product", resource: "Product", details: "Created new product 'Sapphire Blue Crystal'", ip: "192.168.1.101", timestamp: "15 minutes ago", severity: "info" },
+  { id: "al-003", user: "Sana Malik", avatar: null, action: "Bulk Stock Update", resource: "Inventory", details: "Restocked 5 products with 50 units each", ip: "192.168.1.102", timestamp: "1 hour ago", severity: "info" },
+  { id: "al-004", user: "Usman Khan", avatar: null, action: "Refund Processed", resource: "Order KT-6H3G1J", details: "Full refund of Rs. 52,000 processed", ip: "192.168.1.103", timestamp: "2 hours ago", severity: "warning" },
+  { id: "al-005", user: "System", avatar: null, action: "Payment Failed", resource: "Order KT-8K4L2M", details: "Payment verification failed - invalid transaction ID", ip: "—", timestamp: "3 hours ago", severity: "critical" },
+  { id: "al-006", user: "Admin Khattak", avatar: null, action: "Updated Settings", resource: "Website Settings", details: "Updated shipping rates and free threshold", ip: "192.168.1.100", timestamp: "4 hours ago", severity: "info" },
+  { id: "al-007", user: "Ahmed Raza", avatar: null, action: "Deleted Category", resource: "Category", details: "Deleted category 'Kids Eyewear'", ip: "192.168.1.101", timestamp: "5 hours ago", severity: "warning" },
+  { id: "al-008", user: "System", avatar: null, action: "Security Alert", resource: "Login Attempt", details: "Failed login attempt from IP 45.67.89.123", ip: "45.67.89.123", timestamp: "6 hours ago", severity: "critical" },
+  { id: "al-009", user: "Zainab Noor", avatar: null, action: "Customer Updated", resource: "Customer Profile", details: "Updated contact information for Ali Raza", ip: "192.168.1.105", timestamp: "8 hours ago", severity: "info" },
+  { id: "al-010", user: "Admin Khattak", avatar: null, action: "Export Report", resource: "Monthly Report", details: "Exported July 2026 sales report as PDF", ip: "192.168.1.100", timestamp: "1 day ago", severity: "info" },
+];
+
+// ── System Notifications ──
+
+export const systemNotifications: SystemNotification[] = [
+  { id: "nt-001", type: "email", title: "Order Confirmation Sent", message: "Order KT-2A3F9C confirmation email sent to ayesha@example.com", recipient: "ayesha@example.com", status: "sent", timestamp: "2 hours ago", read: false },
+  { id: "nt-002", type: "email", title: "Newsletter Campaign Sent", message: "Summer Collection 2026 newsletter sent to 892 subscribers", recipient: "892 subscribers", status: "sent", timestamp: "5 hours ago", read: false },
+  { id: "nt-003", type: "order", title: "New Order Placed", message: "Order KT-4B1C9A placed by Sara Ahmed — Rs. 59,900", recipient: "Admin", status: "sent", timestamp: "8 hours ago", read: true },
+  { id: "nt-004", type: "order", title: "Payment Received", message: "Payment of Rs. 43,560 received for order KT-2A3F9C", recipient: "Admin", status: "sent", timestamp: "2 hours ago", read: false },
+  { id: "nt-005", type: "alert", title: "Low Stock Alert", message: "12 products are below their low stock threshold", recipient: "Admin", status: "sent", timestamp: "10 hours ago", read: false },
+  { id: "nt-006", type: "email", title: "Password Reset Request", message: "Password reset link sent to fatima@example.com", recipient: "fatima@example.com", status: "sent", timestamp: "1 day ago", read: true },
+  { id: "nt-007", type: "alert", title: "Failed Payment", message: "Payment for order KT-8K4L2M failed — invalid JazzCash transaction ID", recipient: "Admin", status: "sent", timestamp: "3 hours ago", read: false },
+  { id: "nt-008", type: "order", title: "Order Delivered", message: "Order KT-9F2D5E delivered to Usman Malik", recipient: "usman@example.com", status: "sent", timestamp: "1 day ago", read: true },
+  { id: "nt-009", type: "email", title: "Welcome Email", message: "Welcome email sent to ali@example.com", recipient: "ali@example.com", status: "failed", timestamp: "2 days ago", read: true },
+  { id: "nt-010", type: "alert", title: "Database Backup Complete", message: "Daily database backup completed successfully", recipient: "Admin", status: "sent", timestamp: "1 day ago", read: true },
+  { id: "nt-011", type: "alert", title: "SSL Certificate Expiring", message: "SSL certificate for khattak.com expires in 30 days", recipient: "Admin", status: "pending", timestamp: "3 days ago", read: false },
+];
+
+// ── Security ──
+
+export const adminSessions: SessionInfo[] = [
+  { id: "sess-001", device: "Windows 11 PC", browser: "Chrome 125", ip: "192.168.1.100", location: "Lahore, Pakistan", lastActive: "Current session", current: true },
+  { id: "sess-002", device: "iPhone 15 Pro", browser: "Safari 18", ip: "192.168.1.100", location: "Lahore, Pakistan", lastActive: "2 hours ago", current: false },
+  { id: "sess-003", device: "MacBook Pro", browser: "Firefox 128", ip: "203.0.113.45", location: "Karachi, Pakistan", lastActive: "3 days ago", current: false },
+];
+
+export const loginHistory: LoginHistoryEntry[] = [
+  { id: "lh-001", user: "admin@khattak.com", ip: "192.168.1.100", device: "Windows 11 · Chrome 125", location: "Lahore, Pakistan", timestamp: "Just now", success: true },
+  { id: "lh-002", user: "admin@khattak.com", ip: "192.168.1.100", device: "Windows 11 · Chrome 125", location: "Lahore, Pakistan", timestamp: "8 hours ago", success: true },
+  { id: "lh-003", user: "ahmed@khattak.com", ip: "192.168.1.101", device: "macOS · Safari 18", location: "Islamabad, Pakistan", timestamp: "2 hours ago", success: true },
+  { id: "lh-004", user: "usman@khattak.com", ip: "192.168.1.103", device: "Windows 10 · Edge 124", location: "Lahore, Pakistan", timestamp: "3 hours ago", success: true },
+  { id: "lh-005", user: "admin@khattak.com", ip: "45.67.89.123", device: "Unknown · Unknown", location: "Beijing, China", timestamp: "6 hours ago", success: false, reason: "Invalid password" },
+  { id: "lh-006", user: "admin@khattak.com", ip: "45.67.89.123", device: "Unknown · Unknown", location: "Beijing, China", timestamp: "6 hours ago", success: false, reason: "Invalid password" },
+  { id: "lh-007", user: "sana@khattak.com", ip: "192.168.1.102", device: "Windows 11 · Chrome 125", location: "Karachi, Pakistan", timestamp: "1 day ago", success: true },
+  { id: "lh-008", user: "admin@khattak.com", ip: "78.90.12.34", device: "Linux · Firefox 127", location: "Moscow, Russia", timestamp: "2 days ago", success: false, reason: "IP not recognized" },
+];
+
+export const passwordPolicies: PasswordPolicy[] = [
+  { key: "min-length", label: "Minimum Length", enabled: true, value: "8 characters" },
+  { key: "uppercase", label: "Require Uppercase", enabled: true, value: "At least 1 uppercase letter" },
+  { key: "lowercase", label: "Require Lowercase", enabled: true, value: "At least 1 lowercase letter" },
+  { key: "numbers", label: "Require Numbers", enabled: true, value: "At least 1 number" },
+  { key: "symbols", label: "Require Symbols", enabled: true, value: "At least 1 special character" },
+  { key: "expiry", label: "Password Expiry", enabled: true, value: "90 days" },
+  { key: "history", label: "Password History", enabled: true, value: "5 previous passwords" },
+  { key: "lockout", label: "Account Lockout", enabled: true, value: "5 failed attempts" },
+];
+
+// ── Audit Logs ──
+
+export const auditLogs: AuditLog[] = [
+  { id: "aud-001", user: "Admin Khattak", role: "Super Admin", action: "UPDATE", resource: "Order", resourceId: "KT-2A3F9C", details: "Changed status from Processing to Shipped", ip: "192.168.1.100", timestamp: "2 minutes ago", severity: "low" },
+  { id: "aud-002", user: "Ahmed Raza", role: "Manager", action: "CREATE", resource: "Product", resourceId: "kt-013", details: "Created new product 'Sapphire Blue Crystal'", ip: "192.168.1.101", timestamp: "15 minutes ago", severity: "low" },
+  { id: "aud-003", user: "Sana Malik", role: "Manager", action: "UPDATE", resource: "Inventory", resourceId: "Multiple", details: "Bulk restock: 5 products updated (+50 units each)", ip: "192.168.1.102", timestamp: "1 hour ago", severity: "medium" },
+  { id: "aud-004", user: "Usman Khan", role: "Staff", action: "UPDATE", resource: "Order", resourceId: "KT-6H3G1J", details: "Processed refund of Rs. 52,000", ip: "192.168.1.103", timestamp: "2 hours ago", severity: "high" },
+  { id: "aud-005", user: "System", role: "System", action: "FAILURE", resource: "Payment", resourceId: "KT-8K4L2M", details: "Payment verification failed — invalid transaction ID", ip: "—", timestamp: "3 hours ago", severity: "critical" },
+  { id: "aud-006", user: "Admin Khattak", role: "Super Admin", action: "UPDATE", resource: "Settings", resourceId: "shipping", details: "Updated shipping rates and free threshold value", ip: "192.168.1.100", timestamp: "4 hours ago", severity: "medium" },
+  { id: "aud-007", user: "Ahmed Raza", role: "Manager", action: "DELETE", resource: "Category", resourceId: "cat-004", details: "Deleted category 'Kids Eyewear' and reassigned 18 products", ip: "192.168.1.101", timestamp: "5 hours ago", severity: "high" },
+  { id: "aud-008", user: "System", role: "System", action: "LOGIN_FAIL", resource: "Authentication", resourceId: "admin@khattak.com", details: "Failed login attempt from unknown IP 45.67.89.123", ip: "45.67.89.123", timestamp: "6 hours ago", severity: "critical" },
+  { id: "aud-009", user: "Zainab Noor", role: "Staff", action: "UPDATE", resource: "Customer", resourceId: "cst-002", details: "Updated contact information for customer Ali Raza", ip: "192.168.1.105", timestamp: "8 hours ago", severity: "low" },
+  { id: "aud-010", user: "Admin Khattak", role: "Super Admin", action: "EXPORT", resource: "Report", resourceId: "revenue-jul-2026", details: "Exported July 2026 revenue report as PDF", ip: "192.168.1.100", timestamp: "1 day ago", severity: "low" },
+  { id: "aud-011", user: "System", role: "System", action: "BACKUP", resource: "Database", resourceId: "full-backup", details: "Automated daily database backup completed (2.4 GB)", ip: "—", timestamp: "1 day ago", severity: "low" },
+  { id: "aud-012", user: "Admin Khattak", role: "Super Admin", action: "CREATE", resource: "AdminUser", resourceId: "au-008", details: "Created new admin user 'Tariq Hussain' with Manager role", ip: "192.168.1.100", timestamp: "2 days ago", severity: "high" },
+];
+
 export const adminBrands: AdminBrand[] = [
   { id: "brd-001", name: "Khattak Atelier", slug: "khattak-atelier", logo: "", description: "Premium handcrafted eyewear using the finest materials", website: "https://khattak.com/atelier", featured: true, productCount: 38, status: "active", createdAt: "Jan 1, 2026" },
   { id: "brd-002", name: "Khattak Signature", slug: "khattak-signature", logo: "", description: "Distinctive designs for the modern individual", website: "https://khattak.com/signature", featured: true, productCount: 45, status: "active", createdAt: "Jan 1, 2026" },

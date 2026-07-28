@@ -3,12 +3,15 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Bell, Menu, Sun, Moon, LogOut, User, Settings } from "lucide-react";
 import { useAdminStore } from "@/lib/stores/admin-store";
+import { useUiStore } from "@/lib/stores/ui-store";
 import { cn } from "@/lib/utils";
 
 type Props = { onMenuClick: () => void };
 
 export function AdminTopBar({ onMenuClick }: Props) {
   const { user, toggleSidebar } = useAdminStore();
+  const theme = useUiStore((s) => s.theme);
+  const toggleTheme = useUiStore((s) => s.toggleTheme);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
@@ -41,8 +44,8 @@ export function AdminTopBar({ onMenuClick }: Props) {
           <Search className="h-4.5 w-4.5" />
         </button>
 
-        <button type="button" className="flex h-9 w-9 items-center justify-center rounded-xl text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)]">
-          <Sun className="h-4.5 w-4.5" />
+        <button type="button" onClick={toggleTheme} className="flex h-9 w-9 items-center justify-center rounded-xl text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)]">
+          {theme === "dark" ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
         </button>
 
         <div className="relative">

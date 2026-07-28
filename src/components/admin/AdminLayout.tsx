@@ -2,12 +2,15 @@ import { useState, type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminStore } from "@/lib/stores/admin-store";
+import { useTheme } from "@/hooks/useTheme";
+import { cn } from "@/lib/utils";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminTopBar } from "./AdminTopBar";
 
 type Props = { children: ReactNode };
 
 export function AdminLayout({ children }: Props) {
+  useTheme();
   const { isAuthenticated, sidebarCollapsed } = useAdminStore();
   const [mobileSidebar, setMobileSidebar] = useState(false);
 
@@ -40,8 +43,4 @@ export function AdminLayout({ children }: Props) {
       </div>
     </div>
   );
-}
-
-function cn(...classes: (string | boolean | undefined | null)[]) {
-  return classes.filter(Boolean).join(" ");
 }

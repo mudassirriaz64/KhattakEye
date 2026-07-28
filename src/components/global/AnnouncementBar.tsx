@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { announcements } from "@/lib/landing-data";
+import { useUiStore } from "@/lib/stores/ui-store";
 import { cn } from "@/lib/utils";
 
 export function AnnouncementBar() {
   const [current, setCurrent] = useState(0);
-  const [dismissed, setDismissed] = useState(false);
+  const dismissed = useUiStore((s) => s.announcementDismissed);
+  const setDismissed = useUiStore((s) => s.setAnnouncementDismissed);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -22,7 +24,7 @@ export function AnnouncementBar() {
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "auto", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          className="relative overflow-hidden bg-[linear-gradient(135deg,#111111,#1F2937)]"
+          className="fixed left-0 right-0 top-0 z-[60] overflow-hidden bg-[linear-gradient(135deg,#111111,#1F2937)]"
         >
           <div className="mx-auto flex h-10 max-w-[1440px] items-center justify-center px-4">
             <div className="relative h-full w-full max-w-3xl overflow-hidden">

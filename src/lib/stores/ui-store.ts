@@ -10,6 +10,7 @@ type UiState = {
   cartOpen: boolean;
   megaMenuOpen: boolean;
   cookieConsent: boolean;
+  announcementDismissed: boolean;
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
   setMobileNavOpen: (open: boolean) => void;
@@ -18,6 +19,7 @@ type UiState = {
   setCartOpen: (open: boolean) => void;
   setMegaMenuOpen: (open: boolean) => void;
   setCookieConsent: (value: boolean) => void;
+  setAnnouncementDismissed: (value: boolean) => void;
 };
 
 const getInitialTheme = (): ThemeMode => {
@@ -50,6 +52,7 @@ export const useUiStore = create<UiState>((set) => ({
   cartOpen: false,
   megaMenuOpen: false,
   cookieConsent: getInitialCookieConsent(),
+  announcementDismissed: false,
   setTheme: (theme) => set({ theme }),
   toggleTheme: () =>
     set((state) => ({
@@ -66,4 +69,5 @@ export const useUiStore = create<UiState>((set) => ({
     }
     set({ cookieConsent: value });
   },
+  setAnnouncementDismissed: (announcementDismissed) => set({ announcementDismissed }),
 }));

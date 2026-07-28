@@ -56,6 +56,21 @@ import { AdminCustomerDetailPage } from "@/pages/admin/CustomerDetailPage";
 import { AdminReviewsManagePage } from "@/pages/admin/ReviewsManagePage";
 import { AdminTestimonialsPage } from "@/pages/admin/TestimonialsPage";
 import { AdminInventoryPage } from "@/pages/admin/InventoryPage";
+import { AdminHomepageCMSPage } from "@/pages/admin/HomepageCMSPage";
+import { AdminBannerManagementPage } from "@/pages/admin/BannerManagementPage";
+import { AdminPagesCMSPage } from "@/pages/admin/PagesCMSPage";
+import { AdminCouponsPage } from "@/pages/admin/CouponsPage";
+import { AdminNewsletterPage } from "@/pages/admin/NewsletterPage";
+import { AdminMediaLibraryPage } from "@/pages/admin/MediaLibraryPage";
+import { AdminWebsiteSettingsPage } from "@/pages/admin/WebsiteSettingsPage";
+import { AdminReportsPage } from "@/pages/admin/ReportsPage";
+import { AdminAnalyticsPage } from "@/pages/admin/AnalyticsPage";
+import { AdminRolesPage } from "@/pages/admin/RolesPage";
+import { AdminAdminUsersPage } from "@/pages/admin/AdminUsersPage";
+import { AdminActivityLogsPage } from "@/pages/admin/ActivityLogsPage";
+import { AdminSystemNotificationsPage } from "@/pages/admin/SystemNotificationsPage";
+import { AdminSecurityPage } from "@/pages/admin/SecurityPage";
+import { AdminAuditLogsPage } from "@/pages/admin/AuditLogsPage";
 
 export function DesignSystemRoutes() {
   return (
@@ -127,9 +142,21 @@ export default function App() {
         <Route path="/admin/customers/:id" element={<AdminLayout><AdminCustomerDetailPage /></AdminLayout>} />
         <Route path="/admin/reviews" element={<AdminLayout><AdminReviewsManagePage /></AdminLayout>} />
         <Route path="/admin/testimonials" element={<AdminLayout><AdminTestimonialsPage /></AdminLayout>} />
-        <Route path="/admin/cms" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
-        <Route path="/admin/reports" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
-        <Route path="/admin/settings" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
+        <Route path="/admin/cms" element={<AdminLayout><AdminHomepageCMSPage /></AdminLayout>} />
+        <Route path="/admin/cms/banners" element={<AdminLayout><AdminBannerManagementPage /></AdminLayout>} />
+        <Route path="/admin/cms/pages" element={<AdminLayout><AdminPagesCMSPage /></AdminLayout>} />
+        <Route path="/admin/cms/coupons" element={<AdminLayout><AdminCouponsPage /></AdminLayout>} />
+        <Route path="/admin/cms/newsletter" element={<AdminLayout><AdminNewsletterPage /></AdminLayout>} />
+        <Route path="/admin/cms/media" element={<AdminLayout><AdminMediaLibraryPage /></AdminLayout>} />
+        <Route path="/admin/cms/settings" element={<AdminLayout><AdminWebsiteSettingsPage /></AdminLayout>} />
+        <Route path="/admin/reports" element={<AdminLayout><AdminReportsPage /></AdminLayout>} />
+        <Route path="/admin/analytics" element={<AdminLayout><AdminAnalyticsPage /></AdminLayout>} />
+        <Route path="/admin/roles" element={<AdminLayout><AdminRolesPage /></AdminLayout>} />
+        <Route path="/admin/admin-users" element={<AdminLayout><AdminAdminUsersPage /></AdminLayout>} />
+        <Route path="/admin/activity-logs" element={<AdminLayout><AdminActivityLogsPage /></AdminLayout>} />
+        <Route path="/admin/notifications" element={<AdminLayout><AdminSystemNotificationsPage /></AdminLayout>} />
+        <Route path="/admin/security" element={<AdminLayout><AdminSecurityPage /></AdminLayout>} />
+        <Route path="/admin/audit-logs" element={<AdminLayout><AdminAuditLogsPage /></AdminLayout>} />
         <Route path="/design-system/*" element={<DesignSystemRoutes />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
