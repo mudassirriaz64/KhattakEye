@@ -20,6 +20,27 @@ import { VirtualTryOnPage } from "@/pages/VirtualTryOnPage";
 import { WishlistPage } from "@/pages/WishlistPage";
 import { ComparePage } from "@/pages/ComparePage";
 import { RecentlyViewedPage } from "@/pages/RecentlyViewedPage";
+import { CartPage } from "@/pages/CartPage";
+import { CheckoutPage } from "@/pages/CheckoutPage";
+import { OrderDetailsPage } from "@/pages/OrderDetailsPage";
+import { TrackOrderPage } from "@/pages/TrackOrderPage";
+import { InvoicePage } from "@/pages/InvoicePage";
+import { LoginPage } from "@/pages/auth/LoginPage";
+import { RegisterPage } from "@/pages/auth/RegisterPage";
+import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
+import { EmailVerificationPage } from "@/pages/auth/EmailVerificationPage";
+import { OTPVerificationPage } from "@/pages/auth/OTPVerificationPage";
+import { DashboardPage } from "@/pages/account/DashboardPage";
+import { MyOrdersPage } from "@/pages/account/MyOrdersPage";
+import { AccountOrderDetailsPage } from "@/pages/account/OrderDetailsPage";
+import { AccountWishlistPage } from "@/pages/account/WishlistPage";
+import { SavedAddressesPage } from "@/pages/account/SavedAddressesPage";
+import { EditProfilePage } from "@/pages/account/EditProfilePage";
+import { ChangePasswordPage } from "@/pages/account/ChangePasswordPage";
+import { ReviewsPage } from "@/pages/account/ReviewsPage";
+import { NotificationsPage } from "@/pages/account/NotificationsPage";
+import { AccountSettingsPage } from "@/pages/account/AccountSettingsPage";
 
 export function DesignSystemRoutes() {
   return (
@@ -45,78 +66,36 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route
-          path="/"
-          element={
-            <GlobalLayout>
-              <LandingPage />
-            </GlobalLayout>
-          }
-        />
-        <Route
-          path="/shop"
-          element={
-            <GlobalLayout>
-              <ShopPage />
-            </GlobalLayout>
-          }
-        />
-        <Route
-          path="/shop/:category"
-          element={
-            <GlobalLayout>
-              <CategoryPage />
-            </GlobalLayout>
-          }
-        />
-        <Route
-          path="/search"
-          element={
-            <GlobalLayout>
-              <SearchResultsPage />
-            </GlobalLayout>
-          }
-        />
-        <Route
-          path="/product/:slug"
-          element={
-            <GlobalLayout>
-              <ProductDetailsPage />
-            </GlobalLayout>
-          }
-        />
-        <Route
-          path="/virtual-try-on"
-          element={
-            <GlobalLayout>
-              <VirtualTryOnPage />
-            </GlobalLayout>
-          }
-        />
-        <Route
-          path="/wishlist"
-          element={
-            <GlobalLayout>
-              <WishlistPage />
-            </GlobalLayout>
-          }
-        />
-        <Route
-          path="/compare"
-          element={
-            <GlobalLayout>
-              <ComparePage />
-            </GlobalLayout>
-          }
-        />
-        <Route
-          path="/recently-viewed"
-          element={
-            <GlobalLayout>
-              <RecentlyViewedPage />
-            </GlobalLayout>
-          }
-        />
+        <Route path="/" element={<GlobalLayout><LandingPage /></GlobalLayout>} />
+        <Route path="/shop" element={<GlobalLayout><ShopPage /></GlobalLayout>} />
+        <Route path="/shop/:category" element={<GlobalLayout><CategoryPage /></GlobalLayout>} />
+        <Route path="/search" element={<GlobalLayout><SearchResultsPage /></GlobalLayout>} />
+        <Route path="/product/:slug" element={<GlobalLayout><ProductDetailsPage /></GlobalLayout>} />
+        <Route path="/virtual-try-on" element={<GlobalLayout><VirtualTryOnPage /></GlobalLayout>} />
+        <Route path="/wishlist" element={<GlobalLayout><WishlistPage /></GlobalLayout>} />
+        <Route path="/compare" element={<GlobalLayout><ComparePage /></GlobalLayout>} />
+        <Route path="/recently-viewed" element={<GlobalLayout><RecentlyViewedPage /></GlobalLayout>} />
+        <Route path="/cart" element={<GlobalLayout><CartPage /></GlobalLayout>} />
+        <Route path="/checkout" element={<GlobalLayout><CheckoutPage /></GlobalLayout>} />
+        <Route path="/order-details" element={<GlobalLayout><OrderDetailsPage /></GlobalLayout>} />
+        <Route path="/track-order" element={<GlobalLayout><TrackOrderPage /></GlobalLayout>} />
+        <Route path="/invoice" element={<GlobalLayout><InvoicePage /></GlobalLayout>} />
+        <Route path="/account" element={<GlobalLayout><DashboardPage /></GlobalLayout>} />
+        <Route path="/account/orders" element={<GlobalLayout><MyOrdersPage /></GlobalLayout>} />
+        <Route path="/account/order-details" element={<GlobalLayout><AccountOrderDetailsPage /></GlobalLayout>} />
+        <Route path="/account/wishlist" element={<GlobalLayout><AccountWishlistPage /></GlobalLayout>} />
+        <Route path="/account/addresses" element={<GlobalLayout><SavedAddressesPage /></GlobalLayout>} />
+        <Route path="/account/reviews" element={<GlobalLayout><ReviewsPage /></GlobalLayout>} />
+        <Route path="/account/notifications" element={<GlobalLayout><NotificationsPage /></GlobalLayout>} />
+        <Route path="/account/settings" element={<GlobalLayout><AccountSettingsPage /></GlobalLayout>} />
+        <Route path="/account/edit-profile" element={<GlobalLayout><EditProfilePage /></GlobalLayout>} />
+        <Route path="/account/change-password" element={<GlobalLayout><ChangePasswordPage /></GlobalLayout>} />
+        <Route path="/auth/login" element={<LoginPage />} />
+        <Route path="/auth/register" element={<RegisterPage />} />
+        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/auth/email-verification" element={<EmailVerificationPage />} />
+        <Route path="/auth/otp-verification" element={<OTPVerificationPage />} />
         <Route path="/design-system/*" element={<DesignSystemRoutes />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
