@@ -59,6 +59,7 @@ import { AdminReviewsManagePage } from "@/pages/admin/ReviewsManagePage";
 import { AdminTestimonialsPage } from "@/pages/admin/TestimonialsPage";
 import { AdminInventoryPage } from "@/pages/admin/InventoryPage";
 import { AdminHomepageCMSPage } from "@/pages/admin/HomepageCMSPage";
+import { HeroSlidesPage } from "@/pages/admin/HeroSlidesPage";
 import { AdminBannerManagementPage } from "@/pages/admin/BannerManagementPage";
 import { AdminPagesCMSPage } from "@/pages/admin/PagesCMSPage";
 import { AdminCouponsPage } from "@/pages/admin/CouponsPage";
@@ -153,6 +154,7 @@ function AppRoutes() {
         <Route path="/admin/reviews" element={<PageTransition><AdminLayout><AdminReviewsManagePage /></AdminLayout></PageTransition>} />
         <Route path="/admin/testimonials" element={<PageTransition><AdminLayout><AdminTestimonialsPage /></AdminLayout></PageTransition>} />
         <Route path="/admin/cms" element={<PageTransition><AdminLayout><AdminHomepageCMSPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/cms/hero-slides" element={<PageTransition><AdminLayout><HeroSlidesPage /></AdminLayout></PageTransition>} />
         <Route path="/admin/cms/banners" element={<PageTransition><AdminLayout><AdminBannerManagementPage /></AdminLayout></PageTransition>} />
         <Route path="/admin/cms/pages" element={<PageTransition><AdminLayout><AdminPagesCMSPage /></AdminLayout></PageTransition>} />
         <Route path="/admin/cms/coupons" element={<PageTransition><AdminLayout><AdminCouponsPage /></AdminLayout></PageTransition>} />

@@ -50,7 +50,6 @@ const imageBase =
 const ei = (prompt: string) => `${imageBase}${encodeURIComponent(prompt)}`;
 
 export const announcements = [
-  "Free Shipping Across Pakistan — On All Orders",
   "Premium Eyewear — Crafted For Modern Lifestyles",
   "Easy Returns — 14-Day Satisfaction Guarantee",
   "Secure Checkout — 100% Payment Protection",
