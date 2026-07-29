@@ -1,10 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import { X, Truck, ShieldCheck, RotateCcw, CreditCard, Sparkles } from "lucide-react";
+import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { announcements } from "@/lib/landing-data";
 import { useUiStore } from "@/lib/stores/ui-store";
 
-const icons = [Truck, ShieldCheck, RotateCcw, CreditCard, Sparkles];
+const icons = [
+  "✦",
+  "◆",
+  "◈",
+];
 
 const items = announcements.map((text, i) => ({
   text,
@@ -23,7 +27,7 @@ export function AnnouncementBar() {
 
   useEffect(() => {
     if (paused || items.length <= 1) return;
-    const timer = setInterval(next, 3000);
+    const timer = setInterval(next, 3500);
     return () => clearInterval(timer);
   }, [paused, next]);
 
@@ -38,33 +42,52 @@ export function AnnouncementBar() {
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "auto", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          className="fixed left-0 right-0 top-0 z-[60] bg-gradient-to-r from-[#0C111B] via-[#0D9488]/20 to-[#0C111B]"
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="fixed left-0 right-0 top-0 z-[60] border-b border-white/5 bg-[#0C111B]"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
           <div className="relative mx-auto flex h-9 max-w-[1440px] items-center justify-center px-4 md:px-8">
-            <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="flex items-center gap-2.5 overflow-hidden md:mr-20">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={current}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.25 }}
-                  className="flex items-center gap-2.5"
+                  initial={{ opacity: 0, y: 12, filter: "blur(2px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -12, filter: "blur(2px)" }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  className="flex items-center gap-2"
                 >
-                  <active.icon className="h-3 w-3 shrink-0 text-[color:var(--color-accent-teal)]" />
-                  <span className="whitespace-nowrap text-[11px] font-medium tracking-[0.04em] text-white/70">
+                  <span className="text-[10px] text-[var(--color-accent-teal)]">
+                    {active.icon}
+                  </span>
+                  <span className="whitespace-nowrap text-[11px] font-medium tracking-[0.06em] text-white/60">
                     {active.text}
                   </span>
                 </motion.div>
               </AnimatePresence>
+
+              <div className="ml-3 flex items-center gap-1.5">
+                {items.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setCurrent(i)}
+                    className={`h-1 rounded-full transition-all duration-300 ${
+                      i === current
+                        ? "w-3 bg-[var(--color-accent-teal)]"
+                        : "w-1 bg-white/20 hover:bg-white/40"
+                    }`}
+                    aria-label={`Show announcement ${i + 1}`}
+                  />
+                ))}
+              </div>
             </div>
 
             <button
               type="button"
               onClick={() => setDismissed(true)}
-              className="absolute right-3 top-1/2 z-10 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-white/30 transition-colors hover:bg-white/10 hover:text-white"
+              className="absolute right-4 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-white/20 transition-colors hover:bg-white/5 hover:text-white/60"
               aria-label="Dismiss announcement"
             >
               <X className="h-2.5 w-2.5" />

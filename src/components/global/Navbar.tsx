@@ -10,6 +10,7 @@ import { useScrollPosition } from "@/hooks/useScrollPosition";
 import { useTheme } from "@/hooks/useTheme";
 import { useUiStore } from "@/lib/stores/ui-store";
 import { useCartStore } from "@/lib/stores/cart-store";
+import { useReveal } from "@/components/loading/RevealContext";
 
 // ─── Navigation Link Data ───────────────────────────────────────────
 type MegaLink = { label: string; path: string };
@@ -337,6 +338,7 @@ function BrandsMegaPanel({ onEnter, onLeave }: { onEnter: () => void; onLeave: (
 // ─── Navbar ──────────────────────────────────────────────────────────
 export function Navbar() {
   const { isScrolled } = useScrollPosition();
+  const { phase } = useReveal();
   const announcementDismissed = useUiStore((s) => s.announcementDismissed);
   const setMobileNavOpen = useUiStore((state) => state.setMobileNavOpen);
   const setSearchOpen = useUiStore((state) => state.setSearchOpen);
@@ -365,8 +367,11 @@ export function Navbar() {
   }, []);
 
   return (
-    <header
+    <motion.header
       ref={navRef}
+      initial={phase === "loading" ? { y: -80 } : false}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.6, delay: phase === "loading" ? 0.7 : 0, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
         "fixed left-0 right-0 z-50 transition-all duration-300",
         announcementDismissed ? "top-0" : "top-10",
@@ -485,6 +490,6 @@ export function Navbar() {
           />
         )}
       </AnimatePresence>
-    </header>
+    </motion.header>
   );
 }
