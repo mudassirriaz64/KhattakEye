@@ -1,74 +1,115 @@
 import { motion } from "framer-motion";
-import { ScanFace, ArrowRight } from "lucide-react";
+import { ArrowRight, Camera, Check, MonitorSmartphone } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
-import { ScrollReveal } from "@/components/shared/ScrollReveal";
+
+const features = [
+  "Real-time face mapping technology",
+  "360-degree frame preview",
+  "Compare multiple styles side by side",
+  "Share with friends for feedback",
+];
 
 export function VirtualTryOn() {
   return (
-    <section className="relative overflow-hidden">
-      <div className="mx-auto max-w-[1440px] px-4 py-16 md:px-8 md:py-20">
-        <div className="grid items-center gap-10 lg:grid-cols-2">
-          <ScrollReveal direction="left">
-            <div className="space-y-6">
-              <p className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-[color:var(--color-text-secondary)]">
-                <ScanFace className="h-3 w-3 text-[color:var(--color-accent-teal)]" />
-                Virtual Try-On
-              </p>
-              <h2 className="font-display text-3xl leading-tight text-[color:var(--color-text-primary)] md:text-5xl">
+    <section className="relative overflow-hidden border-y border-[color:var(--color-border)] py-16 md:py-24">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--color-accent-teal)/8,transparent_60%)]" />
+
+      <div className="relative mx-auto max-w-7xl px-4 md:px-8">
+        <div className="grid items-center gap-12 lg:grid-cols-5">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-3"
+          >
+            <div className="max-w-xl">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface)] px-3.5 py-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-accent-teal)]" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-[color:var(--color-text-secondary)]">
+                  Virtual Try-On
+                </span>
+              </div>
+
+              <h2 className="font-display text-4xl leading-[1.15] tracking-tight text-[color:var(--color-text-primary)] md:text-5xl lg:text-6xl">
                 Try frames from
                 <br />
-                the comfort of home
+                <span className="text-[color:var(--color-accent-teal)]">the comfort of home</span>
               </h2>
-              <p className="max-w-md text-sm leading-7 text-[color:var(--color-text-secondary)] md:text-base">
+
+              <p className="mt-4 max-w-lg text-base leading-relaxed text-[color:var(--color-text-tertiary)]">
                 Our AI-powered virtual try-on lets you see how any frame looks on your face instantly. No appointments, no pressure, just perfect frames.
               </p>
-              <ul className="space-y-3">
-                {[
-                  "Real-time face mapping technology",
-                  "360-degree frame preview",
-                  "Compare multiple styles side by side",
-                  "Share with friends for feedback",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-[color:var(--color-text-secondary)]">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[color:var(--color-accent-teal)]/10 text-[10px] text-[color:var(--color-accent-teal)]">
-                      ✓
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Button variant="cta-lg" iconRight={<ArrowRight className="h-4 w-4" />}>
-                Try It Now
-              </Button>
-            </div>
-          </ScrollReveal>
 
-          <ScrollReveal direction="right" className="relative">
-            <div className="relative mx-auto aspect-[4/5] max-w-md overflow-hidden rounded-3xl border border-[color:var(--color-border)] bg-[linear-gradient(145deg,#f0f0f0,#e0e0e0)] dark:bg-[linear-gradient(145deg,#1a1a1a,#222222)]">
-              <div className="flex h-full items-center justify-center p-8">
-                <div className="text-center">
-                  <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-[color:var(--color-surface-muted)]">
-                    <ScanFace className="h-10 w-10 text-[color:var(--color-accent-teal)]" />
+              <div className="mt-6 space-y-3">
+                {features.map((item) => (
+                  <div key={item} className="flex items-center gap-3">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-accent-teal)]/10">
+                      <Check className="h-3.5 w-3.5 text-[color:var(--color-accent-teal)]" />
+                    </div>
+                    <span className="text-sm text-[color:var(--color-text-secondary)]">
+                      {item}
+                    </span>
                   </div>
-                  <p className="mt-6 font-display text-2xl text-[color:var(--color-text-primary)]">
+                ))}
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button variant="cta-lg" iconRight={<ArrowRight className="h-4 w-4" />}>
+                  Try It Now
+                </Button>
+                <Button variant="outline">Learn More</Button>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="lg:col-span-2"
+          >
+            <div className="relative mx-auto max-w-xs">
+              <div className="relative overflow-hidden rounded-[2.5rem] border-4 border-[color:var(--color-border)] bg-[color:var(--color-surface)] shadow-2xl">
+                <div className="flex h-6 items-center justify-center gap-1.5 border-b border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-yellow-400" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                </div>
+
+                <div className="flex aspect-[3/5] flex-col items-center justify-center px-6 py-8 text-center">
+                  <div className="relative mb-6">
+                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-[color:var(--color-accent-teal)]/20 to-transparent ring-1 ring-[color:var(--color-accent-teal)]/20">
+                      <Camera className="h-10 w-10 text-[color:var(--color-accent-teal)]" />
+                    </div>
+                    <span className="absolute right-0 top-0 flex h-3 w-3">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[color:var(--color-accent-teal)] opacity-75" />
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-[color:var(--color-accent-teal)]" />
+                    </span>
+                  </div>
+
+                  <h3 className="font-display text-lg font-semibold text-[color:var(--color-text-primary)]">
                     Virtual Try-On
-                  </p>
-                  <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
+                  </h3>
+                  <p className="mt-1.5 text-xs text-[color:var(--color-text-tertiary)]">
                     Point your camera to see how frames look on you
                   </p>
-                  <motion.div
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                    className="mt-8"
-                  >
-                    <Button variant="primary" className="px-8">
+
+                  <div className="mt-6 w-full">
+                    <Button variant="primary" className="w-full text-sm" iconLeft={<Camera className="h-3.5 w-3.5" />}>
                       Start Camera
                     </Button>
-                  </motion.div>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-1.5 text-[10px] text-[color:var(--color-text-tertiary)]">
+                    <MonitorSmartphone className="h-3 w-3" />
+                    Works on any device
+                  </div>
                 </div>
               </div>
             </div>
-          </ScrollReveal>
+          </motion.div>
         </div>
       </div>
     </section>
