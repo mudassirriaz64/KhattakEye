@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { Hero } from "@/components/landing/Hero";
-import { BrandTrust } from "@/components/landing/BrandTrust";
 import { ShopByCategory } from "@/components/landing/ShopByCategory";
 import { FeaturedCollection } from "@/components/landing/FeaturedCollection";
 import { VirtualTryOn } from "@/components/landing/VirtualTryOn";
@@ -19,7 +18,6 @@ export function LandingPage() {
   return (
     <main>
       <Hero />
-      <BrandTrust />
       <ShopByCategory />
       <FeaturedCollection />
       <VirtualTryOn />

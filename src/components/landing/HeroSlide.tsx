@@ -63,39 +63,39 @@ export function HeroSlide({ slide, isActive }: HeroSlideProps) {
         variants={textStagger}
         initial="hidden"
         animate={isActive ? "visible" : "hidden"}
-        className="relative z-10 flex h-full items-center pt-16 md:pt-20"
+        className="relative z-10 flex h-full items-start pt-28 md:pt-32"
       >
         <div className="mx-auto w-full max-w-6xl px-4 md:px-8">
-          <motion.div variants={textItem} className="max-w-xl">
+          <motion.div variants={textItem} className="max-w-2xl">
             {slide.discountBadge && (
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1 backdrop-blur-sm">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1 backdrop-blur-sm">
                 <Sparkles className="h-2.5 w-2.5 text-[color:var(--color-accent-teal)]" />
-                <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/80">
                   {slide.discountBadge}
                 </span>
               </div>
             )}
 
-            <h1 className="font-display text-3xl leading-[1.15] tracking-tight text-white md:text-5xl lg:text-6xl">
+            <h1 className="font-display text-4xl leading-[1.1] tracking-tight text-white md:text-6xl lg:text-7xl">
               {slide.headline}
             </h1>
 
             {slide.highlightedText && (
-              <p className="mt-3 text-base font-medium leading-relaxed text-white/70 md:text-lg">
+              <p className="mt-2 text-lg font-medium leading-relaxed text-white/70 md:text-xl">
                 {slide.highlightedText}
               </p>
             )}
 
-            <p className="mt-2 max-w-lg text-sm leading-6 text-white/50 md:text-base">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/50 md:text-base">
               {slide.subtitle}
             </p>
 
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            <div className="mt-5 flex flex-wrap items-center gap-3">
               <Link to={slide.primaryCta.link}>
                 <Button
                   variant="cta-lg"
                   iconRight={<ArrowRight className="h-4 w-4" />}
-                  className="px-6 py-3.5 text-sm"
+                  className="px-7 py-3.5 text-sm"
                 >
                   {slide.primaryCta.label}
                 </Button>
@@ -104,7 +104,7 @@ export function HeroSlide({ slide, isActive }: HeroSlideProps) {
                 <Link to={slide.secondaryCta.link}>
                   <Button
                     variant="outline"
-                    className="border-white/20 bg-white/5 px-6 py-3.5 text-sm text-white hover:bg-white/10"
+                    className="border-white/20 bg-white/5 px-7 py-3.5 text-sm text-white hover:bg-white/10"
                   >
                     {slide.secondaryCta.label}
                   </Button>
@@ -113,8 +113,8 @@ export function HeroSlide({ slide, isActive }: HeroSlideProps) {
             </div>
 
             {slide.offerBadge && (
-              <div className="mt-4 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 backdrop-blur-sm">
-                <span className="text-[11px] text-white/60">{slide.offerBadge}</span>
+              <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 backdrop-blur-sm">
+                <span className="text-xs text-white/60">{slide.offerBadge}</span>
               </div>
             )}
           </motion.div>

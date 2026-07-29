@@ -1,7 +1,7 @@
 import { HeroCarousel } from "./HeroCarousel";
 import { BrandMarquee } from "./BrandMarquee";
 import { QuickCategories } from "./QuickCategories";
-import { TrustStrip } from "./TrustStrip";
+import { WhyShopWithUs } from "./WhyShopWithUs";
 
 export function Hero() {
   return (
@@ -9,7 +9,7 @@ export function Hero() {
       <HeroCarousel />
       <BrandMarquee />
       <QuickCategories />
-      <TrustStrip />
+      <WhyShopWithUs />
     </>
   );
 }
