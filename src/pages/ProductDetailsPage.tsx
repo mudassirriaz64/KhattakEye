@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Heart, ShoppingBag, Truck, Shield, RefreshCw, BadgeCheck, Star, Share2, GitCompare, Minus, Plus } from "lucide-react";
+import { Heart, ShoppingBag, Truck, Shield, RefreshCw, BadgeCheck, Star, Share2, GitCompare, Minus, Plus, Glasses } from "lucide-react";
 import { motion } from "framer-motion";
 import { Breadcrumb } from "@/components/shop/Breadcrumb";
 import { ProductGallery } from "@/components/product/ProductGallery";
@@ -10,7 +10,10 @@ import { ProductRecommendations } from "@/components/product/ProductRecommendati
 import { StickyAddToCart } from "@/components/product/StickyAddToCart";
 import { Button } from "@/components/primitives/Button";
 import { getProductBySlug, getRelatedProducts } from "@/lib/shop-data";
+import { useCartStore } from "@/lib/stores/cart-store";
 import { useShopStore } from "@/lib/stores/shop-store";
+import { QuickCheckoutModal } from "@/components/shop/QuickCheckoutModal";
+
 import { cn } from "@/lib/utils";
 
 const mockReviews = [
@@ -24,9 +27,13 @@ export function ProductDetailsPage() {
   const { slug } = useParams<{ slug: string }>();
   const product = slug ? getProductBySlug(slug) : null;
   const [wishlisted, setWishlisted] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState(0);
   const addToRecentlyViewed = useShopStore((s) => s.addToRecentlyViewed);
+  const toggleCompare = useShopStore((s) => s.toggleCompare);
+  const compareList = useShopStore((s) => s.compareList);
+  const addItem = useCartStore((s) => s.addItem);
 
   useEffect(() => {
     if (product) addToRecentlyViewed(product.id);
@@ -193,7 +200,14 @@ export function ProductDetailsPage() {
               <Button variant="primary" iconLeft={<ShoppingBag className="h-4 w-4" />} className="flex-1 px-8 py-4 text-base">
                 Add to Cart — {product.currency} {product.price.toLocaleString()}
               </Button>
-              <Button variant="cta-sm" className="px-8 py-4 text-base">Buy Now</Button>
+              <Button variant="cta-sm" className="px-8 py-4 text-base" onClick={() => setCheckoutOpen(true)}>Buy Now</Button>
+              <Link
+                to={`/virtual-try-on?product=${product.slug}`}
+                className="flex items-center gap-2 rounded-2xl border border-[color:var(--color-accent-teal)] px-5 py-4 text-sm font-semibold text-[color:var(--color-accent-teal)] transition-all hover:bg-[color:var(--color-accent-teal)] hover:text-white"
+              >
+                <Glasses className="h-5 w-5" />
+                Try On
+              </Link>
               <button
                 type="button"
                 onClick={() => setWishlisted(!wishlisted)}
@@ -201,13 +215,19 @@ export function ProductDetailsPage() {
               >
                 <Heart className={cn("h-5 w-5", wishlisted && "fill-current")} />
               </button>
-              <button type="button" className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[color:var(--color-border)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]">
+              <button type="button" onClick={() => toggleCompare(product.id)} className={cn("flex h-12 w-12 items-center justify-center rounded-2xl border transition-colors", compareList.includes(product.id) ? "border-[color:var(--color-accent-teal)] text-[color:var(--color-accent-teal)]" : "border-[color:var(--color-border)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]")}>
                 <GitCompare className="h-5 w-5" />
               </button>
               <button type="button" className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[color:var(--color-border)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]">
                 <Share2 className="h-5 w-5" />
               </button>
             </div>
+
+            <QuickCheckoutModal
+              open={checkoutOpen}
+              onClose={() => setCheckoutOpen(false)}
+              product={{ name: product.name, price: product.price, currency: product.currency, image: product.images[0] }}
+            />
 
             <ProductAccordion items={accordionItems} />
           </motion.div>
