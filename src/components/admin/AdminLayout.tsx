@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { useState } from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAdminStore } from "@/lib/stores/admin-store";
 import { useTheme } from "@/hooks/useTheme";
@@ -7,10 +7,9 @@ import { cn } from "@/lib/utils";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminTopBar } from "./AdminTopBar";
 
-type Props = { children: ReactNode };
-
-export function AdminLayout({ children }: Props) {
+export function AdminLayout() {
   useTheme();
+  const location = useLocation();
   const { isAuthenticated, sidebarCollapsed } = useAdminStore();
   const [mobileSidebar, setMobileSidebar] = useState(false);
 
@@ -36,9 +35,18 @@ export function AdminLayout({ children }: Props) {
       <div className="flex min-w-0 flex-1 flex-col">
         <AdminTopBar onMenuClick={() => setMobileSidebar(true)} />
         <main className="flex-1 overflow-y-auto">
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="p-4 lg:p-6">
-            {children}
-          </motion.div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="p-4 lg:p-6"
+            >
+              <Outlet />
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

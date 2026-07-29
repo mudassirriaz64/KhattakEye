@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
-  Search, Heart, UserRound, ShoppingBag, Menu, ChevronDown, Glasses,
+  Search, Heart, UserRound, ShoppingBag, Menu, ChevronDown, Glasses, X,
   SunMedium, MoonStar, Monitor,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -340,6 +340,7 @@ export function Navbar() {
   const { isScrolled } = useScrollPosition();
   const { phase } = useReveal();
   const announcementDismissed = useUiStore((s) => s.announcementDismissed);
+  const mobileNavOpen = useUiStore((s) => s.mobileNavOpen);
   const setMobileNavOpen = useUiStore((state) => state.setMobileNavOpen);
   const setSearchOpen = useUiStore((state) => state.setSearchOpen);
   const setWishlistOpen = useUiStore((state) => state.setWishlistOpen);
@@ -367,6 +368,7 @@ export function Navbar() {
   }, []);
 
   return (
+    <>
     <motion.header
       ref={navRef}
       initial={phase === "loading" ? { y: -80 } : false}
@@ -400,7 +402,7 @@ export function Navbar() {
           </motion.span>
         </Link>
 
-        <nav className="hidden items-center gap-1 xl:flex">
+        <nav className="hidden items-center gap-1 lg:flex">
           {navLinks.map((link) => (
             <div
               key={link.label}
@@ -427,7 +429,7 @@ export function Navbar() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-1">
+        <div className="hidden items-center gap-1 lg:flex">
           {[
             { icon: Search, label: "Search", action: () => setSearchOpen(true) },
             { icon: Heart, label: "Wishlist", action: () => setWishlistOpen(true) },
@@ -462,10 +464,12 @@ export function Navbar() {
             )}
           </button>
           <ThemeToggle />
+        </div>
+        <div className="flex items-center lg:hidden">
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
-            className="ml-2 flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:scale-105 hover:bg-white/10 hover:text-white xl:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-white/80 transition-all hover:scale-105 hover:bg-white/10 hover:text-white"
             aria-label="Open menu"
           >
             <Menu className="h-4 w-4" />
@@ -491,5 +495,102 @@ export function Navbar() {
         )}
       </AnimatePresence>
     </motion.header>
+
+    <AnimatePresence>
+      {mobileNavOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setMobileNavOpen(false)}
+            className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm lg:hidden"
+          />
+          <motion.aside
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 260 }}
+            className="fixed inset-y-0 right-0 z-[80] flex w-[300px] flex-col bg-[#0C111B] shadow-2xl lg:hidden"
+          >
+            <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-[#0C111B]">
+                  <Glasses className="h-4 w-4" />
+                </div>
+                <span className="font-display text-lg text-white">Khattak</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-white/40 transition-colors hover:bg-white/5 hover:text-white"
+                aria-label="Close menu"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-3 py-4">
+              <div className="space-y-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.label}
+                    to={link.path}
+                    onClick={() => setMobileNavOpen(false)}
+                    className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+
+              <div className="mt-6 border-t border-white/5 pt-6">
+                <p className="mb-3 px-4 text-[10px] uppercase tracking-[0.2em] text-white/30">
+                  Quick Links
+                </p>
+                <div className="space-y-1">
+                  {[
+                    { icon: Search, label: "Search", action: () => { setSearchOpen(true); setMobileNavOpen(false); } },
+                    { icon: Heart, label: "Wishlist", action: () => { setWishlistOpen(true); setMobileNavOpen(false); } },
+                    { icon: UserRound, label: "Account", path: "/account" },
+                    { icon: ShoppingBag, label: "Cart", action: () => { setCartOpen(true); setMobileNavOpen(false); } },
+                  ].map(({ icon: Icon, label, action, path }) => (
+                    path ? (
+                      <Link
+                        key={label}
+                        to={path}
+                        onClick={() => setMobileNavOpen(false)}
+                        className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                      >
+                        <Icon className="h-4 w-4" />
+                        {label}
+                      </Link>
+                    ) : (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={action}
+                        className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm text-white/60 transition-colors hover:bg-white/5 hover:text-white"
+                      >
+                        <Icon className="h-4 w-4" />
+                        {label}
+                      </button>
+                    )
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-white/5 px-5 py-4">
+              <p className="text-center text-[10px] text-white/20">
+                Khattak Eyewear &copy; {new Date().getFullYear()}
+              </p>
+            </div>
+          </motion.aside>
+        </>
+      )}
+    </AnimatePresence>
+    </>
   );
 }

@@ -135,10 +135,8 @@ export function Footer() {
 
         <div className="mt-14 border-t border-[color:var(--color-border)] pt-8">
           <div className="flex flex-col items-center justify-between gap-4 text-center md:flex-row md:text-left">
-            <p className="flex items-center gap-1 text-xs text-[color:var(--color-text-tertiary)]">
-              &copy; {new Date().getFullYear()} Khattak Eyewear. Made with
-              <Heart className="inline h-3 w-3 text-[color:var(--color-danger)]" />
-              in Pakistan.
+            <p className="text-xs text-[color:var(--color-text-tertiary)]">
+              &copy; {new Date().getFullYear()} Khattak Eyewear. All rights reserved.
             </p>
             <div className="flex items-center gap-4 text-xs text-[color:var(--color-text-tertiary)]">
               <Link to="/privacy" className="hover:text-[color:var(--color-text-secondary)]">

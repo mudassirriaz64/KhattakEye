@@ -104,6 +104,50 @@ export function DesignSystemRoutes() {
 
 function AppRoutes() {
   const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
+  if (isAdminRoute) {
+    return (
+      <Routes location={location}>
+        <Route path="/admin/login" element={<PageTransition><AdminLoginPage /></PageTransition>} />
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="products" element={<AdminProductsPage />} />
+          <Route path="products/add" element={<AddEditProductPage />} />
+          <Route path="products/:id/edit" element={<AddEditProductPage />} />
+          <Route path="products/:id" element={<AddEditProductPage />} />
+          <Route path="categories" element={<AdminCategoriesPage />} />
+          <Route path="brands" element={<AdminBrandsPage />} />
+          <Route path="orders" element={<AdminOrdersListPage />} />
+          <Route path="orders/:id" element={<AdminOrderDetailsPage />} />
+          <Route path="payments" element={<AdminPaymentVerificationPage />} />
+          <Route path="inventory" element={<AdminInventoryPage />} />
+          <Route path="customers" element={<AdminCustomersListPage />} />
+          <Route path="customers/:id" element={<AdminCustomerDetailPage />} />
+          <Route path="reviews" element={<AdminReviewsManagePage />} />
+          <Route path="testimonials" element={<AdminTestimonialsPage />} />
+          <Route path="cms" element={<AdminHomepageCMSPage />} />
+          <Route path="cms/hero-slides" element={<HeroSlidesPage />} />
+          <Route path="cms/banners" element={<AdminBannerManagementPage />} />
+          <Route path="cms/pages" element={<AdminPagesCMSPage />} />
+          <Route path="cms/coupons" element={<AdminCouponsPage />} />
+          <Route path="cms/newsletter" element={<AdminNewsletterPage />} />
+          <Route path="cms/media" element={<AdminMediaLibraryPage />} />
+          <Route path="cms/settings" element={<AdminWebsiteSettingsPage />} />
+          <Route path="reports" element={<AdminReportsPage />} />
+          <Route path="analytics" element={<AdminAnalyticsPage />} />
+          <Route path="roles" element={<AdminRolesPage />} />
+          <Route path="admin-users" element={<AdminAdminUsersPage />} />
+          <Route path="activity-logs" element={<AdminActivityLogsPage />} />
+          <Route path="notifications" element={<AdminSystemNotificationsPage />} />
+          <Route path="security" element={<AdminSecurityPage />} />
+          <Route path="audit-logs" element={<AdminAuditLogsPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Routes>
+    );
+  }
+
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
@@ -137,38 +181,6 @@ function AppRoutes() {
         <Route path="/auth/reset-password" element={<PageTransition><ResetPasswordPage /></PageTransition>} />
         <Route path="/auth/email-verification" element={<PageTransition><EmailVerificationPage /></PageTransition>} />
         <Route path="/auth/otp-verification" element={<PageTransition><OTPVerificationPage /></PageTransition>} />
-        <Route path="/admin/login" element={<PageTransition><AdminLoginPage /></PageTransition>} />
-        <Route path="/admin" element={<PageTransition><AdminLayout><AdminDashboardPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/products" element={<PageTransition><AdminLayout><AdminProductsPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/products/add" element={<PageTransition><AdminLayout><AddEditProductPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/products/:id/edit" element={<PageTransition><AdminLayout><AddEditProductPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/products/:id" element={<PageTransition><AdminLayout><AddEditProductPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/categories" element={<PageTransition><AdminLayout><AdminCategoriesPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/brands" element={<PageTransition><AdminLayout><AdminBrandsPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/orders" element={<PageTransition><AdminLayout><AdminOrdersListPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/orders/:id" element={<PageTransition><AdminLayout><AdminOrderDetailsPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/payments" element={<PageTransition><AdminLayout><AdminPaymentVerificationPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/inventory" element={<PageTransition><AdminLayout><AdminInventoryPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/customers" element={<PageTransition><AdminLayout><AdminCustomersListPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/customers/:id" element={<PageTransition><AdminLayout><AdminCustomerDetailPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/reviews" element={<PageTransition><AdminLayout><AdminReviewsManagePage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/testimonials" element={<PageTransition><AdminLayout><AdminTestimonialsPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/cms" element={<PageTransition><AdminLayout><AdminHomepageCMSPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/cms/hero-slides" element={<PageTransition><AdminLayout><HeroSlidesPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/cms/banners" element={<PageTransition><AdminLayout><AdminBannerManagementPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/cms/pages" element={<PageTransition><AdminLayout><AdminPagesCMSPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/cms/coupons" element={<PageTransition><AdminLayout><AdminCouponsPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/cms/newsletter" element={<PageTransition><AdminLayout><AdminNewsletterPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/cms/media" element={<PageTransition><AdminLayout><AdminMediaLibraryPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/cms/settings" element={<PageTransition><AdminLayout><AdminWebsiteSettingsPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/reports" element={<PageTransition><AdminLayout><AdminReportsPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/analytics" element={<PageTransition><AdminLayout><AdminAnalyticsPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/roles" element={<PageTransition><AdminLayout><AdminRolesPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/admin-users" element={<PageTransition><AdminLayout><AdminAdminUsersPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/activity-logs" element={<PageTransition><AdminLayout><AdminActivityLogsPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/notifications" element={<PageTransition><AdminLayout><AdminSystemNotificationsPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/security" element={<PageTransition><AdminLayout><AdminSecurityPage /></AdminLayout></PageTransition>} />
-        <Route path="/admin/audit-logs" element={<PageTransition><AdminLayout><AdminAuditLogsPage /></AdminLayout></PageTransition>} />
         <Route path="/design-system/*" element={<DesignSystemRoutes />} />
         <Route path="/404" element={<PageTransition><NotFoundPage /></PageTransition>} />
         <Route path="/500" element={<PageTransition><ErrorPage /></PageTransition>} />
