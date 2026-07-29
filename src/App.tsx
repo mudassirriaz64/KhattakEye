@@ -1,6 +1,8 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/layout/AppShell";
 import { GlobalLayout } from "@/components/global/GlobalLayout";
+import { PageTransition } from "@/components/shared/PageTransition";
 import { ButtonsPage } from "@/pages/ButtonsPage";
 import { CardsPage } from "@/pages/CardsPage";
 import { ColorsPage } from "@/pages/ColorsPage";
@@ -71,95 +73,115 @@ import { AdminActivityLogsPage } from "@/pages/admin/ActivityLogsPage";
 import { AdminSystemNotificationsPage } from "@/pages/admin/SystemNotificationsPage";
 import { AdminSecurityPage } from "@/pages/admin/SecurityPage";
 import { AdminAuditLogsPage } from "@/pages/admin/AuditLogsPage";
+import { NotFoundPage } from "@/pages/NotFoundPage";
+import { ErrorPage } from "@/pages/ErrorPage";
+import { OfflinePage } from "@/pages/OfflinePage";
+import { MaintenancePage } from "@/pages/MaintenancePage";
 
 export function DesignSystemRoutes() {
+  const location = useLocation();
   return (
     <AppShell>
-      <Routes>
-        <Route path="/" element={<OverviewPage />} />
-        <Route path="/foundations/colors" element={<ColorsPage />} />
-        <Route path="/foundations/typography" element={<TypographyPage />} />
-        <Route path="/foundations/layout" element={<LayoutPage />} />
-        <Route path="/components/buttons" element={<ButtonsPage />} />
-        <Route path="/components/forms" element={<FormsPage />} />
-        <Route path="/components/cards" element={<CardsPage />} />
-        <Route path="/components/navigation" element={<NavigationPage />} />
-        <Route path="/motion" element={<MotionPage />} />
-        <Route path="/governance" element={<GovernancePage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={<PageTransition><OverviewPage /></PageTransition>} />
+          <Route path="/foundations/colors" element={<PageTransition><ColorsPage /></PageTransition>} />
+          <Route path="/foundations/typography" element={<PageTransition><TypographyPage /></PageTransition>} />
+          <Route path="/foundations/layout" element={<PageTransition><LayoutPage /></PageTransition>} />
+          <Route path="/components/buttons" element={<PageTransition><ButtonsPage /></PageTransition>} />
+          <Route path="/components/forms" element={<PageTransition><FormsPage /></PageTransition>} />
+          <Route path="/components/cards" element={<PageTransition><CardsPage /></PageTransition>} />
+          <Route path="/components/navigation" element={<PageTransition><NavigationPage /></PageTransition>} />
+          <Route path="/motion" element={<PageTransition><MotionPage /></PageTransition>} />
+          <Route path="/governance" element={<PageTransition><GovernancePage /></PageTransition>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AnimatePresence>
     </AppShell>
+  );
+}
+
+function AppRoutes() {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<PageTransition><GlobalLayout><LandingPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop" element={<PageTransition><GlobalLayout><ShopPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/:category" element={<PageTransition><GlobalLayout><CategoryPage /></GlobalLayout></PageTransition>} />
+        <Route path="/search" element={<PageTransition><GlobalLayout><SearchResultsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/product/:slug" element={<PageTransition><GlobalLayout><ProductDetailsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/virtual-try-on" element={<PageTransition><GlobalLayout><VirtualTryOnPage /></GlobalLayout></PageTransition>} />
+        <Route path="/wishlist" element={<PageTransition><GlobalLayout><WishlistPage /></GlobalLayout></PageTransition>} />
+        <Route path="/compare" element={<PageTransition><GlobalLayout><ComparePage /></GlobalLayout></PageTransition>} />
+        <Route path="/recently-viewed" element={<PageTransition><GlobalLayout><RecentlyViewedPage /></GlobalLayout></PageTransition>} />
+        <Route path="/cart" element={<PageTransition><GlobalLayout><CartPage /></GlobalLayout></PageTransition>} />
+        <Route path="/checkout" element={<PageTransition><GlobalLayout><CheckoutPage /></GlobalLayout></PageTransition>} />
+        <Route path="/order-details" element={<PageTransition><GlobalLayout><OrderDetailsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/track-order" element={<PageTransition><GlobalLayout><TrackOrderPage /></GlobalLayout></PageTransition>} />
+        <Route path="/invoice" element={<PageTransition><GlobalLayout><InvoicePage /></GlobalLayout></PageTransition>} />
+        <Route path="/account" element={<PageTransition><GlobalLayout><DashboardPage /></GlobalLayout></PageTransition>} />
+        <Route path="/account/orders" element={<PageTransition><GlobalLayout><MyOrdersPage /></GlobalLayout></PageTransition>} />
+        <Route path="/account/order-details" element={<PageTransition><GlobalLayout><AccountOrderDetailsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/account/wishlist" element={<PageTransition><GlobalLayout><AccountWishlistPage /></GlobalLayout></PageTransition>} />
+        <Route path="/account/addresses" element={<PageTransition><GlobalLayout><SavedAddressesPage /></GlobalLayout></PageTransition>} />
+        <Route path="/account/reviews" element={<PageTransition><GlobalLayout><ReviewsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/account/notifications" element={<PageTransition><GlobalLayout><NotificationsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/account/settings" element={<PageTransition><GlobalLayout><AccountSettingsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/account/edit-profile" element={<PageTransition><GlobalLayout><EditProfilePage /></GlobalLayout></PageTransition>} />
+        <Route path="/account/change-password" element={<PageTransition><GlobalLayout><ChangePasswordPage /></GlobalLayout></PageTransition>} />
+        <Route path="/auth/login" element={<PageTransition><LoginPage /></PageTransition>} />
+        <Route path="/auth/register" element={<PageTransition><RegisterPage /></PageTransition>} />
+        <Route path="/auth/forgot-password" element={<PageTransition><ForgotPasswordPage /></PageTransition>} />
+        <Route path="/auth/reset-password" element={<PageTransition><ResetPasswordPage /></PageTransition>} />
+        <Route path="/auth/email-verification" element={<PageTransition><EmailVerificationPage /></PageTransition>} />
+        <Route path="/auth/otp-verification" element={<PageTransition><OTPVerificationPage /></PageTransition>} />
+        <Route path="/admin/login" element={<PageTransition><AdminLoginPage /></PageTransition>} />
+        <Route path="/admin" element={<PageTransition><AdminLayout><AdminDashboardPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/products" element={<PageTransition><AdminLayout><AdminProductsPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/products/add" element={<PageTransition><AdminLayout><AddEditProductPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/products/:id/edit" element={<PageTransition><AdminLayout><AddEditProductPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/products/:id" element={<PageTransition><AdminLayout><AddEditProductPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/categories" element={<PageTransition><AdminLayout><AdminCategoriesPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/brands" element={<PageTransition><AdminLayout><AdminBrandsPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/orders" element={<PageTransition><AdminLayout><AdminOrdersListPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/orders/:id" element={<PageTransition><AdminLayout><AdminOrderDetailsPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/payments" element={<PageTransition><AdminLayout><AdminPaymentVerificationPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/inventory" element={<PageTransition><AdminLayout><AdminInventoryPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/customers" element={<PageTransition><AdminLayout><AdminCustomersListPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/customers/:id" element={<PageTransition><AdminLayout><AdminCustomerDetailPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/reviews" element={<PageTransition><AdminLayout><AdminReviewsManagePage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/testimonials" element={<PageTransition><AdminLayout><AdminTestimonialsPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/cms" element={<PageTransition><AdminLayout><AdminHomepageCMSPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/cms/banners" element={<PageTransition><AdminLayout><AdminBannerManagementPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/cms/pages" element={<PageTransition><AdminLayout><AdminPagesCMSPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/cms/coupons" element={<PageTransition><AdminLayout><AdminCouponsPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/cms/newsletter" element={<PageTransition><AdminLayout><AdminNewsletterPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/cms/media" element={<PageTransition><AdminLayout><AdminMediaLibraryPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/cms/settings" element={<PageTransition><AdminLayout><AdminWebsiteSettingsPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/reports" element={<PageTransition><AdminLayout><AdminReportsPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/analytics" element={<PageTransition><AdminLayout><AdminAnalyticsPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/roles" element={<PageTransition><AdminLayout><AdminRolesPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/admin-users" element={<PageTransition><AdminLayout><AdminAdminUsersPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/activity-logs" element={<PageTransition><AdminLayout><AdminActivityLogsPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/notifications" element={<PageTransition><AdminLayout><AdminSystemNotificationsPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/security" element={<PageTransition><AdminLayout><AdminSecurityPage /></AdminLayout></PageTransition>} />
+        <Route path="/admin/audit-logs" element={<PageTransition><AdminLayout><AdminAuditLogsPage /></AdminLayout></PageTransition>} />
+        <Route path="/design-system/*" element={<DesignSystemRoutes />} />
+        <Route path="/404" element={<PageTransition><NotFoundPage /></PageTransition>} />
+        <Route path="/500" element={<PageTransition><ErrorPage /></PageTransition>} />
+        <Route path="/offline" element={<PageTransition><OfflinePage /></PageTransition>} />
+        <Route path="/maintenance" element={<PageTransition><MaintenancePage /></PageTransition>} />
+        <Route path="*" element={<Navigate to="/404" replace />} />
+      </Routes>
+    </AnimatePresence>
   );
 }
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<GlobalLayout><LandingPage /></GlobalLayout>} />
-        <Route path="/shop" element={<GlobalLayout><ShopPage /></GlobalLayout>} />
-        <Route path="/shop/:category" element={<GlobalLayout><CategoryPage /></GlobalLayout>} />
-        <Route path="/search" element={<GlobalLayout><SearchResultsPage /></GlobalLayout>} />
-        <Route path="/product/:slug" element={<GlobalLayout><ProductDetailsPage /></GlobalLayout>} />
-        <Route path="/virtual-try-on" element={<GlobalLayout><VirtualTryOnPage /></GlobalLayout>} />
-        <Route path="/wishlist" element={<GlobalLayout><WishlistPage /></GlobalLayout>} />
-        <Route path="/compare" element={<GlobalLayout><ComparePage /></GlobalLayout>} />
-        <Route path="/recently-viewed" element={<GlobalLayout><RecentlyViewedPage /></GlobalLayout>} />
-        <Route path="/cart" element={<GlobalLayout><CartPage /></GlobalLayout>} />
-        <Route path="/checkout" element={<GlobalLayout><CheckoutPage /></GlobalLayout>} />
-        <Route path="/order-details" element={<GlobalLayout><OrderDetailsPage /></GlobalLayout>} />
-        <Route path="/track-order" element={<GlobalLayout><TrackOrderPage /></GlobalLayout>} />
-        <Route path="/invoice" element={<GlobalLayout><InvoicePage /></GlobalLayout>} />
-        <Route path="/account" element={<GlobalLayout><DashboardPage /></GlobalLayout>} />
-        <Route path="/account/orders" element={<GlobalLayout><MyOrdersPage /></GlobalLayout>} />
-        <Route path="/account/order-details" element={<GlobalLayout><AccountOrderDetailsPage /></GlobalLayout>} />
-        <Route path="/account/wishlist" element={<GlobalLayout><AccountWishlistPage /></GlobalLayout>} />
-        <Route path="/account/addresses" element={<GlobalLayout><SavedAddressesPage /></GlobalLayout>} />
-        <Route path="/account/reviews" element={<GlobalLayout><ReviewsPage /></GlobalLayout>} />
-        <Route path="/account/notifications" element={<GlobalLayout><NotificationsPage /></GlobalLayout>} />
-        <Route path="/account/settings" element={<GlobalLayout><AccountSettingsPage /></GlobalLayout>} />
-        <Route path="/account/edit-profile" element={<GlobalLayout><EditProfilePage /></GlobalLayout>} />
-        <Route path="/account/change-password" element={<GlobalLayout><ChangePasswordPage /></GlobalLayout>} />
-        <Route path="/auth/login" element={<LoginPage />} />
-        <Route path="/auth/register" element={<RegisterPage />} />
-        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/auth/email-verification" element={<EmailVerificationPage />} />
-        <Route path="/auth/otp-verification" element={<OTPVerificationPage />} />
-        <Route path="/admin/login" element={<AdminLoginPage />} />
-        <Route path="/admin" element={<AdminLayout><AdminDashboardPage /></AdminLayout>} />
-        <Route path="/admin/products" element={<AdminLayout><AdminProductsPage /></AdminLayout>} />
-        <Route path="/admin/products/add" element={<AdminLayout><AddEditProductPage /></AdminLayout>} />
-        <Route path="/admin/products/:id/edit" element={<AdminLayout><AddEditProductPage /></AdminLayout>} />
-        <Route path="/admin/products/:id" element={<AdminLayout><AddEditProductPage /></AdminLayout>} />
-        <Route path="/admin/categories" element={<AdminLayout><AdminCategoriesPage /></AdminLayout>} />
-        <Route path="/admin/brands" element={<AdminLayout><AdminBrandsPage /></AdminLayout>} />
-        <Route path="/admin/orders" element={<AdminLayout><AdminOrdersListPage /></AdminLayout>} />
-        <Route path="/admin/orders/:id" element={<AdminLayout><AdminOrderDetailsPage /></AdminLayout>} />
-        <Route path="/admin/payments" element={<AdminLayout><AdminPaymentVerificationPage /></AdminLayout>} />
-        <Route path="/admin/inventory" element={<AdminLayout><AdminInventoryPage /></AdminLayout>} />
-        <Route path="/admin/customers" element={<AdminLayout><AdminCustomersListPage /></AdminLayout>} />
-        <Route path="/admin/customers/:id" element={<AdminLayout><AdminCustomerDetailPage /></AdminLayout>} />
-        <Route path="/admin/reviews" element={<AdminLayout><AdminReviewsManagePage /></AdminLayout>} />
-        <Route path="/admin/testimonials" element={<AdminLayout><AdminTestimonialsPage /></AdminLayout>} />
-        <Route path="/admin/cms" element={<AdminLayout><AdminHomepageCMSPage /></AdminLayout>} />
-        <Route path="/admin/cms/banners" element={<AdminLayout><AdminBannerManagementPage /></AdminLayout>} />
-        <Route path="/admin/cms/pages" element={<AdminLayout><AdminPagesCMSPage /></AdminLayout>} />
-        <Route path="/admin/cms/coupons" element={<AdminLayout><AdminCouponsPage /></AdminLayout>} />
-        <Route path="/admin/cms/newsletter" element={<AdminLayout><AdminNewsletterPage /></AdminLayout>} />
-        <Route path="/admin/cms/media" element={<AdminLayout><AdminMediaLibraryPage /></AdminLayout>} />
-        <Route path="/admin/cms/settings" element={<AdminLayout><AdminWebsiteSettingsPage /></AdminLayout>} />
-        <Route path="/admin/reports" element={<AdminLayout><AdminReportsPage /></AdminLayout>} />
-        <Route path="/admin/analytics" element={<AdminLayout><AdminAnalyticsPage /></AdminLayout>} />
-        <Route path="/admin/roles" element={<AdminLayout><AdminRolesPage /></AdminLayout>} />
-        <Route path="/admin/admin-users" element={<AdminLayout><AdminAdminUsersPage /></AdminLayout>} />
-        <Route path="/admin/activity-logs" element={<AdminLayout><AdminActivityLogsPage /></AdminLayout>} />
-        <Route path="/admin/notifications" element={<AdminLayout><AdminSystemNotificationsPage /></AdminLayout>} />
-        <Route path="/admin/security" element={<AdminLayout><AdminSecurityPage /></AdminLayout>} />
-        <Route path="/admin/audit-logs" element={<AdminLayout><AdminAuditLogsPage /></AdminLayout>} />
-        <Route path="/design-system/*" element={<DesignSystemRoutes />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <AppRoutes />
     </BrowserRouter>
   );
 }

@@ -22,8 +22,15 @@ const trendingProducts = [
 export function SearchOverlay() {
   const searchOpen = useUiStore((state) => state.searchOpen);
   const setSearchOpen = useUiStore((state) => state.setSearchOpen);
+  const recentSearches = useUiStore((state) => state.recentSearches);
+  const addRecentSearch = useUiStore((state) => state.addRecentSearch);
+  const clearRecentSearches = useUiStore((state) => state.clearRecentSearches);
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleSearch = (term: string) => {
+    if (term.trim()) addRecentSearch(term.trim());
+  };
 
   useEffect(() => {
     if (searchOpen) {
@@ -50,13 +57,14 @@ export function SearchOverlay() {
             <div className="flex items-center gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[color:var(--color-text-secondary)]" />
-                <input
-                  ref={inputRef}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search eyewear, collections, brands..."
-                  className="w-full rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] py-5 pl-14 pr-5 text-lg text-[color:var(--color-text-primary)] shadow-[var(--shadow-soft)] outline-none transition-all placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-accent-blue)] focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
-                />
+                  <input
+                    ref={inputRef}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSearch(query); }}
+                    placeholder="Search eyewear, collections, brands..."
+                    className="w-full rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] py-5 pl-14 pr-5 text-lg text-[color:var(--color-text-primary)] shadow-[var(--shadow-soft)] outline-none transition-all placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-accent-blue)] focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
+                  />
               </div>
               <button
                 type="button"
@@ -78,7 +86,7 @@ export function SearchOverlay() {
                     <button
                       key={term}
                       type="button"
-                      onClick={() => setQuery(term)}
+                      onClick={() => { setQuery(term); handleSearch(term); }}
                       className="rounded-full border border-[color:var(--color-border)] px-4 py-2 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-accent-teal)] hover:text-[color:var(--color-accent-teal)]"
                     >
                       {term}
@@ -86,11 +94,37 @@ export function SearchOverlay() {
                   ))}
                 </div>
                 <div className="mt-8">
-                  <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--color-text-secondary)]">
-                    <Clock className="h-3 w-3" />
-                    Recent Searches
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--color-text-secondary)]">
+                      <Clock className="h-3 w-3" />
+                      Recent Searches
+                    </div>
+                    {recentSearches.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={clearRecentSearches}
+                        className="text-[10px] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
+                      >
+                        Clear all
+                      </button>
+                    )}
                   </div>
-                  <p className="text-sm text-[color:var(--color-text-tertiary)]">No recent searches</p>
+                  {recentSearches.length === 0 ? (
+                    <p className="text-sm text-[color:var(--color-text-tertiary)]">No recent searches</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {recentSearches.map((term) => (
+                        <button
+                          key={term}
+                          type="button"
+                          onClick={() => { setQuery(term); handleSearch(term); }}
+                          className="rounded-full border border-[color:var(--color-border)] px-4 py-2 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-accent-teal)] hover:text-[color:var(--color-accent-teal)]"
+                        >
+                          {term}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

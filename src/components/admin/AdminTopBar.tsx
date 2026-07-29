@@ -1,17 +1,44 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Bell, Menu, Sun, Moon, LogOut, User, Settings } from "lucide-react";
+import { Search, Bell, Menu, Sun, Moon, Monitor, LogOut, User, Settings } from "lucide-react";
 import { useAdminStore } from "@/lib/stores/admin-store";
-import { useUiStore } from "@/lib/stores/ui-store";
+import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 
 type Props = { onMenuClick: () => void };
 
+function ThemeToggle() {
+  const { mode, isDark, isSystem, toggleTheme } = useTheme();
+
+  return (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)]"
+      aria-label={`Current theme: ${mode}. Click to switch.`}
+    >
+      <AnimatePresence mode="wait">
+        {isSystem ? (
+          <motion.span key="system" initial={{ opacity: 0, rotate: -90, scale: 0.5 }} animate={{ opacity: 1, rotate: 0, scale: 1 }} exit={{ opacity: 0, rotate: 90, scale: 0.5 }} transition={{ duration: 0.25 }}>
+            <Monitor className="h-4.5 w-4.5" />
+          </motion.span>
+        ) : isDark ? (
+          <motion.span key="dark" initial={{ opacity: 0, rotate: -90, scale: 0.5 }} animate={{ opacity: 1, rotate: 0, scale: 1 }} exit={{ opacity: 0, rotate: 90, scale: 0.5 }} transition={{ duration: 0.25 }}>
+            <Sun className="h-4.5 w-4.5" />
+          </motion.span>
+        ) : (
+          <motion.span key="light" initial={{ opacity: 0, rotate: -90, scale: 0.5 }} animate={{ opacity: 1, rotate: 0, scale: 1 }} exit={{ opacity: 0, rotate: 90, scale: 0.5 }} transition={{ duration: 0.25 }}>
+            <Moon className="h-4.5 w-4.5" />
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </button>
+  );
+}
+
 export function AdminTopBar({ onMenuClick }: Props) {
   const { user, toggleSidebar } = useAdminStore();
-  const theme = useUiStore((s) => s.theme);
-  const toggleTheme = useUiStore((s) => s.toggleTheme);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
@@ -44,9 +71,7 @@ export function AdminTopBar({ onMenuClick }: Props) {
           <Search className="h-4.5 w-4.5" />
         </button>
 
-        <button type="button" onClick={toggleTheme} className="flex h-9 w-9 items-center justify-center rounded-xl text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)]">
-          {theme === "dark" ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
-        </button>
+        <ThemeToggle />
 
         <div className="relative">
           <button type="button" onClick={() => setShowNotifications(!showNotifications)} className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)]">

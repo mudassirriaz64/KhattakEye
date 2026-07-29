@@ -18,11 +18,15 @@ export type CartItem = {
 
 type CartState = {
   items: CartItem[];
+  savedForLater: CartItem[];
   couponCode: string | null;
   couponDiscount: number;
   addItem: (item: CartItem) => void;
   removeItem: (productId: string, color: string) => void;
   updateQuantity: (productId: string, color: string, quantity: number) => void;
+  saveForLater: (productId: string, color: string) => void;
+  moveToCart: (productId: string, color: string) => void;
+  removeSaved: (productId: string, color: string) => void;
   clearCart: () => void;
   applyCoupon: (code: string) => boolean;
   removeCoupon: () => void;
@@ -35,6 +39,7 @@ type CartState = {
 
 export const useCartStore = create<CartState>((set, get) => ({
   items: [],
+  savedForLater: [],
   couponCode: null,
   couponDiscount: 0,
 
@@ -71,7 +76,29 @@ export const useCartStore = create<CartState>((set, get) => ({
       ),
     })),
 
-  clearCart: () => set({ items: [], couponCode: null, couponDiscount: 0 }),
+  saveForLater: (productId, color) =>
+    set((state) => {
+      const item = state.items.find((i) => i.productId === productId && i.color === color);
+      if (!item) return state;
+      return {
+        items: state.items.filter((i) => !(i.productId === productId && i.color === color)),
+        savedForLater: [...state.savedForLater.filter((i) => !(i.productId === productId && i.color === color)), item],
+      };
+    }),
+  moveToCart: (productId, color) =>
+    set((state) => {
+      const item = state.savedForLater.find((i) => i.productId === productId && i.color === color);
+      if (!item) return state;
+      return {
+        savedForLater: state.savedForLater.filter((i) => !(i.productId === productId && i.color === color)),
+        items: [...state.items, { ...item, quantity: 1 }],
+      };
+    }),
+  removeSaved: (productId, color) =>
+    set((state) => ({
+      savedForLater: state.savedForLater.filter((i) => !(i.productId === productId && i.color === color)),
+    })),
+  clearCart: () => set({ items: [], savedForLater: [], couponCode: null, couponDiscount: 0 }),
 
   applyCoupon: (code) => {
     const valid = code.toUpperCase() === "KHATTAK10";

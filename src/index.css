@@ -8,6 +8,21 @@
 @tailwind components;
 @tailwind utilities;
 
+*,
+*::before,
+*::after {
+  transition: background-color 0.35s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
 :root {
   font-family: "Inter", system-ui, sans-serif;
   color-scheme: light;
@@ -78,6 +93,32 @@
   select,
   textarea {
     font: inherit;
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(15, 118, 110, 0.2), 0 0 20px rgba(15, 118, 110, 0.1); }
+  50% { box-shadow: 0 0 16px rgba(15, 118, 110, 0.4), 0 0 40px rgba(15, 118, 110, 0.2); }
+}
+
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.glow-primary:hover {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-gradient-shift,
+  .glow-primary:hover {
+    animation: none !important;
   }
 }
 

@@ -9,6 +9,12 @@ import { BackToTop } from "./BackToTop";
 import { WhatsAppButton } from "./WhatsAppButton";
 import { ScrollProgress } from "./ScrollProgress";
 import { CookieConsent } from "./CookieConsent";
+import { CommandPalette } from "@/components/shared/CommandPalette";
+import { CompareDrawer } from "@/components/shared/CompareDrawer";
+import { MobileBottomBar } from "@/components/shared/MobileBottomBar";
+import { SupportButton } from "@/components/shared/SupportButton";
+import { NewsletterPopup } from "@/components/shared/NewsletterPopup";
+import { ToastContainer } from "@/components/shared/ToastContainer";
 import { useUiStore } from "@/lib/stores/ui-store";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
@@ -26,6 +32,12 @@ export function GlobalLayout({ children }: PropsWithChildren) {
       <SearchOverlay />
       <WishlistDrawer />
       <CartDrawer />
+      <CommandPalette />
+      <CompareDrawer />
+      <MobileBottomBar />
+      <SupportButton />
+      <NewsletterPopup />
+      <ToastContainer />
       {children}
       <Footer />
       <BackToTop />
