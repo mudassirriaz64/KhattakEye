@@ -9,79 +9,225 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/primitives/Button";
 import { allProducts as shopAllProducts } from "@/lib/shop-data";
 import { cn } from "@/lib/utils";
+import {
+  computeGlassesPose,
+  processGlassesImage,
+} from "@/lib/glasses-utils";
+import { useFaceDetection } from "@/hooks/useFaceDetection";
 
 type Step =
   | "onboarding"
-  | "camera"
-  | "preview"
+  | "loading"
+  | "live"
   | "adjust"
   | "compare"
-  | "loading"
-  | "error"
-  | "no-face";
+  | "error";
 
 export function VirtualTryOn() {
   const [searchParams] = useSearchParams();
-  const productSlug = searchParams.get("product");
-
   const [step, setStep] = useState<Step>("onboarding");
   const [image, setImage] = useState<string | null>(null);
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [selectedFrame, setSelectedFrame] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [glassesDataUrl, setGlassesDataUrl] = useState<string>("");
 
-  // Transform state for frame overlay
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
+
   const dragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const posStart = useRef({ x: 0, y: 0 });
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoReady, setVideoReady] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const poseRef = useRef<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+  } | null>(null);
+  const glassesCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const animRef = useRef<number>(0);
 
-  // Suggest frames from shop products
+  const {
+    detected,
+    keypoints,
+    loading: faceDetectionLoading,
+    error: faceDetectionError,
+    startDetection,
+    stopDetection,
+  } = useFaceDetection();
+
   const shopFrames = shopAllProducts.slice(0, 6).map((p) => ({
     name: p.name,
     image: p.images[0],
     slug: p.slug,
   }));
+  const frames = shopFrames.length > 0 ? shopFrames : [
+    { name: "Noir Line Titanium", image: "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=200", slug: "" },
+    { name: "Rose Gold Aviator", image: "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?w=200", slug: "" },
+  ];
 
   useEffect(() => {
-    return () => { stopCamera(); };
-  }, []);
+    return () => {
+      stopCamera();
+      stopDetection();
+      cancelAnimationFrame(animRef.current);
+    };
+  }, [stopDetection]);
+
+  useEffect(() => {
+    if (videoReady && streamRef.current && videoRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => {});
+      setTimeout(() => {
+        if (videoRef.current) startDetection(videoRef.current);
+      }, 300);
+    }
+  }, [videoReady, startDetection]);
+
+  useEffect(() => {
+    if (!frames[selectedFrame]) return;
+    processGlassesImage(frames[selectedFrame].image).then((canvas) => {
+      glassesCanvasRef.current = canvas;
+      setGlassesDataUrl(canvas.toDataURL("image/png"));
+    });
+  }, [selectedFrame, frames]);
+
+  useEffect(() => {
+    const pose = computeGlassesPose(keypoints);
+    if (pose) poseRef.current = pose;
+  }, [keypoints]);
+
+  const renderLoop = useCallback(() => {
+    if (step !== "live") return;
+
+    const canvas = overlayCanvasRef.current;
+    const video = videoRef.current;
+    if (!canvas || !video) {
+      animRef.current = requestAnimationFrame(renderLoop);
+      return;
+    }
+
+    const vw = video.videoWidth || 640;
+    const vh = video.videoHeight || 480;
+    if (canvas.width !== vw || canvas.height !== vh) {
+      canvas.width = vw;
+      canvas.height = vh;
+    }
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      animRef.current = requestAnimationFrame(renderLoop);
+      return;
+    }
+    ctx.clearRect(0, 0, vw, vh);
+
+    const pose = poseRef.current;
+    const gCanvas = glassesCanvasRef.current;
+    if (pose && gCanvas) {
+      ctx.save();
+      ctx.translate(pose.x, pose.y);
+      ctx.rotate(pose.rotation);
+      ctx.drawImage(
+        gCanvas,
+        -pose.width / 2,
+        -pose.height / 2,
+        pose.width,
+        pose.height,
+      );
+      ctx.restore();
+    }
+
+    animRef.current = requestAnimationFrame(renderLoop);
+  }, [step]);
+
+  useEffect(() => {
+    if (step === "live") {
+      animRef.current = requestAnimationFrame(renderLoop);
+    }
+    return () => cancelAnimationFrame(animRef.current);
+  }, [step, renderLoop]);
 
   const startCamera = useCallback(async () => {
     setStep("loading");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+        },
+      });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
-      setStep("camera");
+      setStep("live");
     } catch {
-      setErrorMsg("Camera access denied. Please allow camera permissions or upload a photo instead.");
+      setErrorMsg(
+        "Camera access denied. Please allow camera permissions or upload a photo instead.",
+      );
       setStep("error");
     }
   }, []);
 
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
   const captureImage = () => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    const ctx = canvas.getContext("2d");
-    ctx?.drawImage(videoRef.current, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg");
-    setOriginalImage(dataUrl);
-    setImage(dataUrl);
+    const video = videoRef.current;
+    if (!video) return;
+
+    const vw = video.videoWidth || 640;
+    const vh = video.videoHeight || 480;
+
+    const compCanvas = document.createElement("canvas");
+    compCanvas.width = vw;
+    compCanvas.height = vh;
+    const compCtx = compCanvas.getContext("2d")!;
+    compCtx.drawImage(video, 0, 0);
+
+    const pose = poseRef.current;
+    const gCanvas = glassesCanvasRef.current;
+    if (pose && gCanvas) {
+      compCtx.save();
+      compCtx.translate(pose.x, pose.y);
+      compCtx.rotate(pose.rotation);
+      compCtx.drawImage(
+        gCanvas,
+        -pose.width / 2,
+        -pose.height / 2,
+        pose.width,
+        pose.height,
+      );
+      compCtx.restore();
+    }
+
+    const compUrl = compCanvas.toDataURL("image/png");
+
+    const rawCanvas = document.createElement("canvas");
+    rawCanvas.width = vw;
+    rawCanvas.height = vh;
+    rawCanvas.getContext("2d")!.drawImage(video, 0, 0);
+    const rawUrl = rawCanvas.toDataURL("image/jpeg");
+
+    setOriginalImage(rawUrl);
+    setImage(compUrl);
+    setPos({ x: 0, y: 0 });
+    setScale(1);
+    setRotation(0);
     stopCamera();
+    stopDetection();
     setStep("adjust");
   };
 
@@ -103,15 +249,9 @@ export function VirtualTryOn() {
     reader.readAsDataURL(file);
   };
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
-    }
-  };
-
   const reset = () => {
     stopCamera();
+    stopDetection();
     setImage(null);
     setOriginalImage(null);
     setPos({ x: 0, y: 0 });
@@ -122,7 +262,6 @@ export function VirtualTryOn() {
     setStep("onboarding");
   };
 
-  // Mouse/touch drag handlers
   const handlePointerDown = (e: React.PointerEvent) => {
     dragging.current = true;
     dragStart.current = { x: e.clientX, y: e.clientY };
@@ -138,12 +277,15 @@ export function VirtualTryOn() {
     });
   };
 
-  const handlePointerUp = () => { dragging.current = false; };
+  const handlePointerUp = () => {
+    dragging.current = false;
+  };
 
   const savePreview = () => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container || !image) return;
+
     canvas.width = container.offsetWidth;
     canvas.height = container.offsetHeight;
     const ctx = canvas.getContext("2d");
@@ -154,46 +296,50 @@ export function VirtualTryOn() {
       const cw = canvas.width;
       const ch = canvas.height;
       ctx.drawImage(img, 0, 0, cw, ch);
-      // Draw frame overlay
-      const cx = cw / 2 + pos.x;
-      const cy = ch / 2 + pos.y;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate((rotation * Math.PI) / 180);
-      ctx.scale(scale, scale);
-      ctx.strokeStyle = "#111";
-      ctx.lineWidth = 6;
-      ctx.setLineDash([8, 6]);
-      ctx.beginPath();
-      ctx.ellipse(0, -ch * 0.05, 90, 40, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-      const link = document.createElement("a");
-      link.download = "khattak-tryon.png";
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+
+      const gImg = new Image();
+      gImg.onload = () => {
+        const cx = cw / 2 + pos.x;
+        const cy = ch / 2 + pos.y;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate((rotation * Math.PI) / 180);
+        ctx.scale(scale, scale);
+        const gw = cw * 0.4;
+        const gh = gw * 0.45;
+        ctx.drawImage(gImg, -gw / 2, -gh / 2, gw, gh);
+        ctx.restore();
+
+        const link = document.createElement("a");
+        link.download = "khattak-tryon.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      };
+      gImg.src = glassesDataUrl || frames[selectedFrame].image;
     };
     img.src = image;
   };
 
-  const frames = shopFrames.length > 0 ? shopFrames : [
-    { name: "Noir Line Titanium", image: "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=200", slug: "" },
-    { name: "Rose Gold Aviator", image: "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?w=200", slug: "" },
-  ];
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
       <AnimatePresence mode="wait">
-        {/* ── ONBOARDING ── */}
         {step === "onboarding" && (
-          <motion.div key="onboarding" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-8">
+          <motion.div
+            key="onboarding"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="space-y-8"
+          >
             <div className="text-center">
               <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[color:var(--color-surface-muted)]">
                 <ScanFace className="h-10 w-10 text-[color:var(--color-accent-teal)]" />
               </div>
-              <h1 className="mt-4 font-display text-3xl text-[color:var(--color-text-primary)] md:text-5xl">Virtual Try-On</h1>
+              <h1 className="mt-4 font-display text-3xl text-[color:var(--color-text-primary)] md:text-5xl">
+                Virtual Try-On
+              </h1>
               <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-[color:var(--color-text-secondary)]">
-                See how any frame looks on your face in seconds. Choose your preferred method below.
+                Try frames on your face in real-time. Choose your method below.
               </p>
               <button
                 type="button"
@@ -205,12 +351,29 @@ export function VirtualTryOn() {
 
               <AnimatePresence>
                 {showHelp && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mx-auto mt-4 max-w-lg overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4 text-left">
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="mx-auto mt-4 max-w-lg overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4 text-left"
+                  >
                     <ol className="space-y-2 text-xs text-[color:var(--color-text-secondary)]">
-                      <li className="flex items-start gap-2"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-accent-teal)] text-[9px] text-white">1</span> Take a photo or upload a clear front-facing picture</li>
-                      <li className="flex items-start gap-2"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-accent-teal)] text-[9px] text-white">2</span> Choose a frame style you like</li>
-                      <li className="flex items-start gap-2"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-accent-teal)] text-[9px] text-white">3</span> Drag, resize, and rotate to adjust the fit</li>
-                      <li className="flex items-start gap-2"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-accent-teal)] text-[9px] text-white">4</span> Compare before/after and save your look</li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-accent-teal)] text-[9px] text-white">1</span>
+                        Take a photo or upload a clear front-facing picture
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-accent-teal)] text-[9px] text-white">2</span>
+                        Glasses appear automatically on your face
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-accent-teal)] text-[9px] text-white">3</span>
+                        Drag, resize, and rotate to fine-tune the fit
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-accent-teal)] text-[9px] text-white">4</span>
+                        Compare before/after and save your look
+                      </li>
                     </ol>
                   </motion.div>
                 )}
@@ -219,70 +382,219 @@ export function VirtualTryOn() {
 
             <div className="grid gap-6 md:grid-cols-2">
               {[
-                { icon: Camera, title: "Use Camera", desc: "Real-time preview with instant frame overlay.", action: startCamera },
+                { icon: Camera, title: "Use Camera", desc: "Real-time preview with auto face detection.", action: startCamera },
                 { icon: Upload, title: "Upload Photo", desc: "Upload a clear front-facing photo.", action: () => document.getElementById("tryon-upload")?.click() },
               ].map((opt) => (
-                <button key={opt.title} type="button" onClick={opt.action} className="group rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-8 text-left transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]">
+                <button
+                  key={opt.title}
+                  type="button"
+                  onClick={opt.action}
+                  className="group rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-8 text-left transition-all hover:-translate-y-1 hover:shadow-[var(--shadow-soft)]"
+                >
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[color:var(--color-surface-muted)] text-[color:var(--color-accent-teal)] transition-colors group-hover:bg-[color:var(--color-accent-teal)] group-hover:text-white">
                     <opt.icon className="h-8 w-8" />
                   </div>
-                  <h3 className="mt-4 font-display text-2xl text-[color:var(--color-text-primary)]">{opt.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-secondary)]">{opt.desc}</p>
+                  <h3 className="mt-4 font-display text-2xl text-[color:var(--color-text-primary)]">
+                    {opt.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-secondary)]">
+                    {opt.desc}
+                  </p>
                 </button>
               ))}
             </div>
-            <input id="tryon-upload" type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+            <input
+              id="tryon-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleUpload}
+              className="hidden"
+            />
           </motion.div>
         )}
 
-        {/* ── LOADING ── */}
         {step === "loading" && (
-          <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center py-20">
+          <motion.div
+            key="loading"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center py-20"
+          >
             <LoaderCircle className="h-10 w-10 animate-spin text-[color:var(--color-accent-teal)]" />
-            <p className="mt-4 text-sm text-[color:var(--color-text-secondary)]">Initializing camera...</p>
+            <p className="mt-4 text-sm text-[color:var(--color-text-secondary)]">
+              Initializing...
+            </p>
           </motion.div>
         )}
 
-        {/* ── ERROR ── */}
         {step === "error" && (
-          <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center justify-center py-20">
+          <motion.div
+            key="error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex flex-col items-center justify-center py-20"
+          >
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/20">
               <AlertTriangle className="h-8 w-8 text-[color:var(--color-danger)]" />
             </div>
-            <p className="mt-4 text-sm font-medium text-[color:var(--color-text-primary)]">Something went wrong</p>
-            <p className="mt-1 text-xs text-[color:var(--color-text-secondary)]">{errorMsg}</p>
+            <p className="mt-4 text-sm font-medium text-[color:var(--color-text-primary)]">
+              Something went wrong
+            </p>
+            <p className="mt-1 text-xs text-[color:var(--color-text-secondary)]">
+              {errorMsg}
+            </p>
             <div className="mt-6 flex gap-3">
-              <Button variant="outline" onClick={reset}>Try Again</Button>
-              <Button variant="primary" onClick={() => document.getElementById("tryon-upload")?.click()}>Upload Photo Instead</Button>
+              <Button variant="outline" onClick={reset}>
+                Try Again
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => document.getElementById("tryon-upload")?.click()}
+              >
+                Upload Photo Instead
+              </Button>
             </div>
           </motion.div>
         )}
 
-        {/* ── CAMERA ── */}
-        {step === "camera" && (
-          <motion.div key="camera" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
-            <div className="relative mx-auto max-w-lg overflow-hidden rounded-3xl border border-[color:var(--color-border)] bg-black">
-              <video ref={videoRef} autoPlay playsInline muted className="h-full w-full" />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent p-4">
-                <p className="text-center text-xs text-white/80">Position your face centered in the frame</p>
+        {step === "live" && (
+          <motion.div
+            key="live"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="space-y-6"
+          >
+            <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+              <div className="relative overflow-hidden rounded-3xl border border-[color:var(--color-border)] bg-black aspect-[4/3]">
+                <video
+                  ref={(el) => {
+                    videoRef.current = el;
+                    if (el && !videoReady) setVideoReady(true);
+                  }}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <canvas
+                  ref={overlayCanvasRef}
+                  className="pointer-events-none absolute inset-0 h-full w-full"
+                />
+                {faceDetectionLoading && (
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <p className="rounded-full bg-black/50 px-4 py-1.5 text-xs text-white/70 backdrop-blur">
+                      Loading face detection...
+                    </p>
+                  </div>
+                )}
+                {!detected && !faceDetectionLoading && faceDetectionError && (
+                  <div className="pointer-events-none absolute left-3 top-3">
+                    <p className="rounded-full bg-amber-500/80 px-3 py-1 text-xs text-white backdrop-blur">
+                      Face detection unavailable — position manually
+                    </p>
+                  </div>
+                )}
+                {!detected && !faceDetectionLoading && !faceDetectionError && (
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                    <p className="rounded-full bg-black/50 px-4 py-1.5 text-xs text-white/70 backdrop-blur">
+                      Position your face in the frame
+                    </p>
+                  </div>
+                )}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/50 to-transparent p-4">
+                  <div className="flex items-center justify-center gap-3">
+                    <Button
+                      variant="primary"
+                      onClick={captureImage}
+                      iconLeft={<Camera className="h-4 w-4" />}
+                    >
+                      Capture
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={reset}
+                      iconLeft={<ArrowLeft className="h-4 w-4" />}
+                    >
+                      Back
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--color-text-tertiary)]">
+                    Select Frame
+                  </p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {frames.map((frame, i) => (
+                      <button
+                        key={frame.name}
+                        type="button"
+                        onClick={() => setSelectedFrame(i)}
+                        className={cn(
+                          "rounded-2xl border-2 p-3 text-left transition-all",
+                          selectedFrame === i
+                            ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-surface-muted)]"
+                            : "border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)]",
+                        )}
+                      >
+                        <img
+                          src={frame.image}
+                          alt={frame.name}
+                          className="h-12 w-full rounded-lg object-cover"
+                        />
+                        <p className="mt-1.5 truncate text-[10px] font-medium text-[color:var(--color-text-primary)]">
+                          {frame.name}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[color:var(--color-text-tertiary)]">
+                    Tips
+                  </p>
+                  <div className="mt-2 space-y-1 text-xs text-[color:var(--color-text-secondary)]">
+                    <p className="flex items-center gap-2">
+                      <span className="text-green-500">✓</span> Good lighting
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <span className="text-green-500">✓</span> Face the camera directly
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <span className="text-green-500">✓</span> Keep your face centered
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex justify-center gap-4">
-              <Button variant="primary" onClick={captureImage} iconLeft={<Camera className="h-4 w-4" />}>Capture</Button>
-              <Button variant="outline" onClick={reset} iconLeft={<ArrowLeft className="h-4 w-4" />}>Back</Button>
-            </div>
           </motion.div>
         )}
 
-        {/* ── ADJUST (Main try-on workspace) ── */}
         {step === "adjust" && image && (
-          <motion.div key="adjust" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+          <motion.div
+            key="adjust"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="space-y-6"
+          >
             <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-              {/* Image + overlay */}
-              <div ref={containerRef} className="relative overflow-hidden rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)]">
-                <img src={image} alt="Your photo" className="h-full w-full object-contain max-h-[60vh]" />
+              <div
+                ref={containerRef}
+                className="relative overflow-hidden rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] min-h-[300px]"
+              >
+                <img
+                  src={image}
+                  alt="Your photo"
+                  className="h-full w-full object-contain max-h-[60vh]"
+                />
 
-                {/* Frame overlay — interactive */}
                 <div
                   className="absolute inset-0 cursor-grab active:cursor-grabbing"
                   onPointerDown={handlePointerDown}
@@ -291,23 +603,23 @@ export function VirtualTryOn() {
                   onPointerCancel={handlePointerUp}
                 >
                   <div
-                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 select-none"
+                    className="absolute left-1/2 top-1/2"
                     style={{
                       transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px)) rotate(${rotation}deg) scale(${scale})`,
                     }}
                   >
-                    {/* Frame visual — ellipse representing glasses */}
-                    <svg width="240" height="120" viewBox="0 0 240 120" className="overflow-visible">
-                      <ellipse cx="60" cy="60" rx="55" ry="30" fill="none" stroke={frames[selectedFrame]?.image ? "#111" : "#666"} strokeWidth="6" opacity="0.7" />
-                      <ellipse cx="180" cy="60" rx="55" ry="30" fill="none" stroke={frames[selectedFrame]?.image ? "#111" : "#666"} strokeWidth="6" opacity="0.7" />
-                      <line x1="115" y1="60" x2="125" y2="60" stroke="#666" strokeWidth="4" strokeLinecap="round" />
-                      <path d="M5 60 Q-15 30 5 20" fill="none" stroke="#666" strokeWidth="3" strokeLinecap="round" />
-                      <path d="M235 60 Q255 30 235 20" fill="none" stroke="#666" strokeWidth="3" strokeLinecap="round" />
-                    </svg>
+                    {glassesDataUrl && (
+                      <img
+                        src={glassesDataUrl}
+                        alt="Glasses"
+                        className="pointer-events-none"
+                        style={{ width: "240px", height: "auto" }}
+                        draggable={false}
+                      />
+                    )}
                   </div>
                 </div>
 
-                {/* Controls overlay */}
                 <div className="absolute left-3 top-3 flex gap-1.5">
                   {[
                     { icon: ZoomIn, label: "Resize", action: () => setScale((s) => Math.min(2, s + 0.1)) },
@@ -337,10 +649,11 @@ export function VirtualTryOn() {
                 </div>
               </div>
 
-              {/* Side panel */}
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--color-text-tertiary)]">Select Frame</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--color-text-tertiary)]">
+                    Select Frame
+                  </p>
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     {frames.map((frame, i) => (
                       <button
@@ -359,31 +672,59 @@ export function VirtualTryOn() {
                             : "border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)]",
                         )}
                       >
-                        <img src={frame.image} alt={frame.name} className="h-12 w-full rounded-lg object-cover" />
-                        <p className="mt-1.5 text-[10px] font-medium text-[color:var(--color-text-primary)] truncate">{frame.name}</p>
+                        <img
+                          src={frame.image}
+                          alt={frame.name}
+                          className="h-12 w-full rounded-lg object-cover"
+                        />
+                        <p className="mt-1.5 truncate text-[10px] font-medium text-[color:var(--color-text-primary)]">
+                          {frame.name}
+                        </p>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-3">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[color:var(--color-text-tertiary)]">Controls</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[color:var(--color-text-tertiary)]">
+                    Controls
+                  </p>
                   <div className="mt-2 space-y-1.5 text-xs text-[color:var(--color-text-secondary)]">
-                    <p className="flex items-center gap-2"><Move className="h-3 w-3" /> Drag to move frame</p>
-                    <p className="flex items-center gap-2"><ZoomIn className="h-3 w-3" /> +/- to resize</p>
-                    <p className="flex items-center gap-2"><RotateCw className="h-3 w-3" /> Click to rotate</p>
+                    <p className="flex items-center gap-2">
+                      <Move className="h-3 w-3" /> Drag to move frame
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <ZoomIn className="h-3 w-3" /> +/- to resize
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <RotateCw className="h-3 w-3" /> Click to rotate
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  <Button variant="primary" onClick={() => setStep("compare")} iconLeft={<SlidersHorizontal className="h-4 w-4" />} className="w-full">
+                  <Button
+                    variant="primary"
+                    onClick={() => setStep("compare")}
+                    iconLeft={<SlidersHorizontal className="h-4 w-4" />}
+                    className="w-full"
+                  >
                     Compare Before / After
                   </Button>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={savePreview} iconLeft={<ImageIcon className="h-4 w-4" />} className="flex-1">
+                    <Button
+                      variant="outline"
+                      onClick={savePreview}
+                      iconLeft={<ImageIcon className="h-4 w-4" />}
+                      className="flex-1"
+                    >
                       Save
                     </Button>
-                    <Button variant="ghost" onClick={reset} iconLeft={<Trash2 className="h-4 w-4" />}>
+                    <Button
+                      variant="ghost"
+                      onClick={reset}
+                      iconLeft={<Trash2 className="h-4 w-4" />}
+                    >
                       Retake
                     </Button>
                   </div>
@@ -394,40 +735,79 @@ export function VirtualTryOn() {
           </motion.div>
         )}
 
-        {/* ── COMPARE ── */}
         {step === "compare" && originalImage && image && (
-          <motion.div key="compare" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
-            <h2 className="font-display text-2xl text-[color:var(--color-text-primary)]">Before / After</h2>
+          <motion.div
+            key="compare"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="space-y-6"
+          >
+            <h2 className="font-display text-2xl text-[color:var(--color-text-primary)]">
+              Before / After
+            </h2>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="overflow-hidden rounded-3xl border border-[color:var(--color-border)]">
-                <p className="bg-[color:var(--color-surface-muted)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-[color:var(--color-text-tertiary)]">Original</p>
-                <img src={originalImage} alt="Before" className="h-full w-full object-contain max-h-[50vh]" />
+                <p className="bg-[color:var(--color-surface-muted)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-[color:var(--color-text-tertiary)]">
+                  Original
+                </p>
+                <img
+                  src={originalImage}
+                  alt="Before"
+                  className="h-full w-full object-contain max-h-[50vh]"
+                />
               </div>
               <div className="overflow-hidden rounded-3xl border border-[color:var(--color-border)]">
-                <p className="bg-[color:var(--color-surface-muted)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-[color:var(--color-accent-teal)]">With Frame</p>
+                <p className="bg-[color:var(--color-surface-muted)] px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-[color:var(--color-accent-teal)]">
+                  With Frame
+                </p>
                 <div className="relative">
-                  <img src={image} alt="After" className="h-full w-full object-contain max-h-[50vh]" />
+                  <img
+                    src={image}
+                    alt="After"
+                    className="h-full w-full object-contain max-h-[50vh]"
+                  />
                   <div
-                    className="pointer-events-none absolute inset-0 flex items-center justify-center"
+                    className="pointer-events-none absolute left-1/2 top-1/2"
                     style={{
-                      transform: `translate(${pos.x}px, ${pos.y}px) rotate(${rotation}deg) scale(${scale})`,
+                      transform: `translate(calc(-50% + ${pos.x}px), calc(-50% + ${pos.y}px)) rotate(${rotation}deg) scale(${scale})`,
                     }}
                   >
-                    <svg width="240" height="120" viewBox="0 0 240 120" className="overflow-visible">
-                      <ellipse cx="60" cy="60" rx="55" ry="30" fill="none" stroke={frames[selectedFrame]?.image ? "#111" : "#666"} strokeWidth="6" opacity="0.7" />
-                      <ellipse cx="180" cy="60" rx="55" ry="30" fill="none" stroke={frames[selectedFrame]?.image ? "#111" : "#666"} strokeWidth="6" opacity="0.7" />
-                      <line x1="115" y1="60" x2="125" y2="60" stroke="#666" strokeWidth="4" strokeLinecap="round" />
-                      <path d="M5 60 Q-15 30 5 20" fill="none" stroke="#666" strokeWidth="3" strokeLinecap="round" />
-                      <path d="M235 60 Q255 30 235 20" fill="none" stroke="#666" strokeWidth="3" strokeLinecap="round" />
-                    </svg>
+                    {glassesDataUrl && (
+                      <img
+                        src={glassesDataUrl}
+                        alt=""
+                        className="pointer-events-none"
+                        style={{ width: "240px", height: "auto" }}
+                        draggable={false}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex justify-center gap-3">
-              <Button variant="primary" onClick={savePreview} iconLeft={<ImageIcon className="h-4 w-4" />}>Save Preview</Button>
-              <Button variant="outline" onClick={() => setStep("adjust")} iconLeft={<ArrowLeft className="h-4 w-4" />}>Back to Adjust</Button>
-              <Button variant="ghost" onClick={reset} iconLeft={<RefreshCw className="h-4 w-4" />}>Start Over</Button>
+              <Button
+                variant="primary"
+                onClick={savePreview}
+                iconLeft={<ImageIcon className="h-4 w-4" />}
+              >
+                Save Preview
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setStep("adjust")}
+                iconLeft={<ArrowLeft className="h-4 w-4" />}
+              >
+                Back to Adjust
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={reset}
+                iconLeft={<RefreshCw className="h-4 w-4" />}
+              >
+                Start Over
+              </Button>
             </div>
           </motion.div>
         )}
