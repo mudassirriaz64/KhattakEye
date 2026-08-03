@@ -66,6 +66,11 @@
     @apply border-[color:var(--color-border)];
   }
 
+  html,
+  body {
+    overflow-x: clip;
+  }
+
   html {
     @apply scroll-smooth;
   }
