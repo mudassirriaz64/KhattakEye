@@ -1,0 +1,219 @@
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/playfair-display/500.css";
+@import "@fontsource/playfair-display/600.css";
+@import "@fontsource/playfair-display/700.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*,
+*::before,
+*::after {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+:root {
+  font-family: "Inter", system-ui, sans-serif;
+  color-scheme: light;
+  --color-brand-primary: #b6191b;
+  --color-brand-hover: #8f1215;
+  --color-brand-soft: #d3a095;
+  --color-app-bg: #f7dfc9;
+  --color-panel: #fff8f3;
+  --color-surface-muted: #f3e6d8;
+  --color-border: #ead4c4;
+  --color-border-strong: #d8bca8;
+  --color-text-primary: #19130d;
+  --color-text-secondary: #886057;
+  --color-text-tertiary: #a98a7a;
+  --color-accent-teal: #b6191b;
+  --color-accent-blue: #8f1215;
+  --color-danger: #dc2626;
+  --color-focus-ring: rgba(182, 25, 27, 0.28);
+  --color-disabled-bg: #ead4c4;
+  --color-disabled-text: #a98a7a;
+  --shadow-input: 0 2px 8px rgba(25, 19, 13, 0.05);
+  --shadow-soft: 0 18px 44px rgba(25, 19, 13, 0.1);
+  --shadow-strong: 0 32px 90px rgba(25, 19, 13, 0.18);
+  --glow-brand: 0 8px 32px rgba(182, 25, 27, 0.24);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  * {
+    @apply border-[color:var(--color-border)];
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply min-h-screen bg-[color:var(--color-app-bg)] text-[color:var(--color-text-primary)];
+    background-image:
+      radial-gradient(circle at 85% 0%, rgba(182, 25, 27, 0.06), transparent 32%),
+      radial-gradient(circle at 8% 90%, rgba(211, 160, 149, 0.1), transparent 28%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background-color: rgba(182, 25, 27, 0.18);
+    color: inherit;
+  }
+
+  a {
+    @apply text-inherit no-underline;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Playfair Display", serif;
+  }
+}
+
+/* ─── Luxury Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-app-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--color-brand-primary), var(--color-brand-hover));
+  border-radius: 999px;
+  border: 2px solid var(--color-app-bg);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-hover);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brand-primary) var(--color-app-bg);
+}
+
+/* ─── Luxury Utility Layers ────────────────────────────────────────── */
+@layer components {
+  .glass {
+    background: rgba(255, 248, 243, 0.82);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+  }
+
+  .brand-gradient {
+    background-image: linear-gradient(135deg, var(--color-brand-primary), var(--color-brand-hover));
+  }
+
+  .brand-gradient-soft {
+    background-image: linear-gradient(135deg, rgba(182, 25, 27, 0.08), rgba(211, 160, 149, 0.16));
+  }
+
+  .gold-gradient {
+    background-image: linear-gradient(120deg, #e8c17a, #d3a05a 45%, #b8860b);
+  }
+
+  .text-gradient-brand {
+    background-image: linear-gradient(120deg, var(--color-brand-primary), var(--color-brand-hover));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .card-luxury {
+    @apply rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] shadow-[var(--shadow-input)];
+  }
+
+  .editorial-eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.3em] text-[color:var(--color-brand-primary)];
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: "Playfair Display", serif;
+  }
+}
+
+/* ─── Keyframes & Motion Utilities ─────────────────────────────────── */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(182, 25, 27, 0.18), 0 0 22px rgba(182, 25, 27, 0.1); }
+  50% { box-shadow: 0 0 18px rgba(182, 25, 27, 0.4), 0 0 44px rgba(182, 25, 27, 0.22); }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes ken-burns {
+  0% { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.12) translate(-1.2%, -1.2%); }
+}
+
+.animate-gradient-shift {
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+.glow-primary:hover {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.animate-marquee {
+  animation: marquee 32s linear infinite;
+}
+
+.animate-ken-burns {
+  animation: ken-burns 10s ease-in-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-gradient-shift,
+  .glow-primary:hover,
+  .animate-marquee,
+  .animate-ken-burns {
+    animation: none !important;
+  }
+}
