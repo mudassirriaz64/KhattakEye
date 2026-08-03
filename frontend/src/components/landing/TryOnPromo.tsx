@@ -76,7 +76,7 @@ export function TryOnPromo() {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              className="relative mx-auto max-w-[480px]"
+              className="relative mx-auto max-w-[480px] overflow-hidden"
             >
               <div className="absolute -right-6 -top-6 h-full w-full rounded-[40px] bg-[color:var(--color-brand-soft)]/30" />
               <div className="relative overflow-hidden rounded-[40px] border border-[color:var(--color-border)] shadow-[var(--shadow-strong)]">

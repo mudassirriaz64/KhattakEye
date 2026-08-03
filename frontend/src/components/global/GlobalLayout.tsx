@@ -28,7 +28,7 @@ export function GlobalLayout({ children }: PropsWithChildren) {
       <ScrollProgress />
       <AnnouncementBar />
       <Navbar />
-      <div className={cn(announcementDismissed ? "h-16" : "h-[104px]")} />
+      <div className={cn(announcementDismissed ? "h-16" : "h-[100px]")} />
       <SearchOverlay />
       <WishlistDrawer />
       <CartDrawer />

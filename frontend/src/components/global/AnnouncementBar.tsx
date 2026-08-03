@@ -48,7 +48,7 @@ export function AnnouncementBar() {
           onMouseLeave={() => setPaused(false)}
         >
           <div className="relative mx-auto flex h-9 max-w-[1440px] items-center justify-center px-4 md:px-8">
-            <div className="flex items-center gap-2.5 overflow-hidden md:mr-20">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden pr-10 md:mr-20">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={current}
@@ -56,12 +56,12 @@ export function AnnouncementBar() {
                   animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                   exit={{ opacity: 0, y: -12, filter: "blur(2px)" }}
                   transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                  className="flex items-center gap-2"
+                  className="flex min-w-0 items-center gap-2"
                 >
                   <span className="text-[10px] text-[#D3A095]">
                     {active.icon}
                   </span>
-                  <span className="whitespace-nowrap text-[11px] font-medium tracking-[0.06em] text-white/85">
+                  <span className="truncate whitespace-nowrap text-[11px] font-medium tracking-[0.06em] text-white/85">
                     {active.text}
                   </span>
                 </motion.div>

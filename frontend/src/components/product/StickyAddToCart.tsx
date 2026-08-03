@@ -30,7 +30,7 @@ export function StickyAddToCart({ product }: StickyAddToCartProps) {
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
-          className="fixed bottom-0 left-0 right-0 z-50 border-t border-[color:var(--color-border)] bg-[color:var(--color-app-bg)]/90 backdrop-blur-xl"
+          className="fixed bottom-[60px] left-0 right-0 z-50 border-t border-[color:var(--color-border)] bg-[color:var(--color-app-bg)]/90 backdrop-blur-xl md:bottom-0"
         >
           <div className="mx-auto flex max-w-[1440px] items-center justify-between px-4 py-3 md:px-8">
             <div className="flex items-center gap-4">

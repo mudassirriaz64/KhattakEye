@@ -25,7 +25,7 @@ export function Footer() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[color:var(--color-brand-soft)] to-transparent" />
       <div className="pointer-events-none absolute -top-32 right-10 h-80 w-80 rounded-full bg-[color:var(--color-brand-soft)]/15 blur-3xl" />
 
-      <div className="mx-auto max-w-[1440px] px-4 pb-10 pt-16 md:px-8 md:pt-20">
+      <div className="mx-auto max-w-[1440px] px-4 pb-24 pt-16 md:px-8 md:pb-10 md:pt-20">
         <div className="grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <Link to="/" className="flex items-center gap-3">

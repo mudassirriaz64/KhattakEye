@@ -375,7 +375,7 @@ export function Navbar() {
       transition={{ duration: 0.6, delay: phase === "loading" ? 0.7 : 0, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
         "fixed left-0 right-0 z-50 transition-all duration-300",
-        announcementDismissed ? "top-0" : "top-10",
+        announcementDismissed ? "top-0" : "top-9",
         isScrolled
           ? "glass border-b border-[color:var(--color-border)] shadow-[var(--shadow-soft)]"
           : "border-b border-transparent bg-transparent",
