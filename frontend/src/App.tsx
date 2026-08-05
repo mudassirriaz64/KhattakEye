@@ -192,7 +192,19 @@ function AppRoutes() {
   );
 }
 
+import { useEffect } from "react";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { useAdminStore } from "@/lib/stores/admin-store";
+
 export default function App() {
+  const checkCustomerAuth = useAuthStore((s) => s.checkAuth);
+  const checkAdminAuth = useAdminStore((s) => s.checkAuth);
+
+  useEffect(() => {
+    checkCustomerAuth();
+    checkAdminAuth();
+  }, [checkCustomerAuth, checkAdminAuth]);
+
   return (
     <BrowserRouter>
       <AppRoutes />

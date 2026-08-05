@@ -1,4 +1,16 @@
 import { create } from "zustand";
+import {
+  loginApi,
+  registerApi,
+  logoutApi,
+  getProfileApi,
+  updateProfileApi,
+  changePasswordApi,
+  sendOtpApi,
+  verifyOtpApi,
+  forgotPasswordApi,
+  resetPasswordApi
+} from "../api/auth";
 
 export type UserProfile = {
   id: string;
@@ -16,10 +28,11 @@ type AuthState = {
   isAuthenticated: boolean;
   isLoading: boolean;
   isEmailVerified: boolean;
+  checkAuth: () => Promise<void>;
   login: (email: string, password: string) => Promise<boolean>;
   register: (data: { fullName: string; email: string; phone: string; password: string }) => Promise<boolean>;
-  logout: () => void;
-  updateProfile: (data: Partial<UserProfile>) => void;
+  logout: () => Promise<void>;
+  updateProfile: (data: Partial<UserProfile>) => Promise<boolean>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
   sendVerificationEmail: () => Promise<boolean>;
   verifyEmail: (code: string) => Promise<boolean>;
@@ -30,90 +43,183 @@ type AuthState = {
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: {
-    id: "usr-001",
-    fullName: "Ayesha Khan",
-    email: "ayesha@example.com",
-    phone: "+92 300 1234567",
-    avatar: null,
-    gender: "female",
-    dateOfBirth: "1995-06-15",
-    createdAt: "2026-01-10",
-  },
-  isAuthenticated: true,
+  user: null,
+  isAuthenticated: false,
   isLoading: false,
-  isEmailVerified: true,
+  isEmailVerified: false,
 
-  login: async (_email, _password) => {
+  checkAuth: async () => {
     set({ isLoading: true });
-    await new Promise((r) => setTimeout(r, 800));
-    set({ isLoading: false, isAuthenticated: true, user: get().user });
-    return true;
+    try {
+      const data = await getProfileApi();
+      if (data && data.user) {
+        set({
+          user: data.user,
+          isAuthenticated: true,
+          isEmailVerified: data.user.isEmailVerified
+        });
+      } else {
+        set({ user: null, isAuthenticated: false, isEmailVerified: false });
+      }
+    } catch (err) {
+      set({ user: null, isAuthenticated: false, isEmailVerified: false });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  login: async (email, password) => {
+    set({ isLoading: true });
+    try {
+      const data = await loginApi(email, password);
+      set({
+        isAuthenticated: true,
+        user: data.user,
+        isEmailVerified: data.user.isEmailVerified
+      });
+      return true;
+    } catch (err) {
+      console.error("Login failed:", err);
+      return false;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   register: async (data) => {
     set({ isLoading: true });
-    await new Promise((r) => setTimeout(r, 1000));
-    set({
-      isLoading: false,
-      isAuthenticated: true,
-      isEmailVerified: false,
-      user: { id: "usr-new", ...data, avatar: null, gender: "", dateOfBirth: "", createdAt: new Date().toISOString().split("T")[0] },
-    });
-    return true;
+    try {
+      const res = await registerApi(data);
+      set({
+        isAuthenticated: true,
+        isEmailVerified: false,
+        user: res.user
+      });
+      return true;
+    } catch (err) {
+      console.error("Registration failed:", err);
+      return false;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
-  logout: () => set({ isAuthenticated: false, user: null }),
-
-  updateProfile: (data) =>
-    set((s) => ({ user: s.user ? { ...s.user, ...data } : null })),
-
-  changePassword: async (_current, _new) => {
+  logout: async () => {
     set({ isLoading: true });
-    await new Promise((r) => setTimeout(r, 800));
-    set({ isLoading: false });
-    return true;
+    try {
+      await logoutApi();
+    } catch (err) {
+      console.error("Logout failed:", err);
+    } finally {
+      set({ isAuthenticated: false, user: null, isEmailVerified: false, isLoading: false });
+    }
   },
 
+  updateProfile: async (data) => {
+    set({ isLoading: true });
+    try {
+      const res = await updateProfileApi(data);
+      set({ user: res.user });
+      return true;
+    } catch (err) {
+      console.error("Update profile failed:", err);
+      return false;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    set({ isLoading: true });
+    try {
+      await changePasswordApi(currentPassword, newPassword);
+      return true;
+    } catch (err) {
+      console.error("Change password failed:", err);
+      return false;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // verifyEmail and verifyOTP both wire to the verifyOtp backend handler
   sendVerificationEmail: async () => {
     set({ isLoading: true });
-    await new Promise((r) => setTimeout(r, 600));
-    set({ isLoading: false });
-    return true;
+    try {
+      await sendOtpApi();
+      return true;
+    } catch (err) {
+      console.error("Send verification email failed:", err);
+      return false;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
-  verifyEmail: async (_code) => {
+  verifyEmail: async (code) => {
     set({ isLoading: true });
-    await new Promise((r) => setTimeout(r, 600));
-    set({ isLoading: false, isEmailVerified: true });
-    return true;
+    try {
+      const res = await verifyOtpApi(code);
+      set({ isEmailVerified: true, user: res.user });
+      return true;
+    } catch (err) {
+      console.error("Verify email failed:", err);
+      return false;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
   sendOTP: async () => {
     set({ isLoading: true });
-    await new Promise((r) => setTimeout(r, 600));
-    set({ isLoading: false });
-    return true;
+    try {
+      await sendOtpApi();
+      return true;
+    } catch (err) {
+      console.error("Send OTP failed:", err);
+      return false;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
-  verifyOTP: async (_code) => {
+  verifyOTP: async (code) => {
     set({ isLoading: true });
-    await new Promise((r) => setTimeout(r, 600));
-    set({ isLoading: false, isEmailVerified: true });
-    return true;
+    try {
+      const res = await verifyOtpApi(code);
+      set({ isEmailVerified: true, user: res.user });
+      return true;
+    } catch (err) {
+      console.error("Verify OTP failed:", err);
+      return false;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
-  forgotPassword: async (_email) => {
+  forgotPassword: async (email) => {
     set({ isLoading: true });
-    await new Promise((r) => setTimeout(r, 800));
-    set({ isLoading: false });
-    return true;
+    try {
+      await forgotPasswordApi(email);
+      return true;
+    } catch (err) {
+      console.error("Forgot password request failed:", err);
+      return false;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 
-  resetPassword: async (_token, _password) => {
+  resetPassword: async (token, password) => {
     set({ isLoading: true });
-    await new Promise((r) => setTimeout(r, 800));
-    set({ isLoading: false });
-    return true;
+    try {
+      await resetPasswordApi(token, password);
+      return true;
+    } catch (err) {
+      console.error("Reset password failed:", err);
+      return false;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 }));
