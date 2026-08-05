@@ -45,11 +45,20 @@ import { ReviewsPage } from "@/pages/account/ReviewsPage";
 import { NotificationsPage } from "@/pages/account/NotificationsPage";
 import { AccountSettingsPage } from "@/pages/account/AccountSettingsPage";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { CMSPageContainer } from "@/pages/CMSPageContainer";
+import { ShippingPolicyPage } from "@/pages/ShippingPolicyPage";
+import { ReturnPolicyPage } from "@/pages/ReturnPolicyPage";
+import { PrivacyPolicyPage } from "@/pages/PrivacyPolicyPage";
+import { TermsOfServicePage } from "@/pages/TermsOfServicePage";
+import { EyeCareTipsPage } from "@/pages/EyeCareTipsPage";
 import { AdminLoginPage } from "@/pages/admin/AdminLoginPage";
 import { AdminDashboardPage } from "@/pages/admin/DashboardPage";
 import { AdminProductsPage } from "@/pages/admin/ProductsPage";
 import { AddEditProductPage } from "@/pages/admin/AddEditProductPage";
+import { AdminAddGlassesPage } from "@/pages/admin/AdminAddGlassesPage";
+import { AdminAddLensesPage } from "@/pages/admin/AdminAddLensesPage";
 import { AdminCategoriesPage } from "@/pages/admin/CategoriesPage";
+import { AdminLensesCategoriesPage } from "@/pages/admin/LensesCategoriesPage";
 import { AdminBrandsPage } from "@/pages/admin/BrandsPage";
 import { AdminOrdersListPage } from "@/pages/admin/OrdersListPage";
 import { AdminOrderDetailsPage } from "@/pages/admin/OrderDetailsPage";
@@ -117,10 +126,16 @@ function AppRoutes() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboardPage />} />
           <Route path="products" element={<AdminProductsPage />} />
-          <Route path="products/add" element={<AddEditProductPage />} />
-          <Route path="products/:id/edit" element={<AddEditProductPage />} />
-          <Route path="products/:id" element={<AddEditProductPage />} />
+          <Route path="products/add" element={<AdminAddGlassesPage />} />
+          <Route path="products/add-glasses" element={<AdminAddGlassesPage />} />
+          <Route path="products/add-lenses" element={<AdminAddLensesPage />} />
+          <Route path="products/:id/edit" element={<AdminAddGlassesPage />} />
+          <Route path="products/:id/edit-glasses" element={<AdminAddGlassesPage />} />
+          <Route path="products/:id/edit-lenses" element={<AdminAddLensesPage />} />
+          <Route path="products/:id" element={<AdminAddGlassesPage />} />
           <Route path="categories" element={<AdminCategoriesPage />} />
+          <Route path="categories/glasses" element={<AdminCategoriesPage />} />
+          <Route path="categories/lenses" element={<AdminLensesCategoriesPage />} />
           <Route path="brands" element={<AdminBrandsPage />} />
           <Route path="orders" element={<AdminOrdersListPage />} />
           <Route path="orders/:id" element={<AdminOrderDetailsPage />} />
@@ -194,6 +209,37 @@ function AppRoutes() {
         <Route path="/contact" element={<PageTransition><GlobalLayout><ContactPage /></GlobalLayout></PageTransition>} />
         <Route path="/faq" element={<PageTransition><GlobalLayout><FAQPage /></GlobalLayout></PageTransition>} />
         <Route path="/faqs" element={<PageTransition><GlobalLayout><FAQPage /></GlobalLayout></PageTransition>} />
+        <Route path="/privacy" element={<PageTransition><GlobalLayout><PrivacyPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/privacy/*" element={<PageTransition><GlobalLayout><PrivacyPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/privacy-policy" element={<PageTransition><GlobalLayout><PrivacyPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/privacy-policy/*" element={<PageTransition><GlobalLayout><PrivacyPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/terms" element={<PageTransition><GlobalLayout><TermsOfServicePage /></GlobalLayout></PageTransition>} />
+        <Route path="/terms/*" element={<PageTransition><GlobalLayout><TermsOfServicePage /></GlobalLayout></PageTransition>} />
+        <Route path="/terms-of-service" element={<PageTransition><GlobalLayout><TermsOfServicePage /></GlobalLayout></PageTransition>} />
+        <Route path="/terms-of-service/*" element={<PageTransition><GlobalLayout><TermsOfServicePage /></GlobalLayout></PageTransition>} />
+        <Route path="/terms-and-conditions" element={<PageTransition><GlobalLayout><TermsOfServicePage /></GlobalLayout></PageTransition>} />
+        <Route path="/terms-and-conditions/*" element={<PageTransition><GlobalLayout><TermsOfServicePage /></GlobalLayout></PageTransition>} />
+        <Route path="/eye-care-tips" element={<PageTransition><GlobalLayout><EyeCareTipsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/eye-care-tips/*" element={<PageTransition><GlobalLayout><EyeCareTipsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/eye-care" element={<PageTransition><GlobalLayout><EyeCareTipsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/eye-care/*" element={<PageTransition><GlobalLayout><EyeCareTipsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shipping-policy" element={<PageTransition><GlobalLayout><ShippingPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shipping-policy/*" element={<PageTransition><GlobalLayout><ShippingPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shipping" element={<PageTransition><GlobalLayout><ShippingPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shipping/*" element={<PageTransition><GlobalLayout><ShippingPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shipping-info" element={<PageTransition><GlobalLayout><ShippingPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shipping-info/*" element={<PageTransition><GlobalLayout><ShippingPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/cms/shipping-policy" element={<PageTransition><GlobalLayout><ShippingPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/return-policy" element={<PageTransition><GlobalLayout><ReturnPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/return-policy/*" element={<PageTransition><GlobalLayout><ReturnPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/returns" element={<PageTransition><GlobalLayout><ReturnPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/returns/*" element={<PageTransition><GlobalLayout><ReturnPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/refund-policy" element={<PageTransition><GlobalLayout><ReturnPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/refund-policy/*" element={<PageTransition><GlobalLayout><ReturnPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/return" element={<PageTransition><GlobalLayout><ReturnPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/return/*" element={<PageTransition><GlobalLayout><ReturnPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/cms/return-policy" element={<PageTransition><GlobalLayout><ReturnPolicyPage /></GlobalLayout></PageTransition>} />
+        <Route path="/page/:slug" element={<PageTransition><GlobalLayout><CMSPageContainer /></GlobalLayout></PageTransition>} />
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
     </AnimatePresence>

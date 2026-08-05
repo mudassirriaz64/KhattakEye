@@ -38,11 +38,29 @@ export const getBrands = async (): Promise<any[]> => {
 // Map a backend Product document into the card shape used by storefront
 // components (ProductGrid, ProductCard, ProductRecommendations, etc.).
 // Returns the original object when it already looks like a card.
+const fallbackOpticsImages = [
+  "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1577803645773-f96470509666?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1508296695146-257a814070b4?w=800&auto=format&fit=crop&q=80"
+];
+
+const getFallbackImage = (idStr: string) => {
+  let hash = 0;
+  for (let i = 0; i < idStr.length; i++) hash = (hash << 5) - hash + idStr.charCodeAt(i);
+  return fallbackOpticsImages[Math.abs(hash) % fallbackOpticsImages.length];
+};
+
 export const mapProductCard = (p: any): any => {
   if (!p) return p;
-  if (p.id && p.images && p.price !== undefined && p.slug !== undefined && !p._id) return p;
+  if (p.id && p.images && p.images.length > 0 && p.price !== undefined && p.slug !== undefined && !p._id) return p;
 
-  const images = p.images && p.images.length > 0 ? p.images : [];
+  const rawImages = p.images && p.images.length > 0 ? p.images : [];
+  const validImages = rawImages
+    .map((img: any) => (typeof img === "string" ? img : img?.url))
+    .filter((url: any) => typeof url === "string" && url.trim().length > 0 && !url.includes("trae.ai"));
+
+  const images = validImages.length > 0 ? validImages : [getFallbackImage(p.name || p.slug || "eyewear")];
   const variants = Array.isArray(p.variants) ? p.variants : [];
   const stock = p.stock !== undefined ? p.stock : 0;
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileText, Plus, Edit3, Trash2, MessageSquare, X, HelpCircle } from "lucide-react";
 import { cmsPages, cmsFaqs, type CmsPageContent, type CmsFaq } from "@/lib/admin-data";
@@ -6,22 +6,43 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
+import axios from "@/lib/api/axios";
 
 type Tab = "pages" | "faqs";
 
-const pageFormDefault = { slug: "", title: "", content: "", status: "draft" as CmsPageContent["status"] };
+const pageFormDefault = { slug: "", title: "", content: "", status: "published" as CmsPageContent["status"] };
 const faqFormDefault = { question: "", answer: "", category: "General", order: 1, active: true };
 
 export function AdminPagesCMSPage() {
   const [tab, setTab] = useState<Tab>("pages");
-  const [pages, setPages] = useState(cmsPages);
+  const [pages, setPages] = useState<any[]>(cmsPages);
   const [faqs, setFaqs] = useState(cmsFaqs);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editingPage, setEditingPage] = useState<CmsPageContent | null>(null);
+  const [editingPage, setEditingPage] = useState<any | null>(null);
   const [editingFaq, setEditingFaq] = useState<CmsFaq | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [pageForm, setPageForm] = useState(pageFormDefault);
   const [faqForm, setFaqForm] = useState(faqFormDefault);
+
+  useEffect(() => {
+    fetchPages();
+  }, []);
+
+  const fetchPages = async () => {
+    try {
+      const res = await axios.get("/admin/cms");
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setPages(res.data.map(p => ({
+          id: p._id || p.slug,
+          slug: p.slug,
+          title: p.title,
+          content: p.content,
+          status: "published",
+          updatedAt: p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : "Recently"
+        })));
+      }
+    } catch (err) {}
+  };
 
   const resetPageForm = () => setPageForm(pageFormDefault);
   const resetFaqForm = () => setFaqForm(faqFormDefault);
@@ -40,14 +61,20 @@ export function AdminPagesCMSPage() {
     setShowForm(true);
   };
 
-  const saveForm = () => {
-    if (editingPage) {
-      setPages((prev) => prev.map((p) => p.id === editingPage.id ? { ...p, ...pageForm } : p));
+  const saveForm = async () => {
+    if (tab === "pages" || editingPage) {
+      const targetSlug = pageForm.slug || (pageForm.title ? pageForm.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : "new-page");
+      try {
+        await axios.put(`/admin/cms/${targetSlug}`, {
+          title: pageForm.title,
+          content: pageForm.content
+        });
+        await fetchPages();
+      } catch (err) {
+        console.error("Failed to save CMS page:", err);
+      }
     } else if (editingFaq) {
       setFaqs((prev) => prev.map((f) => f.id === editingFaq.id ? { ...f, ...faqForm } : f));
-    } else if (tab === "pages") {
-      const newPage: CmsPageContent = { id: `pg-${Date.now()}`, ...pageForm, updatedAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) };
-      setPages((prev) => [newPage, ...prev]);
     } else {
       const newFaq: CmsFaq = { id: `faq-${Date.now()}`, ...faqForm };
       setFaqs((prev) => [...prev, newFaq]);

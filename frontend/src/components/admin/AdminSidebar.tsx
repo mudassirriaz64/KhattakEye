@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard, Package, Grid3X3, Bookmark, ShoppingCart, Users, FileText, BarChart3, Settings, LogOut, ChevronLeft, X,
+  LayoutDashboard, Package, Grid3X3, Eye, Bookmark, ShoppingCart, Users, FileText, BarChart3, Settings, LogOut, ChevronLeft, X,
   ShieldCheck, Star, MessageSquare, ClipboardList, Image, Tag, Mail, Globe, Layout,
   TrendingUp, Lock, Bell, Activity, UserCog, ScrollText, Shield, Plus,
 } from "lucide-react";
@@ -13,8 +13,8 @@ const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
   { to: "/admin/orders", icon: ShoppingCart, label: "Orders", badge: "38" },
   { to: "/admin/products", icon: Package, label: "Products", exact: true },
-  { to: "/admin/products/add", icon: Plus, label: "Add Product" },
-  { to: "/admin/categories", icon: Grid3X3, label: "Categories" },
+  { to: "/admin/categories", icon: Grid3X3, label: "Glasses Categories" },
+  { to: "/admin/categories/lenses", icon: Eye, label: "Lenses Categories" },
   { to: "/admin/brands", icon: Bookmark, label: "Brands" },
   { to: "/admin/payments", icon: ShieldCheck, label: "Payments" },
   { to: "/admin/inventory", icon: ClipboardList, label: "Inventory" },

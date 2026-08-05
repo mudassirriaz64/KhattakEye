@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { adminUpdateOrderStatusApi } from "@/lib/api/admin";
 import { getOrderByIdApi } from "@/lib/api/orders";
 
-const statusFlow = ["pending", "processing", "shipped", "delivered", "cancelled"];
+const statusFlow = ["pending", "payment-verification", "confirmed", "processing", "shipped", "delivered", "cancelled"];
 
 export function AdminOrderDetailsPage() {
   const { id } = useParams<{ id: string }>();

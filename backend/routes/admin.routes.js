@@ -21,6 +21,8 @@ router.get(
   adminController.getProductById
 );
 
+const { validateProductPayload } = require('../validators/product.validator');
+
 // POST /api/admin/products
 // Requires auth, admin/manager/super-admin role, and handles multipart form data for images
 router.post(
@@ -28,6 +30,7 @@ router.post(
   auth.protectAdmin,
   requireRole(['admin', 'manager', 'super-admin']),
   upload.array('images', 5),
+  validateProductPayload,
   adminController.createProduct
 );
 
@@ -88,6 +91,13 @@ router.post(
   adminController.createCategory
 );
 
+router.put(
+  '/categories/:id',
+  auth.protectAdmin,
+  requireRole(['admin', 'manager', 'super-admin']),
+  adminController.updateCategory
+);
+
 router.delete(
   '/categories/:id',
   auth.protectAdmin,
@@ -116,5 +126,79 @@ router.delete(
   requireRole(['admin', 'manager', 'super-admin']),
   adminController.deleteBrand
 );
+
+const {
+  upsertCMSPage,
+  getAllCMSPages,
+  getAllBannersAdmin,
+  createBanner,
+  updateBanner,
+  deleteBanner,
+  updateSettings
+} = require('../controllers/cms.controller');
+
+// CMS Page admin routes
+router.get('/cms', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getAllCMSPages);
+router.put('/cms/:slug', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), upsertCMSPage);
+
+// Banner admin routes
+router.get('/banners', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getAllBannersAdmin);
+router.post('/banners', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), createBanner);
+router.put('/banners/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateBanner);
+router.delete('/banners/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteBanner);
+
+// Site Settings admin routes
+router.put('/settings', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateSettings);
+
+const {
+  getPublicTestimonials,
+  getAllTestimonialsAdmin,
+  createTestimonial,
+  updateTestimonial,
+  deleteTestimonial
+} = require('../controllers/testimonials.controller');
+
+// Testimonial admin routes
+router.get('/testimonials', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getAllTestimonialsAdmin);
+router.post('/testimonials', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), createTestimonial);
+router.put('/testimonials/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateTestimonial);
+router.delete('/testimonials/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteTestimonial);
+
+const {
+  getAllReviewsAdmin,
+  updateReviewStatus,
+  deleteReview
+} = require('../controllers/adminReviews.controller');
+
+// Review admin routes
+router.get('/reviews', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getAllReviewsAdmin);
+router.put('/reviews/:id/status', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateReviewStatus);
+router.delete('/reviews/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteReview);
+
+const {
+  getAllUsersAdmin,
+  getUserDetailsAdmin,
+  toggleBlockUser,
+  deleteUserAdmin
+} = require('../controllers/adminUsers.controller');
+
+// User admin routes
+router.get('/users', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getAllUsersAdmin);
+router.get('/users/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getUserDetailsAdmin);
+router.put('/users/:id/block', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), toggleBlockUser);
+router.delete('/users/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteUserAdmin);
+
+const {
+  getAllCouponsAdmin,
+  createCoupon,
+  updateCoupon,
+  deleteCoupon
+} = require('../controllers/adminCoupons.controller');
+
+// Coupon admin routes
+router.get('/coupons', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getAllCouponsAdmin);
+router.post('/coupons', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), createCoupon);
+router.put('/coupons/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateCoupon);
+router.delete('/coupons/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteCoupon);
 
 module.exports = router;

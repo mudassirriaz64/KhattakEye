@@ -13,7 +13,7 @@ export function AdminCategoriesPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   
   useEffect(() => {
-    getCategoriesApi().then((data) => {
+    getCategoriesApi("glasses").then((data) => {
       if (Array.isArray(data) && data.length > 0) {
         const mapped: AdminCategory[] = data.map((c: any) => ({
           id: c._id || c.id,
@@ -24,7 +24,8 @@ export function AdminCategoriesPage() {
           parent: c.parent || null,
           featured: c.featured !== undefined ? c.featured : true,
           status: c.status || "active",
-          image: c.image || ""
+          image: c.image || "",
+          createdAt: c.createdAt || new Date().toISOString()
         }));
         setCategories(mapped);
       }
@@ -35,7 +36,7 @@ export function AdminCategoriesPage() {
 
   const [showParentForm, setShowParentForm] = useState(false);
   const [editingCat, setEditingCat] = useState<AdminCategory | null>(null);
-  const [parentForm, setParentForm] = useState({ name: "", slug: "", description: "", featured: true, status: "active" as "active" | "inactive" });
+  const [parentForm, setParentForm] = useState({ name: "", slug: "", description: "", productKind: "glasses" as "glasses" | "lenses", type: "category" as "category" | "style" | "collection", featured: true, status: "active" as "active" | "inactive" });
   
   const [newSubName, setNewSubName] = useState("");
   const [newSubDescription, setNewSubDescription] = useState("");
@@ -44,12 +45,12 @@ export function AdminCategoriesPage() {
   const getSubcategories = (parentId: string) => categories.filter((c) => c.parent === parentId);
 
   const resetParentForm = () => {
-    setParentForm({ name: "", slug: "", description: "", featured: true, status: "active" });
+    setParentForm({ name: "", slug: "", description: "", productKind: "glasses", type: "category", featured: true, status: "active" });
     setEditingCat(null);
   };
 
-  const openEditParent = (cat: AdminCategory) => {
-    setParentForm({ name: cat.name, slug: cat.slug, description: cat.description, featured: cat.featured, status: cat.status });
+  const openEditParent = (cat: any) => {
+    setParentForm({ name: cat.name, slug: cat.slug, description: cat.description, productKind: cat.productKind || "glasses", type: cat.type || "category", featured: cat.featured, status: cat.status });
     setEditingCat(cat);
     setShowParentForm(true);
   };
@@ -63,11 +64,12 @@ export function AdminCategoriesPage() {
         ...parentForm,
         parent: null,
         productCount: 0,
-        image: ""
+        image: "",
+        createdAt: new Date().toISOString()
       };
       setCategories((prev) => [newCat, ...prev]);
       try {
-        await adminCreateCategoryApi({ name: parentForm.name, description: parentForm.description });
+        await adminCreateCategoryApi({ name: parentForm.name, description: parentForm.description, productKind: parentForm.productKind, type: parentForm.type });
       } catch (err) {
         console.error("Failed to create category:", err);
       }
@@ -139,6 +141,21 @@ export function AdminCategoriesPage() {
               <div>
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Slug</label>
                 <input type="text" value={parentForm.slug} onChange={(e) => setParentForm((p) => ({ ...p, slug: e.target.value }))} placeholder="e.g. sunglasses" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm" />
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Product Kind</label>
+                <select value={parentForm.productKind} onChange={(e) => setParentForm((p) => ({ ...p, productKind: e.target.value as any }))} className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm">
+                  <option value="glasses">Glasses (Eyeglasses / Sunglasses)</option>
+                  <option value="lenses">Lenses (Contact Lenses)</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Mega-Menu Column Type</label>
+                <select value={parentForm.type} onChange={(e) => setParentForm((p) => ({ ...p, type: e.target.value as any }))} className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm">
+                  <option value="category">Category (Column 1)</option>
+                  <option value="style">Style / Need (Column 2)</option>
+                  <option value="collection">Collection (Column 3)</option>
+                </select>
               </div>
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Description</label>
@@ -213,7 +230,6 @@ export function AdminCategoriesPage() {
                         <div className="flex items-center justify-end gap-2">
                           <Button 
                             variant="outline" 
-                            size="sm"
                             className="text-xs h-8"
                             onClick={() => setSelectedParent(parent)}
                           >
@@ -278,7 +294,6 @@ export function AdminCategoriesPage() {
                   </div>
                   <Button 
                     variant="primary" 
-                    size="sm" 
                     onClick={handleAddSubcategory} 
                     disabled={!newSubName.trim()} 
                     className="mt-3 text-xs"
@@ -327,7 +342,7 @@ export function AdminCategoriesPage() {
 
               {/* Footer */}
               <div className="flex justify-end border-t border-[color:var(--color-border)] px-6 py-3">
-                <Button variant="outline" size="sm" onClick={() => setSelectedParent(null)} className="text-xs">Close</Button>
+                <Button variant="outline" onClick={() => setSelectedParent(null)} className="text-xs">Close</Button>
               </div>
 
             </motion.div>

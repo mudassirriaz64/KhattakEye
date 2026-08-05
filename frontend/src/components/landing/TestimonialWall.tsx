@@ -1,7 +1,9 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Star, Quote } from "lucide-react";
-import { testimonials } from "@/lib/landing-data";
+import { testimonials as fallbackTestimonials } from "@/lib/landing-data";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
+import axios from "@/lib/api/axios";
 
 function Stars({ rating }: { rating: number }) {
   return (
@@ -17,7 +19,26 @@ function Stars({ rating }: { rating: number }) {
 }
 
 export function TestimonialWall() {
-  const [featured, ...rest] = testimonials;
+  const [list, setList] = useState<any[]>(fallbackTestimonials);
+
+  useEffect(() => {
+    axios.get("/testimonials")
+      .then((res) => {
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+          setList(res.data.map(t => ({
+            id: t._id,
+            name: t.customerName,
+            avatar: t.customerImage || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop",
+            location: "Verified Buyer",
+            text: t.text,
+            rating: t.rating
+          })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const [featured, ...rest] = list.length > 0 ? list : fallbackTestimonials;
 
   return (
     <section className="bg-[color:var(--color-panel)] py-20 md:py-28">

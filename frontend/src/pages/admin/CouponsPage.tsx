@@ -1,43 +1,89 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Tag, Plus, Edit3, Trash2, X, Copy } from "lucide-react";
 import { cmsCoupons, type CmsCoupon } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
+import axios from "@/lib/api/axios";
 
-const formDefault = { code: "", description: "", discount: 10, type: "percentage" as CmsCoupon["type"], minOrder: 0, usageLimit: 100, used: 0, expiresAt: "", active: true };
+const formDefault = { code: "", description: "", discount: 10, type: "percentage", minOrder: 0, usageLimit: 100, used: 0, expiresAt: "2026-12-31", active: true };
 
 export function AdminCouponsPage() {
-  const [coupons, setCoupons] = useState(cmsCoupons);
+  const [coupons, setCoupons] = useState<any[]>(cmsCoupons);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editing, setEditing] = useState<CmsCoupon | null>(null);
+  const [editing, setEditing] = useState<any | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(formDefault);
   const [copied, setCopied] = useState<string | null>(null);
 
+  useEffect(() => {
+    fetchCoupons();
+  }, []);
+
+  const fetchCoupons = async () => {
+    try {
+      const res = await axios.get("/admin/coupons");
+      if (res.data && res.data.items && Array.isArray(res.data.items) && res.data.items.length > 0) {
+        setCoupons(res.data.items.map((c: any) => ({
+          id: c._id,
+          code: c.code,
+          description: `${c.discountPercent}% Discount`,
+          discount: c.discountPercent,
+          type: "percentage",
+          minOrder: c.minOrderValue || 0,
+          usageLimit: c.usageLimit || 100,
+          used: c.usedCount || 0,
+          expiresAt: c.expiryDate ? new Date(c.expiryDate).toISOString().split("T")[0] : "2026-12-31",
+          active: c.isActive
+        })));
+      }
+    } catch (err) {}
+  };
+
   const resetForm = () => setForm(formDefault);
 
-  const openEdit = (c: CmsCoupon) => {
-    setForm({ code: c.code, description: c.description, discount: c.discount, type: c.type, minOrder: c.minOrder, usageLimit: c.usageLimit, used: c.used, expiresAt: c.expiresAt, active: c.active });
+  const openEdit = (c: any) => {
+    setForm({ code: c.code, description: c.description || "", discount: c.discount, type: c.type || "percentage", minOrder: c.minOrder, usageLimit: c.usageLimit, used: c.used, expiresAt: c.expiresAt, active: c.active });
     setEditing(c);
     setShowForm(true);
   };
 
-  const saveCoupon = () => {
-    if (editing) {
-      setCoupons((prev) => prev.map((c) => c.id === editing.id ? { ...c, ...form } : c));
-    } else {
-      const newC: CmsCoupon = { id: `cp-${Date.now()}`, ...form };
-      setCoupons((prev) => [newC, ...prev]);
+  const saveCoupon = async () => {
+    try {
+      const payload = {
+        code: form.code,
+        discountPercent: Number(form.discount),
+        expiryDate: form.expiresAt || "2026-12-31",
+        isActive: form.active,
+        minOrderValue: Number(form.minOrder),
+        usageLimit: Number(form.usageLimit)
+      };
+
+      if (editing && editing.id && !editing.id.startsWith("cp-")) {
+        await axios.put(`/admin/coupons/${editing.id}`, payload);
+      } else {
+        await axios.post("/admin/coupons", payload);
+      }
+      await fetchCoupons();
+    } catch (err) {
+      console.error("Failed to save coupon:", err);
     }
     setShowForm(false);
     setEditing(null);
     resetForm();
   };
 
-  const removeCoupon = () => {
-    if (deleteId) { setCoupons((prev) => prev.filter((c) => c.id !== deleteId)); setDeleteId(null); }
+  const removeCoupon = async () => {
+    if (deleteId) {
+      if (!deleteId.startsWith("cp-")) {
+        try {
+          await axios.delete(`/admin/coupons/${deleteId}`);
+        } catch (err) {}
+      }
+      setCoupons((prev) => prev.filter((c) => c.id !== deleteId));
+      setDeleteId(null);
+    }
   };
 
   const copyCode = async (code: string) => {

@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
 import { adminGetOrdersApi } from "@/lib/api/admin";
 
-const statusFilters = ["All", "Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
+const statusFilters = ["All", "Pending", "Payment Verification", "Confirmed", "Processing", "Shipped", "Delivered", "Cancelled"];
 const paymentFilters = ["All Methods", "Bank Transfer", "JazzCash", "EasyPaisa"];
 
 const paymentColors: Record<string, string> = {

@@ -32,6 +32,7 @@ export function AdminProductsPage() {
         const formatted = res.items.map((p: any) => ({
           id: p._id,
           name: p.name,
+          kind: p.kind || 'glasses',
           sku: p.sku || 'N/A',
           category: p.category,
           stock: p.stock || 0,
@@ -78,9 +79,14 @@ export function AdminProductsPage() {
           <h1 className="font-display text-2xl text-[color:var(--color-text-primary)] md:text-3xl">Products</h1>
           <p className="mt-0.5 text-sm text-[color:var(--color-text-secondary)]">{products.length} total products</p>
         </div>
-        <Link to="/admin/products/add" className="flex items-center gap-2 rounded-xl bg-[color:var(--color-brand-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-black">
-          <Plus className="h-4 w-4" /> Add Product
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/admin/products/add-glasses" className="flex items-center gap-1.5 rounded-xl bg-[color:var(--color-brand-primary)] px-3.5 py-2.5 text-xs font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-black">
+            <Plus className="h-4 w-4" /> Add Glasses
+          </Link>
+          <Link to="/admin/products/add-lenses" className="flex items-center gap-1.5 rounded-xl bg-teal-600 px-3.5 py-2.5 text-xs font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-teal-700">
+            <Plus className="h-4 w-4" /> Add Contact Lenses
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)]">
@@ -114,6 +120,7 @@ export function AdminProductsPage() {
                   <input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll} className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-accent-teal)]" />
                 </th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Product</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Type</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">SKU</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Category</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Stock</th>
@@ -127,13 +134,13 @@ export function AdminProductsPage() {
               <AnimatePresence>
                 {loading ? (
                   <tr>
-                    <td colSpan={9} className="py-16 text-center">
+                    <td colSpan={10} className="py-16 text-center">
                       <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-[color:var(--color-brand-primary)]" />
                       <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">Loading products...</p>
                     </td>
                   </tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={9} className="py-16 text-center"><Package className="mx-auto h-8 w-8 text-[color:var(--color-text-tertiary)]" /><p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">No products found</p></td></tr>
+                  <tr><td colSpan={10} className="py-16 text-center"><Package className="mx-auto h-8 w-8 text-[color:var(--color-text-tertiary)]" /><p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">No products found</p></td></tr>
                 ) : (
                   filtered.map((product, i) => (
                     <motion.tr
@@ -153,6 +160,11 @@ export function AdminProductsPage() {
                           <span className="text-sm font-medium text-[color:var(--color-text-primary)]">{product.name}</span>
                         </div>
                       </td>
+                      <td className="px-4 py-3">
+                        <span className={cn("inline-block rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider", product.kind === "lenses" ? "bg-teal-500/10 text-teal-600" : "bg-amber-500/10 text-amber-600")}>
+                          {product.kind === "lenses" ? "Lenses" : "Glasses"}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-xs text-[color:var(--color-text-tertiary)]">{product.sku}</td>
                       <td className="px-4 py-3 text-xs text-[color:var(--color-text-tertiary)]">{product.category}</td>
                       <td className="px-4 py-3"><StockBadge stock={product.stock} /></td>
@@ -164,7 +176,7 @@ export function AdminProductsPage() {
                           <Link to={`/admin/products/${product.id}`} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-blue)]">
                             <Eye className="h-3.5 w-3.5" />
                           </Link>
-                          <Link to={`/admin/products/${product.id}/edit`} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]">
+                          <Link to={product.kind === "lenses" ? `/admin/products/${product.id}/edit-lenses` : `/admin/products/${product.id}/edit-glasses`} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]">
                             <Edit3 className="h-3.5 w-3.5" />
                           </Link>
                           <button type="button" className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]">

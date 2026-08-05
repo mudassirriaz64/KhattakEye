@@ -26,6 +26,8 @@ export type AdminCategory = {
   productCount: number;
   featured: boolean;
   status: "active" | "inactive";
+  productKind?: "glasses" | "lenses";
+  type?: "category" | "style" | "collection";
   createdAt: string;
 };
 
@@ -159,8 +161,8 @@ export const adminProducts: AdminProduct[] = [
 ];
 
 export const adminCategories: AdminCategory[] = [
-  { id: "cat-001", name: "Sunglasses", slug: "sunglasses", parent: null, description: "Premium sunglasses with UV400 protection", image: "", productCount: 42, featured: true, status: "active", createdAt: "Jan 1, 2026" },
-  { id: "cat-002", name: "Eyeglasses", slug: "eyeglasses", parent: null, description: "Prescription & everyday optical frames", image: "", productCount: 58, featured: true, status: "active", createdAt: "Jan 1, 2026" },
+  { id: "cat-001", name: "Sunglasses", slug: "sunglasses", parent: null, description: "Premium sunglasses with UV400 protection", image: "", productCount: 42, featured: true, status: "active", createdAt: "Jan 1, 2026", productKind: "glasses", type: "category" },
+  { id: "cat-002", name: "Eyeglasses", slug: "eyeglasses", parent: null, description: "Prescription & everyday optical frames", image: "", productCount: 58, featured: true, status: "active", createdAt: "Jan 1, 2026", productKind: "glasses", type: "category" },
   // Sunglasses Subcategories
   { id: "cat-010", name: "Polarized Shades", slug: "polarized-shades", parent: "cat-001", description: "Glare-reducing polarized lenses", image: "", productCount: 16, featured: true, status: "active", createdAt: "Feb 1, 2026" },
   { id: "cat-011", name: "Driving Sunglasses", slug: "driving-sunglasses", parent: "cat-001", description: "High contrast lenses for optimal driving vision", image: "", productCount: 12, featured: false, status: "active", createdAt: "Feb 5, 2026" },
@@ -171,6 +173,21 @@ export const adminCategories: AdminCategory[] = [
   { id: "cat-021", name: "Computer & Blue Light", slug: "blue-light", parent: "cat-002", description: "Digital screen eye strain protection", image: "", productCount: 25, featured: true, status: "active", createdAt: "Feb 5, 2026" },
   { id: "cat-022", name: "Reading Glasses", slug: "reading-glasses", parent: "cat-002", description: "Compact magnification frames", image: "", productCount: 14, featured: false, status: "active", createdAt: "Feb 10, 2026" },
   { id: "cat-023", name: "Rimless & Minimalist", slug: "rimless-frames", parent: "cat-002", description: "Ultra lightweight rimless design", image: "", productCount: 18, featured: true, status: "active", createdAt: "Feb 15, 2026" },
+];
+
+export const adminLensesCategories: AdminCategory[] = [
+  { id: "cat-lns-001", name: "Shop by Type", slug: "shop-by-type", parent: null, description: "Category grouping for contact lenses by wear duration and usage", image: "", productCount: 45, featured: true, status: "active", createdAt: "Jan 1, 2026", productKind: "lenses", type: "category" },
+  { id: "cat-lns-002", name: "Shop by Need", slug: "shop-by-need", parent: null, description: "Style & specialty grouping for contact lenses by vision need", image: "", productCount: 30, featured: true, status: "active", createdAt: "Jan 1, 2026", productKind: "lenses", type: "style" },
+  // Shop by Type Subcategories
+  { id: "cat-lns-010", name: "Daily", slug: "daily", parent: "cat-lns-001", description: "Daily contact lenses", image: "", productCount: 12, featured: true, status: "active", createdAt: "Feb 1, 2026" },
+  { id: "cat-lns-011", name: "Monthly", slug: "monthly", parent: "cat-lns-001", description: "Monthly contact lenses", image: "", productCount: 15, featured: true, status: "active", createdAt: "Feb 1, 2026" },
+  { id: "cat-lns-012", name: "Yearly", slug: "yearly", parent: "cat-lns-001", description: "Yearly contact lenses", image: "", productCount: 8, featured: true, status: "active", createdAt: "Feb 1, 2026" },
+  { id: "cat-lns-013", name: "Colored", slug: "colored", parent: "cat-lns-001", description: "Colored contact lenses", image: "", productCount: 18, featured: true, status: "active", createdAt: "Feb 1, 2026" },
+  { id: "cat-lns-014", name: "Cosmetic", slug: "cosmetic", parent: "cat-lns-001", description: "Cosmetic contact lenses", image: "", productCount: 10, featured: true, status: "active", createdAt: "Feb 1, 2026" },
+  // Shop by Need Subcategories
+  { id: "cat-lns-020", name: "Toric (Astigmatism)", slug: "toric", parent: "cat-lns-002", description: "Astigmatism correction lenses", image: "", productCount: 9, featured: true, status: "active", createdAt: "Feb 1, 2026" },
+  { id: "cat-lns-021", name: "Multifocal", slug: "multifocal", parent: "cat-lns-002", description: "Presbyopia correction lenses", image: "", productCount: 7, featured: true, status: "active", createdAt: "Feb 1, 2026" },
+  { id: "cat-lns-022", name: "Daily Disposable", slug: "daily-disposable", parent: "cat-lns-002", description: "Single-use daily disposable lenses", image: "", productCount: 14, featured: true, status: "active", createdAt: "Feb 1, 2026" }
 ];
 
 export type AdminOrderDetail = {

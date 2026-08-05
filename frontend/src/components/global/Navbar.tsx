@@ -19,6 +19,8 @@ type NavLink = {
   path: string;
   mega?: MegaColumn[];
   megaImages?: string[];
+  megaImageLabel?: string;
+  megaImageLink?: string;
 };
 
 const navLinks: NavLink[] = [
@@ -89,13 +91,13 @@ const navLinks: NavLink[] = [
       { title: "Support", links: [
         { label: "FAQs", path: "/faqs" },
         { label: "Track Order", path: "/track-order" },
-        { label: "Shipping Info", path: "/shipping" },
+        { label: "Shipping Info", path: "/shipping-policy" },
         { label: "Return Policy", path: "/return-policy" },
       ]},
       { title: "Legal", links: [
         { label: "Privacy Policy", path: "/privacy" },
         { label: "Terms of Service", path: "/terms" },
-        { label: "Refund Policy", path: "/refund-policy" },
+        { label: "Refund Policy", path: "/return-policy" },
       ]},
     ],
   },
@@ -103,25 +105,21 @@ const navLinks: NavLink[] = [
     label: "Contact Lenses", path: "/shop/contact-lenses",
     megaImages: [
       "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?w=400&h=400&fit=crop",
     ],
+    megaImageLabel: "Bella Lenses",
+    megaImageLink: "/shop/contact-lenses/colored",
     mega: [
-      { title: "Type", links: [
+      { title: "Shop by Type", links: [
         { label: "Daily", path: "/shop/contact-lenses/daily" },
         { label: "Monthly", path: "/shop/contact-lenses/monthly" },
         { label: "Yearly", path: "/shop/contact-lenses/yearly" },
         { label: "Colored", path: "/shop/contact-lenses/colored" },
         { label: "Cosmetic", path: "/shop/contact-lenses/cosmetic" },
       ]},
-      { title: "Specialty", links: [
+      { title: "Shop by Need", links: [
         { label: "Toric (Astigmatism)", path: "/shop/contact-lenses/toric" },
         { label: "Multifocal", path: "/shop/contact-lenses/multifocal" },
         { label: "Daily Disposable", path: "/shop/contact-lenses/daily-disposable" },
-      ]},
-      { title: "Brands", links: [
-        { label: "Khattak Atelier", path: "/brands/khattak-atelier" },
-        { label: "Khattak Signature", path: "/brands/khattak-signature" },
-        { label: "Khattak Heritage", path: "/brands/khattak-heritage" },
       ]},
     ],
   },
@@ -197,10 +195,11 @@ function BrandLogoSvg({ initials, color }: { initials: string; color: string }) 
   );
 }
 
-// ─── Mega Menu Panel ─────────────────────────────────────────────────
-function MegaPanel({ columns, images, onEnter, onLeave }: {
+function MegaPanel({ columns, images, imageLabel, imageLink, onEnter, onLeave }: {
   columns: MegaColumn[];
   images?: string[];
+  imageLabel?: string;
+  imageLink?: string;
   onEnter: () => void;
   onLeave: () => void;
 }) {
@@ -216,14 +215,14 @@ function MegaPanel({ columns, images, onEnter, onLeave }: {
     >
       <motion.div
         className={cn(
-          "mx-auto flex max-w-[1440px] gap-10 px-8 py-12",
-          images ? "items-start" : "justify-center",
+          "mx-auto flex max-w-[1440px] gap-12 px-8 py-12",
+          images ? "items-start justify-center" : "justify-center",
         )}
         variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }}
         initial="hidden"
         animate="visible"
       >
-        <div className={cn("grid flex-1 gap-10", images ? "grid-cols-3" : "grid-cols-3")}>
+        <div className={cn("grid gap-12", columns.length === 2 ? "grid-cols-2 min-w-[420px]" : "grid-cols-3 flex-1")}>
           {columns.map((col) => (
             <motion.div
               key={col.title}
@@ -263,16 +262,29 @@ function MegaPanel({ columns, images, onEnter, onLeave }: {
             transition={{ duration: 0.3, delay: 0.1 }}
             className="flex shrink-0 flex-col gap-4"
           >
-            {images.slice(0, 2).map((src, i) => (
-              <div key={i} className="group relative h-[150px] w-[150px] overflow-hidden rounded-[18px]">
-                <img
-                  src={src}
-                  alt=""
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-              </div>
-            ))}
+            {images.slice(0, images.length === 1 ? 1 : 2).map((src, i) => {
+              const CardContent = (
+                <div className={cn("group relative overflow-hidden rounded-[18px] border border-[color:var(--color-border)] shadow-sm", images.length === 1 ? "h-[190px] w-[210px]" : "h-[150px] w-[150px]")}>
+                  <img
+                    src={src}
+                    alt={imageLabel || ""}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className={cn("absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent", imageLabel ? "opacity-100" : "opacity-0 group-hover:opacity-100 transition-opacity")} />
+                  {imageLabel && (
+                    <div className="absolute bottom-3.5 left-3.5 right-3.5 text-left">
+                      <span className="inline-block rounded bg-[#b91c1c] px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest text-white mb-1">NEW COLORS</span>
+                      <p className="font-display text-base font-bold text-white drop-shadow-sm">{imageLabel}</p>
+                    </div>
+                  )}
+                </div>
+              );
+              return imageLink ? (
+                <Link key={i} to={imageLink}>{CardContent}</Link>
+              ) : (
+                <div key={i}>{CardContent}</div>
+              );
+            })}
           </motion.div>
         )}
       </motion.div>
@@ -355,37 +367,51 @@ export function Navbar() {
   useEffect(() => {
     async function fetchNavData() {
       try {
-        const [categories, brands] = await Promise.all([
+        const [allCategories, brands] = await Promise.all([
           getCategories(),
           getBrands()
         ]);
-        
-        const grouped = {
-          Category: categories.filter((c: any) => c.type === 'category'),
-          Styles: categories.filter((c: any) => c.type === 'style'),
-          Collections: categories.filter((c: any) => c.type === 'collection')
-        };
-        
-        const dynamicMega = [
-          {
-            title: "Category",
-            links: grouped.Category.map((c: any) => ({ label: c.name, path: `/shop?category=${c.slug}` }))
-          },
-          {
-            title: "Styles",
-            links: grouped.Styles.map((c: any) => ({ label: c.name, path: `/shop?category=${c.slug}` }))
-          },
-          {
-            title: "Collections",
-            links: grouped.Collections.map((c: any) => ({ label: c.name, path: `/shop?category=${c.slug}` }))
-          }
-        ].filter(col => col.links.length > 0);
 
-        if (dynamicMega.length > 0) {
+        if (Array.isArray(allCategories) && allCategories.length > 0) {
+          const findCat = (slug: string) => allCategories.find((c: any) => c.slug === slug);
+          const eyeglassesCat = findCat('eyeglasses');
+          const sunglassesCat = findCat('sunglasses');
+          const contactLensesCat = findCat('contact-lenses');
+          const lensesCat = findCat('lenses');
+
+          const buildMegaFromSubcategories = (parentCat: any, basePath: string) => {
+            if (!parentCat || !Array.isArray(parentCat.subcategories) || parentCat.subcategories.length === 0) {
+              return null;
+            }
+            const groupsMap: Record<string, { label: string; path: string }[]> = {};
+            for (const sub of parentCat.subcategories) {
+              const groupName = sub.group || "Categories";
+              if (!groupsMap[groupName]) groupsMap[groupName] = [];
+              groupsMap[groupName].push({
+                label: sub.name,
+                path: `${basePath}/${sub.slug}`
+              });
+            }
+            return Object.entries(groupsMap).map(([title, links]) => ({ title, links }));
+          };
+
+          const dynamicEyeglassesMega = buildMegaFromSubcategories(eyeglassesCat, '/shop/eyeglasses');
+          const dynamicSunglassesMega = buildMegaFromSubcategories(sunglassesCat, '/shop/sunglasses');
+          const dynamicContactLensesMega = buildMegaFromSubcategories(contactLensesCat, '/shop/contact-lenses');
+          const dynamicLensesMega = buildMegaFromSubcategories(lensesCat, '/shop/lenses');
+
           setNavData(prev => prev.map(link => {
-            // Replace the mega menu for Eyeglasses/Sunglasses with real backend categories
-            if (link.label === "Eyeglasses" || link.label === "Sunglasses") {
-              return { ...link, mega: dynamicMega };
+            if (link.label === "Eyeglasses" && dynamicEyeglassesMega) {
+              return { ...link, mega: dynamicEyeglassesMega };
+            }
+            if (link.label === "Sunglasses" && dynamicSunglassesMega) {
+              return { ...link, mega: dynamicSunglassesMega };
+            }
+            if (link.label === "Contact Lenses" && dynamicContactLensesMega) {
+              return { ...link, mega: dynamicContactLensesMega };
+            }
+            if (link.label === "Lenses" && dynamicLensesMega) {
+              return { ...link, mega: dynamicLensesMega };
             }
             return link;
           }));
@@ -579,6 +605,8 @@ export function Navbar() {
             key={megaLabel}
             columns={currentLink.mega}
             images={currentLink.megaImages}
+            imageLabel={currentLink.megaImageLabel}
+            imageLink={currentLink.megaImageLink}
             onEnter={() => handleEnter(megaLabel)}
             onLeave={handleLeave}
           />

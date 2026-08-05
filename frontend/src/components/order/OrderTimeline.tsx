@@ -13,11 +13,9 @@ const statusIndex: Record<OrderStatus, number> = {
   "payment-verification": 1,
   confirmed: 2,
   processing: 3,
-  packed: 4,
-  shipped: 5,
-  "out-for-delivery": 6,
-  delivered: 7,
-  cancelled: 8,
+  shipped: 4,
+  delivered: 5,
+  cancelled: 6,
 };
 
 export function OrderTimeline({ entries, currentStatus }: OrderTimelineProps) {

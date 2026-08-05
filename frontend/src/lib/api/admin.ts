@@ -15,8 +15,9 @@ export const adminGetProfileApi = async () => {
   return response.data;
 };
 
-export const adminGetProductsApi = async (page = 1, limit = 50) => {
-  const response = await api.get(`/admin/products?page=${page}&limit=${limit}`);
+export const adminGetProductsApi = async (page = 1, limit = 50, kind?: string) => {
+  const query = kind ? `&kind=${kind}` : '';
+  const response = await api.get(`/admin/products?page=${page}&limit=${limit}${query}`);
   return response.data;
 };
 
@@ -34,17 +35,23 @@ export const createProductApi = async (formData: FormData) => {
   return response.data;
 };
 
-export const getCategoriesApi = async () => {
-  const response = await api.get('/categories');
+export const getCategoriesApi = async (productKind?: string, type?: string) => {
+  const params = new URLSearchParams();
+  if (productKind) params.append('productKind', productKind);
+  if (type) params.append('type', type);
+  const queryString = params.toString() ? `?${params.toString()}` : '';
+  const response = await api.get(`/categories${queryString}`);
   return response.data;
 };
 
-export const getPublicProductsApi = async (page = 1, limit = 100) => {
+export const getPublicProductsApi = async (page = 1, limit = 100, kind?: string) => {
   try {
-    const response = await api.get(`/products?page=${page}&limit=${limit}`);
+    const query = kind ? `&kind=${kind}` : '';
+    const response = await api.get(`/products?page=${page}&limit=${limit}${query}`);
     return response.data;
   } catch (err) {
-    const response = await api.get(`/admin/products?page=${page}&limit=${limit}`);
+    const query = kind ? `&kind=${kind}` : '';
+    const response = await api.get(`/admin/products?page=${page}&limit=${limit}${query}`);
     return response.data;
   }
 };
@@ -65,7 +72,7 @@ export const adminGetDashboardStatsApi = async () => {
   return response.data;
 };
 
-export const adminCreateCategoryApi = async (data: { name: string; description?: string }) => {
+export const adminCreateCategoryApi = async (data: { name: string; description?: string; productKind?: string; type?: string }) => {
   const response = await api.post('/admin/categories', data);
   return response.data;
 };

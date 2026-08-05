@@ -126,12 +126,18 @@ export function Footer() {
             <p className="text-xs text-[color:var(--color-text-tertiary)]">
               &copy; {new Date().getFullYear()} Khattak Eyewear. All rights reserved.
             </p>
-            <div className="flex items-center gap-5 text-xs text-[color:var(--color-text-tertiary)]">
+            <div className="flex flex-wrap items-center justify-center md:justify-end gap-5 text-xs text-[color:var(--color-text-tertiary)]">
               <Link to="/privacy" className="transition-colors hover:text-[color:var(--color-brand-primary)]">
                 Privacy Policy
               </Link>
               <Link to="/terms" className="transition-colors hover:text-[color:var(--color-brand-primary)]">
                 Terms of Service
+              </Link>
+              <Link to="/refund-policy" className="transition-colors hover:text-[color:var(--color-brand-primary)]">
+                Refund Policy
+              </Link>
+              <Link to="/eye-care-tips" className="transition-colors hover:text-[color:var(--color-brand-primary)]">
+                Eye Care Tips
               </Link>
               <span className="hidden sm:inline">Crafted with care in Lahore</span>
             </div>

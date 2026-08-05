@@ -1,42 +1,86 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Images, Plus, Edit3, Trash2, X } from "lucide-react";
 import { cmsBanners, type CmsBanner } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
+import axios from "@/lib/api/axios";
 
-const defaultForm = { title: "", subtitle: "", link: "", active: true, type: "slider" as CmsBanner["type"], position: 1 };
+const defaultForm = { title: "", subtitle: "", link: "", active: true, type: "homepage-slider", position: 1, image: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=1200&fit=crop" };
 
 export function AdminBannerManagementPage() {
-  const [banners, setBanners] = useState(cmsBanners);
+  const [banners, setBanners] = useState<any[]>(cmsBanners);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editing, setEditing] = useState<CmsBanner | null>(null);
+  const [editing, setEditing] = useState<any | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<{ title: string; subtitle: string; link: string; active: boolean; type: CmsBanner["type"]; position: number }>(defaultForm);
+  const [form, setForm] = useState(defaultForm);
+
+  useEffect(() => {
+    fetchBanners();
+  }, []);
+
+  const fetchBanners = async () => {
+    try {
+      const res = await axios.get("/admin/banners");
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setBanners(res.data.map(b => ({
+          id: b._id,
+          title: b.title || "Banner",
+          subtitle: "",
+          link: b.link || "/shop",
+          active: b.isActive,
+          type: b.type === "homepage-slider" ? "slider" : "offer",
+          position: b.order || 1,
+          image: b.image
+        })));
+      }
+    } catch (err) {}
+  };
 
   const resetForm = () => setForm(defaultForm);
 
-  const openEdit = (b: CmsBanner) => {
-    setForm({ title: b.title, subtitle: b.subtitle, link: b.link, active: b.active, type: b.type, position: b.position });
+  const openEdit = (b: any) => {
+    setForm({ title: b.title, subtitle: b.subtitle || "", link: b.link, active: b.active, type: b.type || "homepage-slider", position: b.position || 1, image: b.image || "" });
     setEditing(b);
     setShowForm(true);
   };
 
-  const saveBanner = () => {
-    if (editing) {
-      setBanners((prev) => prev.map((b) => b.id === editing.id ? { ...b, ...form } : b));
-    } else {
-      const newB: CmsBanner = { id: `bn-${Date.now()}`, ...form, image: "" };
-      setBanners((prev) => [newB, ...prev]);
+  const saveBanner = async () => {
+    try {
+      const payload = {
+        title: form.title,
+        link: form.link,
+        type: form.type === "slider" ? "homepage-slider" : "promotional",
+        order: form.position,
+        isActive: form.active,
+        image: form.image || "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=1200&fit=crop"
+      };
+
+      if (editing && editing.id && !editing.id.startsWith("bn-")) {
+        await axios.put(`/admin/banners/${editing.id}`, payload);
+      } else {
+        await axios.post("/admin/banners", payload);
+      }
+      await fetchBanners();
+    } catch (err) {
+      console.error("Failed to save banner:", err);
     }
     setShowForm(false);
     setEditing(null);
     resetForm();
   };
 
-  const removeBanner = () => {
-    if (deleteId) { setBanners((prev) => prev.filter((b) => b.id !== deleteId)); setDeleteId(null); }
+  const removeBanner = async () => {
+    if (deleteId) {
+      if (!deleteId.startsWith("bn-")) {
+        try {
+          await axios.delete(`/admin/banners/${deleteId}`);
+        } catch (err) {}
+      }
+      setBanners((prev) => prev.filter((b) => b.id !== deleteId));
+      setDeleteId(null);
+    }
   };
 
   const typeColors: Record<string, string> = { slider: "bg-[color:var(--color-brand-hover)]/10 text-[color:var(--color-brand-hover)]", offer: "bg-emerald-500/10 text-emerald-600", popup: "bg-[color:var(--color-brand-primary)]/10 text-[color:var(--color-brand-primary)]", seasonal: "bg-amber-500/10 text-amber-600" };

@@ -1,41 +1,86 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, Plus, Edit3, Trash2, Star, X } from "lucide-react";
+import { MessageSquare, Plus, Edit3, Trash2, X, Star } from "lucide-react";
 import { adminTestimonials, type Testimonial } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
+import axios from "@/lib/api/axios";
 import { cn } from "@/lib/utils";
 
+const defaultForm = { name: "", role: "", text: "", rating: 5, featured: false, avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop" };
+
 export function AdminTestimonialsPage() {
-  const [testimonials, setTestimonials] = useState(adminTestimonials);
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<Testimonial | null>(null);
+  const [testimonials, setTestimonials] = useState<any[]>(adminTestimonials);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", role: "", text: "", rating: 5, status: "active" as "active" | "inactive", featured: false });
+  const [editing, setEditing] = useState<any | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(defaultForm);
 
-  const resetForm = () => setForm({ name: "", role: "", text: "", rating: 5, status: "active", featured: false });
+  useEffect(() => {
+    fetchTestimonials();
+  }, []);
 
-  const openEdit = (t: Testimonial) => {
-    setForm({ name: t.name, role: t.role, text: t.text, rating: t.rating, status: t.status, featured: t.featured });
+  const fetchTestimonials = async () => {
+    try {
+      const res = await axios.get("/admin/testimonials");
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setTestimonials(res.data.map(t => ({
+          id: t._id,
+          name: t.customerName,
+          role: "Verified Customer",
+          text: t.text,
+          rating: t.rating,
+          featured: t.isActive,
+          avatar: t.customerImage,
+          createdAt: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "Recent"
+        })));
+      }
+    } catch (err) {}
+  };
+
+  const resetForm = () => setForm(defaultForm);
+
+  const openEdit = (t: any) => {
+    setForm({ name: t.name, role: t.role || "", text: t.text, rating: t.rating, featured: t.featured, avatar: t.avatar || "" });
     setEditing(t);
     setShowForm(true);
   };
 
-  const save = () => {
-    if (editing) {
-      setTestimonials((prev) => prev.map((t) => t.id === editing.id ? { ...t, ...form } : t));
-    } else {
-      const item: Testimonial = { id: `tst-${Date.now()}`, ...form, avatar: null, createdAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) };
-      setTestimonials((prev) => [item, ...prev]);
+  const saveTestimonial = async () => {
+    try {
+      const payload = {
+        customerName: form.name,
+        customerImage: form.avatar,
+        rating: form.rating,
+        text: form.text,
+        isActive: form.featured
+      };
+
+      if (editing && editing.id && !editing.id.startsWith("tst-")) {
+        await axios.put(`/admin/testimonials/${editing.id}`, payload);
+      } else {
+        await axios.post("/admin/testimonials", payload);
+      }
+      await fetchTestimonials();
+    } catch (err) {
+      console.error("Failed to save testimonial:", err);
     }
     setShowForm(false);
     setEditing(null);
     resetForm();
   };
 
-  const remove = () => {
-    if (deleteId) { setTestimonials((prev) => prev.filter((t) => t.id !== deleteId)); setDeleteId(null); }
+  const removeTestimonial = async () => {
+    if (deleteId) {
+      if (!deleteId.startsWith("tst-")) {
+        try {
+          await axios.delete(`/admin/testimonials/${deleteId}`);
+        } catch (err) {}
+      }
+      setTestimonials((prev) => prev.filter((t) => t.id !== deleteId));
+      setDeleteId(null);
+    }
   };
 
   const toggleFeatured = (id: string) => setTestimonials((prev) => prev.map((t) => t.id === id ? { ...t, featured: !t.featured } : t));
@@ -67,11 +112,10 @@ export function AdminTestimonialsPage() {
                 </div>
               </div>
               <div className="flex items-end gap-4">
-                <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.featured} onChange={(e) => setForm((p) => ({ ...p, featured: e.target.checked }))} className="h-4 w-4 rounded" /><span className="text-xs">Featured</span></label>
-                <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.status === "active"} onChange={(e) => setForm((p) => ({ ...p, status: e.target.checked ? "active" : "inactive" }))} className="h-4 w-4 rounded" /><span className="text-xs">Active</span></label>
+                <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" checked={form.featured} onChange={(e) => setForm((p) => ({ ...p, featured: e.target.checked }))} className="h-4 w-4 rounded" /><span className="text-xs">Featured / Active</span></label>
               </div>
             </div>
-            <div className="mt-4 flex gap-2"><Button variant="primary" onClick={save} className="text-xs">{editing ? "Update" : "Create"}</Button><Button variant="ghost" onClick={() => setShowForm(false)} className="text-xs">Cancel</Button></div>
+            <div className="mt-4 flex gap-2"><Button variant="primary" onClick={saveTestimonial} className="text-xs">{editing ? "Update" : "Create"}</Button><Button variant="ghost" onClick={() => setShowForm(false)} className="text-xs">Cancel</Button></div>
           </div>
         </motion.div>
       )}
@@ -102,7 +146,7 @@ export function AdminTestimonialsPage() {
                   <button type="button" onClick={() => toggleFeatured(t.id)} className={cn("text-[10px] font-semibold", t.featured ? "text-amber-500" : "text-[color:var(--color-text-tertiary)]")}>
                     {t.featured ? "Featured" : "Set Featured"}
                   </button>
-                  <StatusBadge status={t.status} />
+                  <StatusBadge status={t.status || "active"} />
                 </div>
               </div>
             </motion.div>
@@ -112,7 +156,7 @@ export function AdminTestimonialsPage() {
 
       {testimonials.length === 0 && <div className="py-16 text-center"><MessageSquare className="mx-auto h-10 w-10" /><p className="mt-3 text-sm">No testimonials yet.</p></div>}
 
-      <ConfirmModal open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={remove} title="Delete Testimonial" message="This will permanently remove this testimonial." confirmLabel="Delete" variant="danger" />
+      <ConfirmModal open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={removeTestimonial} title="Delete Testimonial" message="This will permanently remove this testimonial." confirmLabel="Delete" variant="danger" />
     </div>
   );
 }

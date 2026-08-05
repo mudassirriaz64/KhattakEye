@@ -25,10 +25,18 @@ export type ShowcaseCard = {
   accent: string;
 };
 
-const imageBase =
-  "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?image_size=portrait_4_3&prompt=";
+const realOpticsImages = [
+  "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800&auto=format&fit=crop&q=80",
+  "https://images.unsplash.com/photo-1577803645773-f96470509666?w=800&auto=format&fit=crop&q=80"
+];
 
-const encodeImagePrompt = (prompt: string) => `${imageBase}${encodeURIComponent(prompt)}`;
+const encodeImagePrompt = (prompt: string) => {
+  let hash = 0;
+  for (let i = 0; i < prompt.length; i++) hash = (hash << 5) - hash + prompt.charCodeAt(i);
+  const idx = Math.abs(hash) % realOpticsImages.length;
+  return realOpticsImages[idx];
+};
 
 export const navItems: NavItem[] = [
   { label: "Overview", path: "/", section: "Foundations" },

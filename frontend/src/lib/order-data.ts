@@ -3,9 +3,7 @@ export type OrderStatus =
   | "payment-verification"
   | "confirmed"
   | "processing"
-  | "packed"
   | "shipped"
-  | "out-for-delivery"
   | "delivered"
   | "cancelled";
 
@@ -81,9 +79,7 @@ export const mockOrder: Order = {
     { status: "payment-verification", label: "Payment Verification", date: "July 28, 2026 - 02:35 PM", description: "Payment is being verified.", completed: true },
     { status: "confirmed", label: "Confirmed", date: "July 28, 2026 - 04:00 PM", description: "Order has been confirmed and payment verified.", completed: true },
     { status: "processing", label: "Processing", date: "July 29, 2026 - 10:00 AM", description: "Your frames are being prepared by our artisans.", completed: true },
-    { status: "packed", label: "Packed", date: "Expected July 30", description: "Your order will be packed with premium care.", completed: false },
     { status: "shipped", label: "Shipped", date: "Expected July 31", description: "Your order will be shipped via courier.", completed: false },
-    { status: "out-for-delivery", label: "Out for Delivery", date: "Expected Aug 4", description: "Your order will be out for delivery.", completed: false },
     { status: "delivered", label: "Delivered", date: "Expected Aug 5", description: "Your order will be delivered to your address.", completed: false },
   ],
 };

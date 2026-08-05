@@ -144,12 +144,16 @@ export function ProductDetailsPage() {
         <div className="space-y-4">
           <p>Free shipping across Pakistan on all orders. Orders are processed within 24 hours and delivered within 3-5 business days.</p>
           <p>We offer a 14-day satisfaction guarantee. If you're not completely satisfied, contact us for a free return pick-up.</p>
+          <p className="pt-2 text-xs font-semibold">
+            <Link to="/shipping-policy" className="text-[color:var(--color-brand-primary)] hover:underline mr-4">Full Shipping Policy →</Link>
+            <Link to="/return-policy" className="text-[color:var(--color-brand-primary)] hover:underline">Full Return Policy →</Link>
+          </p>
         </div>
       ),
     },
     {
       title: `Reviews (${product.reviewCount})`,
-      content: <ProductReviews reviews={[]} rating={product.rating} reviewCount={product.reviewCount} />,
+      content: <ProductReviews productId={product.id || product._id} rating={product.rating} reviewCount={product.reviewCount} />,
     },
   ];
 
@@ -311,7 +315,20 @@ export function ProductDetailsPage() {
                 variant="primary" 
                 className="w-full py-4 bg-[#b91c1c] hover:bg-[#991b1b] text-white flex flex-col items-center justify-center gap-0.5 h-auto rounded-xl"
                 onClick={() => {
-                  addItem(product, quantity);
+                  addItem({
+                    productId: product.id || (product as any)._id,
+                    name: product.name,
+                    brand: product.brand,
+                    image: product.images?.[0] || "",
+                    price: product.price,
+                    quantity,
+                    color: (product as any).colors?.[0]?.hex || "#000",
+                    colorName: (product as any).colors?.[0]?.name || "Standard",
+                    size: (product as any).size || "Medium",
+                    lensType: (product as any).lensType || "Standard",
+                    sku: product.sku || product.id,
+                    stock: product.stock || 10
+                  });
                   setCheckoutOpen(true);
                 }}
               >

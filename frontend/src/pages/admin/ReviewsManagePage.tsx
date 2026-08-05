@@ -1,17 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Search, CheckCircle, XCircle, MessageSquare, Heart, Sparkles } from "lucide-react";
 import { adminReviewsManage, type AdminReviewManage } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
+import axios from "@/lib/api/axios";
 
 type Tab = "pending" | "approved" | "rejected";
 
 export function AdminReviewsManagePage() {
-  const [reviews, setReviews] = useState(adminReviewsManage);
+  const [reviews, setReviews] = useState<any[]>(adminReviewsManage);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [replyText, setReplyText] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchReviews();
+  }, []);
+
+  const fetchReviews = async () => {
+    try {
+      const res = await axios.get("/admin/reviews");
+      if (res.data && res.data.items && Array.isArray(res.data.items) && res.data.items.length > 0) {
+        setReviews(res.data.items.map((r: any) => ({
+          id: r._id,
+          product: r.productName || r.product?.name || "Product",
+          productImage: r.productImage || r.product?.images?.[0] || "",
+          customer: r.user?.fullName || "Customer",
+          rating: r.rating,
+          comment: r.text,
+          date: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "Recent",
+          status: r.status === "published" ? "approved" : r.status,
+          reply: r.adminReply || undefined
+        })));
+      }
+    } catch (err) {}
+  };
 
   const filtered = reviews.filter((r) => {
     const matchTab = r.status === activeTab;
@@ -19,16 +43,27 @@ export function AdminReviewsManagePage() {
     return matchTab && matchSearch;
   });
 
-  const updateStatus = (id: string, status: "approved" | "rejected") => {
-    setReviews((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
-  };
-
   const toggleFeatured = (id: string) => {
     setReviews((prev) => prev.map((r) => r.id === id ? { ...r, featured: !r.featured } : r));
   };
 
-  const setReply = (id: string, reply: string) => {
-    setReviews((prev) => prev.map((r) => r.id === id ? { ...r, reply } : r));
+  const updateStatus = async (id: string, status: "approved" | "rejected") => {
+    const apiStatus = status === "approved" ? "published" : "rejected";
+    try {
+      await axios.put(`/admin/reviews/${id}/status`, { status: apiStatus });
+      await fetchReviews();
+    } catch (err) {
+      setReviews((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
+    }
+  };
+
+  const setReply = async (id: string, reply: string) => {
+    try {
+      await axios.put(`/admin/reviews/${id}/status`, { adminReply: reply });
+      await fetchReviews();
+    } catch (err) {
+      setReviews((prev) => prev.map((r) => r.id === id ? { ...r, reply } : r));
+    }
     setReplyText(null);
   };
 

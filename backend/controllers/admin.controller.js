@@ -2,6 +2,8 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const Product = require('../models/Product');
+const Glasses = require('../models/Glasses');
+const Lenses = require('../models/Lenses');
 const Order = require('../models/Order');
 const Category = require('../models/Category');
 const Brand = require('../models/Brand');
@@ -23,6 +25,7 @@ const writeTempFile = (buffer, originalName) => {
 const createProduct = async (req, res, next) => {
   try {
     const {
+      kind = 'glasses',
       name,
       brand,
       category,
@@ -39,7 +42,6 @@ const createProduct = async (req, res, next) => {
       weight,
       frameShape,
       frameMaterial,
-      lensMaterial,
       lensType,
       lensColor,
       frameColor,
@@ -47,10 +49,18 @@ const createProduct = async (req, res, next) => {
       lensWidth,
       bridgeWidth,
       templeLength,
-      metaTitle,
-      metaDescription,
-      metaKeywords,
-      variants // will come in as JSON string
+      wearDuration,
+      disposalType,
+      packSize,
+      baseCurve,
+      diameter,
+      waterContent,
+      powerMin,
+      powerMax,
+      isToric,
+      isMultifocal,
+      colorTint,
+      variants
     } = req.body;
 
     // Process images
@@ -67,30 +77,27 @@ const createProduct = async (req, res, next) => {
         } catch (err) {
           console.error("Image processing error:", err);
         } finally {
-          // Clean up temp files
           if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
           if (compressedPath && fs.existsSync(compressedPath)) fs.unlinkSync(compressedPath);
         }
       }
     }
 
-    // Parse variants if they exist
     let parsedVariants = [];
     if (variants) {
       try {
-        parsedVariants = JSON.parse(variants);
+        parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
       } catch (err) {
         console.error("Failed to parse variants JSON:", err);
       }
     }
 
-    // Map frontend fields to backend Mongoose Product schema
-    const productData = {
+    const baseProductData = {
       name,
       slug: (name || 'product').toLowerCase().replace(/[\s_]+/g, '-').replace(/[^\w-]+/g, ''),
       brand: brand || 'Louis Vuitton',
-      category: category || 'sunglasses',
-      subcategory: subcategory || 'fashion-luxury',
+      category: category || (kind === 'lenses' ? 'contact-lenses' : 'sunglasses'),
+      subcategory: subcategory || '',
       shortDescription: shortDescription || '',
       description: description || '',
       price: Number(price) || 0,
@@ -98,48 +105,63 @@ const createProduct = async (req, res, next) => {
       cost: cost ? Number(cost) : null,
       sku: sku || `SKU-${Date.now()}`,
       stock: Number(stock) || 10,
-      status: status || 'draft',
+      status: status || 'active',
       featured: featured === 'true' || featured === true,
       isNewArrival: req.body.isNewArrival === 'true' || req.body.isNewArrival === true,
       isBestSeller: req.body.isBestSeller === 'true' || req.body.isBestSeller === true,
-      
-      // Images from Cloudinary
-      images: publicIds,
-
-      // Top-level schema properties required by Product.js
-      frameShape: frameShape || 'Square',
-      frameMaterial: frameMaterial || 'Acetate',
-      lensType: lensType || 'UV400 Protected',
-      lensColor: lensColor || 'Standard Tint',
-      frameColor: frameColor || 'Black',
-      frameSize: frameWidth ? `${lensWidth || 54}-${bridgeWidth || 18}-${templeLength || 145}` : '54-18-145',
-      weight: weight ? `${weight}g` : '32g',
-      uvProtection: true,
-      warranty: '1 Year Warranty',
+      images: publicIds.length > 0 ? publicIds : (Array.isArray(req.body.images) ? req.body.images : []),
       availability: (Number(stock) || 10) > 0 ? 'in-stock' : 'out-of-stock',
-
-      variants: parsedVariants,
-
-      seo: {
-        metaTitle: metaTitle || name,
-        metaDescription: metaDescription || shortDescription,
-        metaKeywords: metaKeywords ? metaKeywords.split(',').map(k => k.trim()) : [],
-      }
     };
 
-    if (req.body.gender) {
-      try {
-        productData.gender = JSON.parse(req.body.gender);
-      } catch (e) {
-        productData.gender = req.body.gender.split(',');
-      }
-    }
+    let newProduct;
 
-    const newProduct = await Product.create(productData);
+    if (kind === 'lenses') {
+      const lensesData = {
+        ...baseProductData,
+        wearDuration: wearDuration || 'daily',
+        disposalType: disposalType || 'Daily Disposable',
+        packSize: packSize ? Number(packSize) : 30,
+        baseCurve: baseCurve ? Number(baseCurve) : 8.6,
+        diameter: diameter ? Number(diameter) : 14.2,
+        waterContent: waterContent ? Number(waterContent) : 58,
+        powerRange: {
+          min: powerMin ? Number(powerMin) : -10.0,
+          max: powerMax ? Number(powerMax) : +6.0
+        },
+        isToric: isToric === 'true' || isToric === true,
+        isMultifocal: isMultifocal === 'true' || isMultifocal === true,
+        colorTint: colorTint || ''
+      };
+      newProduct = await Lenses.create(lensesData);
+    } else {
+      const glassesData = {
+        ...baseProductData,
+        frameShape: frameShape || 'Square',
+        frameMaterial: frameMaterial || 'Acetate',
+        lensType: lensType || 'UV400 Protected',
+        lensColor: lensColor || 'Standard Tint',
+        frameColor: frameColor || 'Black',
+        frameSize: frameWidth ? `${lensWidth || 54}-${bridgeWidth || 18}-${templeLength || 145}` : '54-18-145',
+        weight: weight ? `${weight}g` : '32g',
+        uvProtection: req.body.uvProtection !== undefined ? (req.body.uvProtection === 'true' || req.body.uvProtection === true) : true,
+        warranty: req.body.warranty || '1 Year Warranty',
+        variants: parsedVariants
+      };
+
+      if (req.body.gender) {
+        try {
+          glassesData.gender = typeof req.body.gender === 'string' ? JSON.parse(req.body.gender) : req.body.gender;
+        } catch (e) {
+          glassesData.gender = typeof req.body.gender === 'string' ? req.body.gender.split(',') : req.body.gender;
+        }
+      }
+
+      newProduct = await Glasses.create(glassesData);
+    }
 
     res.status(201).json({
       success: true,
-      message: 'Product created successfully',
+      message: `${kind === 'lenses' ? 'Lenses' : 'Glasses'} product created successfully`,
       data: newProduct
     });
   } catch (error) {
@@ -149,12 +171,15 @@ const createProduct = async (req, res, next) => {
 
 const getProducts = async (req, res, next) => {
   try {
-    const { page = 1, limit = 50 } = req.query;
+    const { page = 1, limit = 50, kind } = req.query;
+    const filter = {};
+    if (kind) filter.kind = kind;
+
     const skip = (Number(page) - 1) * Number(limit);
 
     const [products, total] = await Promise.all([
-      Product.find().sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
-      Product.countDocuments()
+      Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+      Product.countDocuments(filter)
     ]);
 
     // Format products
@@ -336,10 +361,17 @@ const getDashboardStats = async (req, res, next) => {
 
 const createCategory = async (req, res, next) => {
   try {
-    const { name, description, image } = req.body;
+    const { name, description, image, productKind, type } = req.body;
     if (!name) return res.status(400).json({ message: 'Category name is required' });
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    const category = new Category({ name, slug, description, image: image || '' });
+    const category = new Category({
+      name,
+      slug,
+      description,
+      image: image || '',
+      productKind: productKind || 'glasses',
+      type: type || 'category'
+    });
     await category.save();
     res.status(201).json(category);
   } catch (error) {
@@ -352,6 +384,28 @@ const deleteCategory = async (req, res, next) => {
     const { id } = req.params;
     await Category.findByIdAndDelete(id);
     res.status(200).json({ message: 'Category deleted' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateCategory = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, description, image, productKind, type } = req.body;
+    const updateData = {};
+    if (name) {
+      updateData.name = name;
+      updateData.slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    }
+    if (description !== undefined) updateData.description = description;
+    if (image !== undefined) updateData.image = image;
+    if (productKind !== undefined) updateData.productKind = productKind;
+    if (type !== undefined) updateData.type = type;
+
+    const category = await Category.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    if (!category) return res.status(404).json({ message: 'Category not found' });
+    res.status(200).json(category);
   } catch (error) {
     next(error);
   }
@@ -399,6 +453,7 @@ module.exports = {
   updateOrderStatus,
   getDashboardStats,
   createCategory,
+  updateCategory,
   deleteCategory,
   getAdminBrands,
   createBrand,

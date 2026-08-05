@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Settings, Save } from "lucide-react";
 import { cmsWebsiteSettings } from "@/lib/admin-data";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
+import axios from "@/lib/api/axios";
 
 type SettingsSections = "general" | "contact" | "social" | "payments" | "shipping" | "seo" | "analytics";
 
@@ -22,9 +23,22 @@ export function AdminWebsiteSettingsPage() {
   const [settings, setSettings] = useState(cmsWebsiteSettings);
   const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  useEffect(() => {
+    axios.get("/settings").then((res) => {
+      if (res.data) {
+        setSettings((prev) => ({ ...prev, ...res.data }));
+      }
+    }).catch(() => {});
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      await axios.put("/admin/settings", settings);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error("Failed to save settings:", err);
+    }
   };
 
   const update = (path: string, value: string) => {

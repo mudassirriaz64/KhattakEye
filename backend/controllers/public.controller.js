@@ -28,9 +28,10 @@ const formatProduct = (product) => {
 
 exports.getCategories = async (req, res, next) => {
   try {
-    const { type } = req.query;
+    const { type, productKind } = req.query;
     const filter = {};
     if (type) filter.type = type;
+    if (productKind) filter.productKind = productKind;
 
     const categories = await Category.find(filter).sort({ order: 1 });
     
@@ -65,6 +66,7 @@ exports.getProducts = async (req, res, next) => {
   try {
     const { 
       q,
+      kind,
       category, 
       minPrice, 
       maxPrice, 
@@ -77,6 +79,8 @@ exports.getProducts = async (req, res, next) => {
     } = req.query;
 
     const filter = {};
+
+    if (kind) filter.kind = kind;
 
     if (q) {
       const regex = new RegExp(q.trim(), 'i');

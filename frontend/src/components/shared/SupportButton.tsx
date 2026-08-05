@@ -4,9 +4,9 @@ import { MessageCircle, Phone, Mail, X, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const supportOptions = [
-  { icon: MessageCircle, label: "WhatsApp", href: "https://wa.me/1234567890", color: "text-[#25D366]" },
-  { icon: Phone, label: "Call Us", href: "tel:+1234567890", color: "text-[color:var(--color-accent-blue)]" },
-  { icon: Mail, label: "Email", href: "mailto:support@khattakeyewear.com", color: "text-[color:var(--color-accent-teal)]" },
+  { icon: MessageCircle, label: "WhatsApp", href: "https://wa.me/923001234567", color: "text-[#25D366]" },
+  { icon: Phone, label: "Call Us", href: "tel:+923001234567", color: "text-[color:var(--color-accent-blue)]" },
+  { icon: Mail, label: "Email", href: "mailto:hello@khattakeyewear.com", color: "text-[color:var(--color-accent-teal)]" },
 ];
 
 export function SupportButton() {

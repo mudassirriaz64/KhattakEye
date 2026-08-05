@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { type Product } from "@/lib/shop-data";
 import { useShopStore } from "@/lib/stores/shop-store";
 import { useCartStore } from "@/lib/stores/cart-store";
+import { useWishlistStore } from "@/lib/stores/wishlist-store";
 import { cn } from "@/lib/utils";
 
 type ProductCardProps = {
@@ -13,7 +14,9 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
-  const [wishlisted, setWishlisted] = useState(false);
+  const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
+  const isInWishlist = useWishlistStore((s) => s.isInWishlist);
+  const isWishlisted = isInWishlist(product.id || (product as any)._id);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const addToRecentlyViewed = useShopStore((s) => s.addToRecentlyViewed);
@@ -29,11 +32,6 @@ export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
   // Format brand name cleanly (remove hyphens, capitalize words)
   const rawBrand = product.brand || "Khattak Atelier";
   const formattedBrand = rawBrand.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-
-  // Size & Gender meta tag
-  const genderLabel = Array.isArray(product.gender) ? product.gender[0] : (product.gender || "Unisex");
-  const sizeLabel = product.size || "Medium";
-  const metaBadge = `${sizeLabel} · ${genderLabel}`;
 
   const handlePrevImage = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -63,10 +61,10 @@ export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
       image: images[0],
       price: product.price,
       quantity: 1,
-      color: product.colors?.[0]?.hex || "#000",
-      colorName: product.colors?.[0]?.name || "Standard",
-      size: sizeLabel,
-      lensType: product.lensType || "Standard",
+      color: (product as any).colors?.[0]?.hex || "#000",
+      colorName: (product as any).colors?.[0]?.name || "Standard",
+      size: (product as any).size || "Medium",
+      lensType: (product as any).lensType || "Standard",
       sku: product.sku || product.id,
       stock: product.stock || 10
     });
@@ -101,15 +99,15 @@ export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setWishlisted(!wishlisted);
+              toggleWishlist(product);
             }}
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-[color:var(--color-text-primary)] shadow-sm backdrop-blur-md transition-all hover:scale-110 hover:bg-white",
-              wishlisted && "text-[color:var(--color-danger)]"
+              isWishlisted && "text-[color:var(--color-danger)]"
             )}
             title="Wishlist"
           >
-            <Heart className={cn("h-4 w-4", wishlisted && "fill-current")} />
+            <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
           </button>
         </div>
 
@@ -163,12 +161,9 @@ export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
 
       {/* Product Content Details */}
       <div className="flex flex-1 flex-col p-4">
-        {/* Brand Name & Eyewear Meta Badge (Size & Gender) */}
-        <div className="flex items-center justify-between text-[10px] font-semibold tracking-wide text-[color:var(--color-text-tertiary)]">
+        {/* Brand Name */}
+        <div className="text-[10px] font-semibold tracking-wide text-[color:var(--color-text-tertiary)]">
           <span className="uppercase tracking-[0.16em]">{formattedBrand}</span>
-          <span className="rounded-md bg-[color:var(--color-surface-muted)] px-2 py-0.5 text-[10px] font-medium text-[color:var(--color-text-secondary)]">
-            {metaBadge}
-          </span>
         </div>
 
         {/* Clean Modern Sans-Serif Title with Line-Clamp */}

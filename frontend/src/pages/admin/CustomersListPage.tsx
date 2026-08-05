@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Search, Eye, Ban, CheckCircle, Mail } from "lucide-react";
@@ -6,17 +6,45 @@ import { adminCustomerDetails } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { cn } from "@/lib/utils";
+import axios from "@/lib/api/axios";
 
 export function AdminCustomersListPage() {
-  const [customers, setCustomers] = useState(adminCustomerDetails);
+  const [customers, setCustomers] = useState<any[]>(adminCustomerDetails);
   const [search, setSearch] = useState("");
   const [blockId, setBlockId] = useState<string | null>(null);
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get("/admin/users");
+      if (res.data && res.data.items && Array.isArray(res.data.items) && res.data.items.length > 0) {
+        setCustomers(res.data.items.map((u: any) => ({
+          id: u._id,
+          name: u.fullName || "Customer",
+          email: u.email,
+          phone: u.phone || "N/A",
+          totalOrders: u.ordersCount || 0,
+          totalSpent: u.totalSpent || 0,
+          blocked: u.isBlocked || false,
+          joinedDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "Recent"
+        })));
+      }
+    } catch (err) {}
+  };
+
   const filtered = customers.filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase()));
 
-  const toggleBlock = () => {
+  const toggleBlock = async () => {
     if (blockId) {
-      setCustomers((prev) => prev.map((c) => c.id === blockId ? { ...c, blocked: !c.blocked } : c));
+      try {
+        await axios.put(`/admin/users/${blockId}/block`);
+        await fetchUsers();
+      } catch (err) {
+        setCustomers((prev) => prev.map((c) => c.id === blockId ? { ...c, blocked: !c.blocked } : c));
+      }
       setBlockId(null);
     }
   };

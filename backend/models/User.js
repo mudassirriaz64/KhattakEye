@@ -24,6 +24,7 @@ const UserSchema = new Schema({
   dateOfBirth: { type: Date },
   isEmailVerified: { type: Boolean, default: false },
   role: { type: String, enum: ["customer"], default: "customer" },
+  isBlocked: { type: Boolean, default: false },
   addresses: { type: [AddressSchema], default: [] },
   wishlist: [{ type: Schema.Types.ObjectId, ref: 'Product' }],
   verificationOtp: { type: String },

@@ -6,6 +6,8 @@ const variants: Record<string, string> = {
   archived: "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]",
   published: "bg-[color:var(--color-accent-teal)]/10 text-[color:var(--color-accent-teal)]",
   pending: "bg-amber-500/10 text-amber-600",
+  "payment-verification": "bg-purple-500/10 text-purple-600",
+  confirmed: "bg-indigo-500/10 text-indigo-600",
   processing: "bg-[color:var(--color-accent-blue)]/10 text-[color:var(--color-accent-blue)]",
   shipped: "bg-[color:var(--color-accent-teal)]/10 text-[color:var(--color-accent-teal)]",
   delivered: "bg-emerald-500/10 text-emerald-600",

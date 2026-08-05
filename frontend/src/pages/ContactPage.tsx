@@ -6,6 +6,7 @@ import { TextField, TextAreaField, SelectField } from "@/components/primitives/F
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
 import { SectionHeading } from "@/components/shared/SectionHeading";
 import { footerLinks } from "@/lib/landing-data";
+import axios from "@/lib/api/axios";
 
 const contactChannels = [
   {
@@ -50,10 +51,28 @@ const inquiryTypes = [
 
 export function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitted(true);
+    const formData = new FormData(e.currentTarget);
+    const body = {
+      name: formData.get("name"),
+      email: formData.get("email"),
+      phone: formData.get("phone"),
+      subject: formData.get("subject"),
+      message: formData.get("message"),
+    };
+
+    setLoading(true);
+    try {
+      await axios.post("/contact", body);
+      setSubmitted(true);
+    } catch (err) {
+      console.error("Contact submission error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -186,9 +205,11 @@ export function ContactPage() {
                     <p className="mt-2 text-sm leading-7 text-white/80">
                       Our live chat and WhatsApp concierge are available during atelier hours for instant answers.
                     </p>
-                    <Button className="mt-6 bg-white text-[color:var(--color-brand-primary)] hover:bg-white/90 hover:shadow-none">
-                      Start a Chat
-                    </Button>
+                    <a href="https://wa.me/923001234567" target="_blank" rel="noopener noreferrer">
+                      <Button className="mt-6 bg-white text-[color:var(--color-brand-primary)] hover:bg-white/90 hover:shadow-none">
+                        Start WhatsApp Chat
+                      </Button>
+                    </a>
                   </div>
                 </ScrollReveal>
 
@@ -200,11 +221,14 @@ export function ContactPage() {
                     <p className="mt-3 text-sm leading-7 text-[color:var(--color-text-secondary)]">
                       {footerLinks.contact.address}
                     </p>
-                    <div className="mt-6 overflow-hidden rounded-2xl border border-[color:var(--color-border)]">
-                      <img
-                        src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=900&q=80"
-                        alt="Khattak Eyewear atelier"
-                        className="aspect-[16/9] w-full object-cover"
+                    <div className="mt-6 overflow-hidden rounded-2xl border border-[color:var(--color-border)] aspect-[16/9] w-full">
+                      <iframe
+                        title="Khattak Eyewear Atelier Location"
+                        src="https://maps.google.com/maps?q=MM+Alam+Road+Gulberg+III+Lahore+Pakistan&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                        className="h-full w-full border-0"
+                        allowFullScreen
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
                       />
                     </div>
                   </div>

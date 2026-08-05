@@ -2,15 +2,21 @@ import { useState, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { Mail, Check, ArrowRight } from "lucide-react";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
+import axios from "@/lib/api/axios";
 
 export function NewsletterSection() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!email.trim()) return;
-    setSubscribed(true);
+    try {
+      await axios.post("/newsletter/subscribe", { email });
+      setSubscribed(true);
+    } catch (err) {
+      setSubscribed(true);
+    }
   };
 
   return (

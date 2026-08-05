@@ -14,6 +14,7 @@ export function AdminInventoryPage() {
   const [stockFilter, setStockFilter] = useState("All");
   const [showHistory, setShowHistory] = useState(false);
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
+  const [editStock, setEditStock] = useState<{ id: string; value: number } | null>(null);
 
   useEffect(() => {
     getPublicProductsApi(1, 100).then((data) => {
@@ -67,6 +68,11 @@ export function AdminInventoryPage() {
   };
 
   const lowStockItems = items.filter((i) => i.status === "low-stock" || i.status === "out-of-stock");
+  const filtered = items.filter((item) => {
+    const matchesSearch = !search || item.name.toLowerCase().includes(search.toLowerCase()) || item.sku.toLowerCase().includes(search.toLowerCase());
+    const matchesStock = stockFilter === "All" || (stockFilter === "In Stock" && item.status === "in-stock") || (stockFilter === "Low Stock" && item.status === "low-stock") || (stockFilter === "Out of Stock" && item.status === "out-of-stock");
+    return matchesSearch && matchesStock;
+  });
   const histForItem: InventoryHistory[] = [];
 
   return (

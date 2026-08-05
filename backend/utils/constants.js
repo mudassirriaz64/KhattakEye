@@ -3,9 +3,7 @@ const ORDER_STATUSES = {
   PAYMENT_VERIFICATION: 'payment-verification',
   CONFIRMED: 'confirmed',
   PROCESSING: 'processing',
-  PACKED: 'packed',
   SHIPPED: 'shipped',
-  OUT_FOR_DELIVERY: 'out-for-delivery',
   DELIVERED: 'delivered',
   CANCELLED: 'cancelled'
 };

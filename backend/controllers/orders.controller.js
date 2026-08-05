@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const { sendOrderConfirmationEmail } = require('../utils/email');
 const Coupon = require('../models/Coupon');
 const { resolveImageUrl } = require('../utils/cloudinary');
 
@@ -168,6 +169,13 @@ exports.createOrder = async (req, res, next) => {
     });
 
     await order.save();
+
+    // Trigger order confirmation email notification
+    try {
+      await sendOrderConfirmationEmail(order);
+    } catch (err) {
+      console.error("Order confirmation email failed:", err);
+    }
 
     // Only after a successful order do we consume the coupon usage.
     if (appliedCoupon) {
