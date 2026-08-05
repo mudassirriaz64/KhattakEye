@@ -46,7 +46,7 @@ export function SupportButton() {
         onClick={() => setOpen(!open)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="flex h-12 w-12 items-center justify-center rounded-full brand-gradient text-white shadow-[var(--shadow-strong)] transition-colors hover:shadow-[var(--glow-brand)]"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-[#8F1215] text-white shadow-lg transition-all hover:bg-[#6D1F22]"
         aria-label="Customer support"
       >
         {open ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}
