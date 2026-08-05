@@ -49,7 +49,8 @@ const ProductSchema = new Schema({
   discount: { type: Number, default: 0, min: 0, max: 100 },
   featured: { type: Boolean, default: false },
   isNewArrival: { type: Boolean, default: false },
-  isBestSeller: { type: Boolean, default: false }
+  isBestSeller: { type: Boolean, default: false },
+  model3d: { type: String, trim: true }
 }, {
   timestamps: true
 });

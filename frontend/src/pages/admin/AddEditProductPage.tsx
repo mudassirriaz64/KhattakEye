@@ -1,29 +1,169 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Save, Eye, Plus, X, ImagePlus } from "lucide-react";
+import { ArrowLeft, Save, Eye, Plus, X, ImagePlus, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
+import { createProductApi, getCategoriesApi, adminGetProductByIdApi } from "@/lib/api/admin";
+import { useToastStore } from "@/lib/stores/toast-store";
 
 export function AddEditProductPage() {
+  const { id } = useParams<{ id?: string }>();
+  const navigate = useNavigate();
+  const addToast = useToastStore((s) => s.addToast);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [form, setForm] = useState({
-    name: "", brand: "khattak-atelier", category: "sunglasses", description: "", shortDescription: "",
+    name: "", brand: "louis-vuitton", category: "", subcategory: "", description: "", shortDescription: "",
     price: "", oldPrice: "", cost: "", sku: "", stock: "", status: "draft", featured: false,
-    weight: "", frameMaterial: "", lensMaterial: "", lensType: "standard", frameWidth: "",
+    isNewArrival: false, isBestSeller: false, gender: [] as string[],
+    weight: "", frameMaterial: "", lensMaterial: "", lensType: "standard", frameShape: "", frameWidth: "",
     lensWidth: "", bridgeWidth: "", templeLength: "",
     metaTitle: "", metaDescription: "", metaKeywords: "",
   });
 
+  useEffect(() => {
+    if (id) {
+      adminGetProductByIdApi(id).then((product) => {
+        if (product) {
+          setForm({
+            name: product.name || "",
+            brand: product.brand || "louis-vuitton",
+            category: product.category || "sunglasses",
+            subcategory: product.subcategory || "",
+            description: product.description || "",
+            shortDescription: product.shortDescription || "",
+            price: product.price ? String(product.price) : "",
+            oldPrice: product.oldPrice ? String(product.oldPrice) : "",
+            cost: product.cost ? String(product.cost) : "",
+            sku: product.sku || "",
+            stock: product.stock ? String(product.stock) : "",
+            status: product.status || "active",
+            featured: Boolean(product.featured),
+            isNewArrival: Boolean(product.isNewArrival),
+            isBestSeller: Boolean(product.isBestSeller),
+            gender: Array.isArray(product.gender) ? product.gender : [],
+            weight: product.weight ? String(product.weight) : "",
+            frameMaterial: product.frameMaterial || "",
+            lensMaterial: product.lensMaterial || "",
+            lensType: product.lensType || "standard",
+            frameShape: product.frameShape || "",
+            frameWidth: product.frameWidth ? String(product.frameWidth) : "",
+            lensWidth: product.lensWidth ? String(product.lensWidth) : "",
+            bridgeWidth: product.bridgeWidth ? String(product.bridgeWidth) : "",
+            templeLength: product.templeLength ? String(product.templeLength) : "",
+            metaTitle: product.metaTitle || "",
+            metaDescription: product.metaDescription || "",
+            metaKeywords: product.metaKeywords || "",
+          });
+          if (Array.isArray(product.variants)) {
+            setVariants(product.variants);
+          }
+        }
+      }).catch((err) => console.error("Failed to fetch product details for edit:", err));
+    }
+  }, [id]);
+
+  const [dbCategories, setDbCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    getCategoriesApi().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setDbCategories(data);
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Pre-defined exact 4 subcategories per parent
+  const sunglassesSubcategories = [
+    { name: "Polarized Shades", slug: "polarized-shades" },
+    { name: "Driving Sunglasses", slug: "driving-sunglasses" },
+    { name: "Fashion & Luxury", slug: "fashion-luxury" },
+    { name: "Sports Performance", slug: "sports-performance" }
+  ];
+
+  const eyeglassesSubcategories = [
+    { name: "Prescription Glasses", slug: "prescription-glasses" },
+    { name: "Computer & Blue Light", slug: "blue-light" },
+    { name: "Reading Glasses", slug: "reading-glasses" },
+    { name: "Rimless & Minimalist", slug: "rimless-frames" }
+  ];
+
+  // Dynamically extract from selected parent in DB or use exact 4 fallback
+  const selectedParent = dbCategories.find(
+    (c) => c.slug === form.category || c.name?.toLowerCase() === form.category.toLowerCase()
+  );
+
+  const availableSubcategories = 
+    selectedParent?.subcategories && selectedParent.subcategories.length > 0
+      ? selectedParent.subcategories
+      : form.category === "sunglasses" 
+        ? sunglassesSubcategories 
+        : form.category === "eyeglasses" 
+          ? eyeglassesSubcategories 
+          : [];
+
   const [variants, setVariants] = useState<{ color: string; colorName: string; stock: number }[]>([]);
-  const [images, setImages] = useState<string[]>([]);
-  const [relatedProducts] = useState<string[]>([]);
+  const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = (key: string, value: any) => setForm((p) => ({ ...p, [key]: value }));
+
+  const toggleGender = (g: string) => {
+    setForm(p => ({
+      ...p,
+      gender: p.gender.includes(g) ? p.gender.filter(x => x !== g) : [...p.gender, g]
+    }));
+  };
 
   const addVariant = () => setVariants((prev) => [...prev, { color: "", colorName: "", stock: 0 }]);
   const updateVariant = (i: number, key: string, value: any) => setVariants((prev) => prev.map((v, j) => j === i ? { ...v, [key]: value } : v));
   const removeVariant = (i: number) => setVariants((prev) => prev.filter((_, j) => j !== i));
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newImages = Array.from(e.target.files).map(file => ({
+        file,
+        preview: URL.createObjectURL(file)
+      }));
+      setImages(prev => [...prev, ...newImages]);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages(prev => {
+      const newArr = [...prev];
+      URL.revokeObjectURL(newArr[index].preview);
+      newArr.splice(index, 1);
+      return newArr;
+    });
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsSubmitting(true);
+      const formData = new FormData();
+      Object.entries(form).forEach(([key, val]) => {
+        if (key === "gender") {
+          if ((val as string[]).length > 0) formData.append(key, JSON.stringify(val));
+        } else if (val !== "") {
+          formData.append(key, String(val));
+        }
+      });
+      formData.append("variants", JSON.stringify(variants));
+      
+      images.forEach(img => formData.append("images", img.file));
+
+      await createProductApi(formData);
+      addToast({ title: "Product created", description: "Product has been successfully saved.", type: "success" });
+      navigate("/admin/products");
+    } catch (error: any) {
+      addToast({ title: "Error", description: error.response?.data?.message || "Failed to create product", type: "error" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const sections = [
     { id: "general", label: "General Information" },
@@ -47,11 +187,14 @@ export function AddEditProductPage() {
           <Link to="/admin/products" className="inline-flex items-center gap-1.5 text-xs text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]">
             <ArrowLeft className="h-3 w-3" /> Back to Products
           </Link>
-          <h1 className="mt-2 font-display text-2xl text-[color:var(--color-text-primary)] md:text-3xl">Add New Product</h1>
+          <h1 className="mt-2 font-display text-2xl text-[color:var(--color-text-primary)] md:text-3xl">{id ? "Edit Product" : "Add New Product"}</h1>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" iconLeft={<Eye className="h-4 w-4" />} className="text-xs">Preview</Button>
-          <Button variant="primary" iconLeft={<Save className="h-4 w-4" />} className="text-xs">Save Product</Button>
+          <Button variant="primary" onClick={handleSave} disabled={isSubmitting} className="text-xs">
+            {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {isSubmitting ? "Saving..." : "Save Product"}
+          </Button>
         </div>
       </div>
 
@@ -75,21 +218,56 @@ export function AddEditProductPage() {
                 <div>
                   <label className={labelClass}>Brand</label>
                   <select value={form.brand} onChange={(e) => set("brand", e.target.value)} className={inputClass}>
-                    <option value="khattak-atelier">Khattak Atelier</option>
-                    <option value="khattak-signature">Khattak Signature</option>
-                    <option value="khattak-heritage">Khattak Heritage</option>
-                    <option value="khattak-performance">Khattak Performance</option>
+                    <option value="louis-vuitton">Louis Vuitton</option>
+                    <option value="prada">Prada</option>
+                    <option value="gucci">Gucci</option>
+                    <option value="ray-ban">Ray-Ban</option>
+                    <option value="tom-ford">Tom Ford</option>
+                    <option value="cartier">Cartier</option>
+                    <option value="dior">Dior</option>
                   </select>
                 </div>
                 <div>
-                  <label className={labelClass}>Category</label>
-                  <select value={form.category} onChange={(e) => set("category", e.target.value)} className={inputClass}>
+                  <label className={labelClass}>Parent Category</label>
+                  <select 
+                    value={form.category} 
+                    onChange={(e) => {
+                      set("category", e.target.value);
+                      set("subcategory", ""); // reset subcategory on parent change
+                    }} 
+                    className={inputClass}
+                  >
+                    <option value="">Select Parent Category...</option>
                     <option value="sunglasses">Sunglasses</option>
                     <option value="eyeglasses">Eyeglasses</option>
-                    <option value="sports">Sports</option>
-                    <option value="kids">Kids</option>
-                    <option value="blue-light">Blue Light</option>
                   </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Subcategory</label>
+                  <select 
+                    value={form.subcategory} 
+                    onChange={(e) => set("subcategory", e.target.value)} 
+                    disabled={!form.category}
+                    className={cn(inputClass, !form.category && "opacity-50 cursor-not-allowed bg-[color:var(--color-surface-muted)]")}
+                  >
+                    <option value="">
+                      {!form.category ? "Select Parent Category First..." : `Select Subcategory (${form.category === 'sunglasses' ? 'Sunglasses' : 'Eyeglasses'})`}
+                    </option>
+                    {availableSubcategories.map((c) => (
+                      <option key={c.slug} value={c.slug}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelClass}>Gender</label>
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    {["men", "women", "kids", "unisex"].map((g) => (
+                      <label key={g} className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.gender.includes(g)} onChange={() => toggleGender(g)} className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-accent-teal)]" />
+                        <span className="text-sm capitalize text-[color:var(--color-text-secondary)]">{g}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 <div className="sm:col-span-2">
                   <label className={labelClass}>Short Description</label>
@@ -99,10 +277,18 @@ export function AddEditProductPage() {
                   <label className={labelClass}>Full Description</label>
                   <textarea rows={4} value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Detailed product description..." className={inputClass} />
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-6">
                   <label className="flex items-center gap-2.5 cursor-pointer">
                     <input type="checkbox" checked={form.featured} onChange={(e) => set("featured", e.target.checked)} className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-accent-teal)]" />
                     <span className="text-sm text-[color:var(--color-text-secondary)]">Featured product</span>
+                  </label>
+                  <label className="flex items-center gap-2.5 cursor-pointer">
+                    <input type="checkbox" checked={form.isNewArrival} onChange={(e) => set("isNewArrival", e.target.checked)} className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-accent-teal)]" />
+                    <span className="text-sm text-[color:var(--color-text-secondary)]">New Arrival</span>
+                  </label>
+                  <label className="flex items-center gap-2.5 cursor-pointer">
+                    <input type="checkbox" checked={form.isBestSeller} onChange={(e) => set("isBestSeller", e.target.checked)} className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-accent-teal)]" />
+                    <span className="text-sm text-[color:var(--color-text-secondary)]">Best Seller</span>
                   </label>
                   <StatusBadge status={form.status} />
                 </div>
@@ -112,16 +298,17 @@ export function AddEditProductPage() {
 
           {activeSection === "images" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <input type="file" multiple accept="image/*" ref={fileInputRef} onChange={handleImageSelect} className="hidden" />
               <div className="grid grid-cols-4 gap-4">
                 {images.map((img, i) => (
                   <div key={i} className="relative aspect-square rounded-xl bg-[color:var(--color-surface-muted)]">
-                    <img src={img} alt="" className="h-full w-full rounded-xl object-cover" />
-                    <button type="button" onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))} className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--color-danger)] text-white shadow-[var(--shadow-soft)]">
+                    <img src={img.preview} alt="" className="h-full w-full rounded-xl object-cover" />
+                    <button type="button" onClick={() => handleRemoveImage(i)} className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--color-danger)] text-white shadow-[var(--shadow-soft)]">
                       <X className="h-3 w-3" />
                     </button>
                   </div>
                 ))}
-                <button type="button" onClick={() => setImages((prev) => [...prev, "https://via.placeholder.com/400"])} className="flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-[color:var(--color-border)] transition-colors hover:border-[color:var(--color-accent-teal)]">
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-[color:var(--color-border)] transition-colors hover:border-[color:var(--color-accent-teal)]">
                   <div className="text-center">
                     <ImagePlus className="mx-auto h-8 w-8 text-[color:var(--color-text-tertiary)]" />
                     <p className="mt-2 text-xs text-[color:var(--color-text-tertiary)]">Add Image</p>
@@ -160,7 +347,25 @@ export function AddEditProductPage() {
 
           {activeSection === "frame" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid gap-5 sm:grid-cols-2">
-              <div><label className={labelClass}>Frame Material</label><input type="text" value={form.frameMaterial} onChange={(e) => set("frameMaterial", e.target.value)} placeholder="e.g. Japanese Titanium" className={inputClass} /></div>
+              <div><label className={labelClass}>Frame Shape</label>
+                <select value={form.frameShape} onChange={(e) => set("frameShape", e.target.value)} className={inputClass}>
+                  <option value="">Select Shape</option>
+                  <option value="aviator">Aviator</option>
+                  <option value="round">Round</option>
+                  <option value="square">Square</option>
+                  <option value="rectangle">Rectangle</option>
+                  <option value="cat-eye">Cat Eye</option>
+                  <option value="geometric">Geometric</option>
+                  <option value="wayfarer">Wayfarer</option>
+                  <option value="oval">Oval</option>
+                  <option value="butterfly">Butterfly</option>
+                  <option value="shield">Shield</option>
+                  <option value="rimless">Rimless</option>
+                  <option value="half-rim">Half Rim</option>
+                  <option value="sports">Sports</option>
+                </select>
+              </div>
+              <div><label className={labelClass}>Frame Material</label><input type="text" value={form.frameMaterial} onChange={(e) => set("frameMaterial", e.target.value)} placeholder="e.g. Japanese Titanium, Acetate" className={inputClass} /></div>
               <div><label className={labelClass}>Weight (g)</label><input type="text" value={form.weight} onChange={(e) => set("weight", e.target.value)} placeholder="e.g. 18" className={inputClass} /></div>
               <div><label className={labelClass}>Frame Width (mm)</label><input type="text" value={form.frameWidth} onChange={(e) => set("frameWidth", e.target.value)} placeholder="e.g. 140" className={inputClass} /></div>
               <div><label className={labelClass}>Bridge Width (mm)</label><input type="text" value={form.bridgeWidth} onChange={(e) => set("bridgeWidth", e.target.value)} placeholder="e.g. 18" className={inputClass} /></div>

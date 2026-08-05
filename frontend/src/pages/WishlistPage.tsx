@@ -1,11 +1,10 @@
 import { Heart, ShoppingBag, Trash2, GitCompare } from "lucide-react";
 import { Link } from "react-router-dom";
-import { allProducts } from "@/lib/shop-data";
 import { useShopStore } from "@/lib/stores/shop-store";
 import { Button } from "@/components/primitives/Button";
 
 export function WishlistPage() {
-  const wishlistItems = allProducts.slice(0, 0);
+  const wishlistItems: any[] = [];
 
   if (wishlistItems.length === 0) {
     return (

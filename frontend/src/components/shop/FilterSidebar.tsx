@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { filterGroups } from "@/lib/shop-data";
@@ -5,6 +6,7 @@ import { useShopStore } from "@/lib/stores/shop-store";
 import { Button } from "@/components/primitives/Button";
 import { FilterGroup, FilterCheckbox } from "./FilterGroup";
 import { PriceSlider } from "./PriceSlider";
+import { getProducts } from "@/lib/api/products";
 
 type FilterSidebarProps = {
   open: boolean;
@@ -17,6 +19,18 @@ export function FilterSidebar({ open, onClose }: FilterSidebarProps) {
   const setFilter = useShopStore((s) => s.setFilter);
   const setPriceRange = useShopStore((s) => s.setPriceRange);
   const resetFilters = useShopStore((s) => s.resetFilters);
+
+  const [dbProducts, setDbProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    getProducts({ limit: 100 }).then((data) => {
+      if (data && data.items) {
+        setDbProducts(data.items);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const activeProductsList = dbProducts;
 
   const hasFilters = Object.values(selectedFilters).some((v) => v.length > 0) || priceRange[0] > 0 || priceRange[1] < 50000;
 
@@ -38,22 +52,75 @@ export function FilterSidebar({ open, onClose }: FilterSidebarProps) {
             );
           }
           const currentValues = selectedFilters[group.id] || [];
+
+          let displayOptions = group.options;
+          if (group.id === "category") {
+            const isEyeglasses = window.location.pathname.includes("eyeglasses");
+            const isSunglasses = window.location.pathname.includes("sunglasses");
+
+            if (isSunglasses) {
+              displayOptions = group.options.filter((opt) =>
+                ["polarized-shades", "driving-sunglasses", "fashion-luxury", "sports-performance"].includes(opt.value)
+              );
+            } else if (isEyeglasses) {
+              displayOptions = group.options.filter((opt) =>
+                ["prescription-glasses", "blue-light", "reading-glasses", "rimless-frames"].includes(opt.value)
+              );
+            }
+          }
+
           return (
             <FilterGroup key={group.id} label={group.label}>
-              {group.options.map((opt) => (
-                <FilterCheckbox
-                  key={opt.value}
-                  label={opt.label}
-                  count={opt.count}
-                  checked={currentValues.includes(opt.value)}
-                  onChange={() => {
-                    const next = currentValues.includes(opt.value)
-                      ? currentValues.filter((v) => v !== opt.value)
-                      : [...currentValues, opt.value];
-                    setFilter(group.id, next);
-                  }}
-                />
-              ))}
+              {displayOptions.map((opt) => {
+                const optVal = opt.value.toLowerCase();
+                const optLabel = opt.label.toLowerCase();
+
+                const dynamicCount = activeProductsList.filter((p: any) => {
+                  const pCat = (p.category || "").toLowerCase();
+                  const pSub = (p.subcategory || "").toLowerCase();
+                  const pBrand = (p.brand || "").toLowerCase().replace(/\s+/g, "-");
+                  const pBrandRaw = (p.brand || "").toLowerCase();
+
+                  if (group.id === "category") {
+                    const normSub = pSub.replace(/\s+/g, "-").replace(/&/g, "").replace(/--+/g, "-");
+                    return pCat === optVal || pSub === optVal || normSub.includes(optVal) || optVal.includes(normSub) || pSub.includes(optLabel);
+                  }
+                  if (group.id === "brand") {
+                    return pBrand === optVal || pBrandRaw === optLabel || pBrandRaw.includes(optLabel);
+                  }
+                  if (group.id === "gender") {
+                    const genders = Array.isArray(p.gender) 
+                      ? p.gender.map((g: string) => g.toLowerCase()) 
+                      : [String(p.gender || "").toLowerCase()];
+                    return genders.includes(optVal) || genders.includes("unisex");
+                  }
+                  if (group.id === "frame-shape") {
+                    return (p.frameShape || "").toLowerCase() === optVal;
+                  }
+                  if (group.id === "frame-material") {
+                    return (p.frameMaterial || "").toLowerCase().includes(optVal);
+                  }
+                  if (group.id === "lens-type") {
+                    return (p.lensType || "").toLowerCase().includes(optVal);
+                  }
+                  return false;
+                }).length;
+
+                return (
+                  <FilterCheckbox
+                    key={opt.value}
+                    label={opt.label}
+                    count={dynamicCount}
+                    checked={currentValues.includes(opt.value)}
+                    onChange={() => {
+                      const next = currentValues.includes(opt.value)
+                        ? currentValues.filter((v) => v !== opt.value)
+                        : [...currentValues, opt.value];
+                      setFilter(group.id, next);
+                    }}
+                  />
+                );
+              })}
             </FilterGroup>
           );
         })}

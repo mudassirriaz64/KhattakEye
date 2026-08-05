@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Package, Truck, CreditCard, MapPin, FileText, Printer, Download, CheckCircle, XCircle, MessageSquare } from "lucide-react";
@@ -6,18 +6,53 @@ import { adminOrders } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
+import { adminUpdateOrderStatusApi } from "@/lib/api/admin";
+import { getOrderByIdApi } from "@/lib/api/orders";
 
-const statusFlow = ["pending", "payment-verification", "confirmed", "processing", "packed", "shipped", "out-for-delivery", "delivered"];
+const statusFlow = ["pending", "processing", "shipped", "delivered", "cancelled"];
 
 export function AdminOrderDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const order = adminOrders.find((o) => o.id === id) || adminOrders[0];
-  const [currentStatus, setCurrentStatus] = useState(order.status);
+  const [order, setOrder] = useState<any>(adminOrders[0]);
+  const [currentStatus, setCurrentStatus] = useState("pending");
   const [showStatusMenu, setShowStatusMenu] = useState(false);
 
-  const updateStatus = (newStatus: string) => {
+  useEffect(() => {
+    if (id) {
+      getOrderByIdApi(id).then((data) => {
+        if (data) {
+          setOrder({
+            id: data._id || id,
+            orderNumber: data.orderNumber || id,
+            customer: {
+              name: data.customerName || "Customer",
+              email: data.customerEmail || "customer@example.com",
+              phone: data.customerPhone || ""
+            },
+            shippingAddress: data.shippingAddress ? `${data.shippingAddress.street}, ${data.shippingAddress.city}` : "Address",
+            items: data.items || [],
+            total: data.total || 0,
+            paymentMethod: data.paymentMethod || "COD",
+            status: data.status || "pending",
+            date: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
+            timeline: data.timeline || adminOrders[0].timeline
+          });
+          setCurrentStatus(data.status || "pending");
+        }
+      }).catch(() => {});
+    }
+  }, [id]);
+
+  const updateStatus = async (newStatus: string) => {
     setCurrentStatus(newStatus);
     setShowStatusMenu(false);
+    if (id) {
+      try {
+        await adminUpdateOrderStatusApi(id, newStatus);
+      } catch (err) {
+        console.error("Failed to update order status:", err);
+      }
+    }
   };
 
   return (

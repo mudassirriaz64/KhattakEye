@@ -1,29 +1,34 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, X } from "lucide-react";
 import { Breadcrumb } from "@/components/shop/Breadcrumb";
 import { ProductGrid } from "@/components/shop/ProductGrid";
 import { QuickViewModal } from "@/components/quickview/QuickViewModal";
-import { allProducts } from "@/lib/shop-data";
+import { getProducts, mapProductCard } from "@/lib/api/products";
 
 export function SearchResultsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
   const [localQuery, setLocalQuery] = useState(query);
+  const [liveProducts, setLiveProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const results = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    return allProducts.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.frameShape.toLowerCase().includes(q) ||
-        p.frameMaterial.toLowerCase().includes(q),
-    );
+  useEffect(() => {
+    if (query.trim()) {
+      setLoading(true);
+      getProducts({ q: query.trim(), limit: 50 })
+        .then((res) => {
+          const mapped = (res.items || []).map(mapProductCard);
+          setLiveProducts(mapped);
+        })
+        .catch(() => setLiveProducts([]))
+        .finally(() => setLoading(false));
+    } else {
+      setLiveProducts([]);
+    }
   }, [query]);
+
+  const results = liveProducts;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,13 +62,21 @@ export function SearchResultsPage() {
 
       {query && (
         <p className="mt-6 text-sm text-[color:var(--color-text-secondary)]">
-          {results.length} {results.length === 1 ? "result" : "results"} for <span className="font-medium text-[color:var(--color-text-primary)]">"{query}"</span>
+          {loading ? "Searching..." : `${results.length} ${results.length === 1 ? "result" : "results"} for `}
+          {!loading && <span className="font-medium text-[color:var(--color-text-primary)]">"{query}"</span>}
         </p>
       )}
 
       <div className="mt-6">
         {query ? (
-          results.length > 0 ? (
+          loading ? (
+            <div className="py-20 text-center">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[color:var(--color-surface-muted)]">
+                <Search className="h-10 w-10 text-[color:var(--color-text-tertiary)]" />
+              </div>
+              <p className="mt-6 font-display text-2xl text-[color:var(--color-text-primary)]">Searching...</p>
+            </div>
+          ) : results.length > 0 ? (
             <ProductGrid products={results} />
           ) : (
             <div className="py-20 text-center">

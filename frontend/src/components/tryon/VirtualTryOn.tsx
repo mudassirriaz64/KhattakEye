@@ -7,13 +7,14 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/primitives/Button";
-import { allProducts as shopAllProducts } from "@/lib/shop-data";
 import { cn } from "@/lib/utils";
 import {
   computeGlassesPose,
   processGlassesImage,
 } from "@/lib/glasses-utils";
 import { useFaceDetection } from "@/hooks/useFaceDetection";
+
+import { getProducts, getProductBySlug } from "@/lib/api/products";
 
 type Step =
   | "onboarding"
@@ -22,6 +23,8 @@ type Step =
   | "adjust"
   | "compare"
   | "error";
+
+const defaultFrames: Array<{ name: string; image: string; slug: string }> = [];
 
 export function VirtualTryOn() {
   const [searchParams] = useSearchParams();
@@ -32,6 +35,8 @@ export function VirtualTryOn() {
   const [showHelp, setShowHelp] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [glassesDataUrl, setGlassesDataUrl] = useState<string>("");
+
+  const [frames, setFrames] = useState<Array<{ name: string; image: string; slug: string }>>(defaultFrames);
 
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
@@ -66,15 +71,70 @@ export function VirtualTryOn() {
     stopDetection,
   } = useFaceDetection();
 
-  const shopFrames = shopAllProducts.slice(0, 6).map((p) => ({
-    name: p.name,
-    image: p.images[0],
-    slug: p.slug,
-  }));
-  const frames = shopFrames.length > 0 ? shopFrames : [
-    { name: "Noir Line Titanium", image: "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=200", slug: "" },
-    { name: "Rose Gold Aviator", image: "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?w=200", slug: "" },
-  ];
+  useEffect(() => {
+    async function loadFrames() {
+      try {
+        const res = await getProducts({ limit: 12 });
+        let list: Array<{ name: string; image: string; slug: string }> = [];
+        if (res && res.items && res.items.length > 0) {
+          list = res.items.map((p: any) => ({
+            name: p.name,
+            image: p.images && p.images[0] ? p.images[0] : "/hero-sunglasses.png",
+            slug: p.slug || p.id || ""
+          }));
+        }
+
+        const rawProductParam = searchParams.get("product");
+        if (rawProductParam) {
+          const productParam = decodeURIComponent(rawProductParam).toLowerCase().trim();
+          
+          // Check if passed product is already in list or defaultFrames
+          let matchIdx = list.findIndex(f => 
+            f.slug.toLowerCase() === productParam || 
+            f.name.toLowerCase() === productParam ||
+            f.name.toLowerCase().includes(productParam) ||
+            productParam.includes(f.slug.toLowerCase())
+          );
+
+          if (matchIdx === -1) {
+            // Fetch single product from API if not in list
+            try {
+              const p = await getProductBySlug(productParam);
+              if (p) {
+                const single = {
+                  name: p.name,
+                  image: p.images && p.images[0] ? p.images[0] : "/hero-sunglasses.png",
+                  slug: p.slug || p.id || productParam
+                };
+                list.unshift(single);
+                matchIdx = 0;
+              }
+            } catch {
+              // fallback label if product lookup failed
+              const customSingle = {
+                name: rawProductParam.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+                image: "/hero-sunglasses.png",
+                slug: productParam
+              };
+              list.unshift(customSingle);
+              matchIdx = 0;
+            }
+          }
+
+          if (list.length > 0) {
+            setFrames(list);
+            if (matchIdx !== -1) setSelectedFrame(matchIdx);
+          }
+        } else if (list.length > 0) {
+          setFrames(list);
+        }
+      } catch {
+        // use defaultFrames fallback
+      }
+    }
+
+    loadFrames();
+  }, [searchParams]);
 
   useEffect(() => {
     return () => {
@@ -134,15 +194,19 @@ export function VirtualTryOn() {
     const pose = poseRef.current;
     const gCanvas = glassesCanvasRef.current;
     if (pose && gCanvas) {
+      const frameAspect = gCanvas.width / (gCanvas.height || 1);
+      const drawWidth = pose.width * 1.8;
+      const drawHeight = drawWidth / frameAspect;
+
       ctx.save();
       ctx.translate(pose.x, pose.y);
       ctx.rotate(pose.rotation);
       ctx.drawImage(
         gCanvas,
-        -pose.width / 2,
-        -pose.height / 2,
-        pose.width,
-        pose.height,
+        -drawWidth / 2,
+        -drawHeight / 2,
+        drawWidth,
+        drawHeight,
       );
       ctx.restore();
     }
@@ -545,7 +609,10 @@ export function VirtualTryOn() {
                         <img
                           src={frame.image}
                           alt={frame.name}
-                          className="h-12 w-full rounded-lg object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "/hero-sunglasses.png";
+                          }}
+                          className="h-12 w-full rounded-lg object-cover bg-neutral-100"
                         />
                         <p className="mt-1.5 truncate text-[10px] font-medium text-[color:var(--color-text-primary)]">
                           {frame.name}

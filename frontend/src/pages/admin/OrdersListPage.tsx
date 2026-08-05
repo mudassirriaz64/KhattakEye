@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ShoppingCart, Search, SlidersHorizontal, ChevronDown, Eye, Download, FileText, Calendar } from "lucide-react";
 import { adminOrders } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
+import { adminGetOrdersApi } from "@/lib/api/admin";
 
 const statusFilters = ["All", "Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
 const paymentFilters = ["All Methods", "Bank Transfer", "JazzCash", "EasyPaisa"];
@@ -13,16 +14,42 @@ const paymentColors: Record<string, string> = {
   "bank-transfer": "bg-[color:var(--color-accent-blue)]/10 text-[color:var(--color-accent-blue)]",
   jazzcash: "bg-rose-500/10 text-rose-600",
   easypaisa: "bg-emerald-500/10 text-emerald-600",
+  cod: "bg-amber-500/10 text-amber-600",
 };
 
 export function AdminOrdersListPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [paymentFilter, setPaymentFilter] = useState("All Methods");
+  const [dbOrders, setDbOrders] = useState<any[]>([]);
 
-  const filtered = adminOrders.filter((o) => {
-    const matchStatus = statusFilter === "All" || o.status === statusFilter.toLowerCase();
-    const matchPayment = paymentFilter === "All Methods" || o.paymentMethod === paymentFilter;
+  useEffect(() => {
+    adminGetOrdersApi(1, 100).then((data) => {
+      if (data && data.items) {
+        const mapped = data.items.map((o: any) => ({
+          id: o._id || o.id,
+          orderNumber: o.orderNumber,
+          customer: {
+            name: o.customerName || "Customer",
+            email: o.customerEmail || "customer@example.com",
+            phone: o.customerPhone || ""
+          },
+          items: o.items || [],
+          total: o.total || 0,
+          paymentMethod: o.paymentMethod || "COD",
+          status: o.status || "pending",
+          date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : new Date().toLocaleDateString()
+        }));
+        setDbOrders(mapped);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const activeOrdersList = dbOrders.length > 0 ? dbOrders : adminOrders;
+
+  const filtered = activeOrdersList.filter((o) => {
+    const matchStatus = statusFilter === "All" || o.status.toLowerCase() === statusFilter.toLowerCase();
+    const matchPayment = paymentFilter === "All Methods" || o.paymentMethod.toLowerCase().includes(paymentFilter.toLowerCase());
     const matchSearch = !search || o.orderNumber.toLowerCase().includes(search.toLowerCase()) || o.customer.name.toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchPayment && matchSearch;
   });
@@ -32,7 +59,7 @@ export function AdminOrdersListPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl text-[color:var(--color-text-primary)] md:text-3xl">Orders</h1>
-          <p className="mt-0.5 text-sm text-[color:var(--color-text-secondary)]">{adminOrders.length} total orders</p>
+          <p className="mt-0.5 text-sm text-[color:var(--color-text-secondary)]">{activeOrdersList.length} total orders</p>
         </div>
       </div>
 

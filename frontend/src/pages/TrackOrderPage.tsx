@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, HeadphonesIcon, MessageCircle, Package } from "lucide-react";
@@ -6,18 +6,41 @@ import { mockOrder } from "@/lib/order-data";
 import { TrackOrderSearch } from "@/components/order/TrackOrderSearch";
 import { OrderTimeline } from "@/components/order/OrderTimeline";
 import { Button } from "@/components/primitives/Button";
+import { getOrderByIdApi } from "@/lib/api/orders";
 
 export function TrackOrderPage() {
   const [searchParams] = useSearchParams();
   const initialId = searchParams.get("id") || "";
   const [tracked, setTracked] = useState(!!initialId);
   const [orderId, setOrderId] = useState(initialId);
+  const [order, setOrder] = useState<any>(mockOrder);
 
-  const order = mockOrder;
+  const fetchLiveOrder = (idToSearch: string) => {
+    if (!idToSearch) return;
+    getOrderByIdApi(idToSearch).then((data) => {
+      if (data) {
+        setOrder({
+          orderNumber: data.orderNumber || idToSearch,
+          estimatedDelivery: data.estimatedDelivery ? new Date(data.estimatedDelivery).toLocaleDateString() : "August 8, 2026",
+          status: data.status || "pending",
+          timeline: data.timeline && data.timeline.length > 0 ? data.timeline : mockOrder.timeline,
+          items: data.items || []
+        });
+      }
+    }).catch(() => {});
+  };
+
+  useEffect(() => {
+    if (initialId) {
+      fetchLiveOrder(initialId);
+    }
+  }, [initialId]);
 
   const handleSearch = (id: string, phone: string) => {
-    setOrderId(id);
+    const query = id || phone;
+    setOrderId(query);
     setTracked(true);
+    fetchLiveOrder(query);
   };
 
   return (

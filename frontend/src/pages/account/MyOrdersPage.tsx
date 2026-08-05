@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Package, Search, ChevronRight, Download, Eye, MapPin } from "lucide-react";
 import { AccountLayout } from "@/components/account/AccountLayout";
-import { recentOrders } from "@/lib/account-data";
 import { cn } from "@/lib/utils";
+import { getMyOrdersApi } from "@/lib/api/orders";
 
 const filters = ["All", "Processing", "Shipped", "Delivered", "Cancelled"];
 
@@ -19,15 +19,40 @@ const statusColor: Record<string, string> = {
 export function MyOrdersPage() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [dbOrders, setDbOrders] = useState<any[]>([]);
 
-  const filtered = recentOrders.filter((o) => {
-    const matchFilter = activeFilter === "All" || o.status === activeFilter.toLowerCase();
+  useEffect(() => {
+    getMyOrdersApi().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped = data.map((o: any) => ({
+          orderNumber: o.orderNumber,
+          date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
+          status: o.status || "pending",
+          total: o.total || 0,
+          itemCount: o.items ? o.items.length : 1,
+          items: (o.items || []).map((i: any) => ({
+            name: i.name,
+            color: i.color,
+            quantity: i.quantity,
+            price: i.price,
+            image: i.image
+          }))
+        }));
+        setDbOrders(mapped);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const activeOrdersList = dbOrders;
+
+  const filtered = activeOrdersList.filter((o) => {
+    const matchFilter = activeFilter === "All" || o.status.toLowerCase() === activeFilter.toLowerCase();
     const matchSearch = !search || o.orderNumber.toLowerCase().includes(search.toLowerCase());
     return matchFilter && matchSearch;
   });
 
   return (
-    <AccountLayout title="My Orders" subtitle={`${recentOrders.length} total orders`}>
+    <AccountLayout title="My Orders" subtitle={`${dbOrders.length} total orders`}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-xs">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-text-tertiary)]" />

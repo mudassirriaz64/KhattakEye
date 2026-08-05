@@ -31,16 +31,15 @@ const navLinks: NavLink[] = [
     ],
     mega: [
       { title: "Category", links: [
-        { label: "Men Eyeglasses", path: "/shop/eyeglasses/men" },
-        { label: "Women Eyeglasses", path: "/shop/eyeglasses/women" },
-        { label: "Kids Eyeglasses", path: "/shop/eyeglasses/kids" },
-        { label: "Premium Frames", path: "/shop/premium" },
-        { label: "Lightweight Frames", path: "/shop/lightweight" },
+        { label: "Prescription Glasses", path: "/shop/eyeglasses" },
+        { label: "Computer & Blue Light", path: "/shop/eyeglasses" },
+        { label: "Reading Glasses", path: "/shop/eyeglasses" },
+        { label: "Rimless & Minimalist", path: "/shop/eyeglasses" },
       ]},
       { title: "Styles", links: [
-        { label: "Rimless Frames", path: "/shop/rimless" },
         { label: "Full Rim", path: "/shop/full-rim" },
         { label: "Half Rim", path: "/shop/half-rim" },
+        { label: "Rimless Frames", path: "/shop/rimless" },
         { label: "New Arrivals", path: "/shop/new" },
         { label: "Best Sellers", path: "/shop/best" },
       ]},
@@ -49,7 +48,6 @@ const navLinks: NavLink[] = [
         { label: "Acetate Collection", path: "/shop/acetate" },
         { label: "Aviator Classics", path: "/shop/aviator" },
         { label: "Sport Performance", path: "/shop/sport" },
-        { label: "Gift Cards", path: "/gift-cards" },
       ]},
     ],
   },
@@ -61,24 +59,21 @@ const navLinks: NavLink[] = [
     ],
     mega: [
       { title: "Category", links: [
-        { label: "Men", path: "/shop/sunglasses/men" },
-        { label: "Women", path: "/shop/sunglasses/women" },
-        { label: "Kids", path: "/shop/sunglasses/kids" },
-        { label: "Polarized", path: "/shop/sunglasses/polarized" },
-        { label: "UV Protection", path: "/shop/sunglasses/uv" },
+        { label: "Polarized Shades", path: "/shop/sunglasses" },
+        { label: "Driving Sunglasses", path: "/shop/sunglasses" },
+        { label: "Fashion & Luxury", path: "/shop/sunglasses" },
+        { label: "Sports Performance", path: "/shop/sunglasses" },
       ]},
       { title: "Styles", links: [
-        { label: "Driving", path: "/shop/sunglasses/driving" },
-        { label: "Fashion", path: "/shop/sunglasses/fashion" },
-        { label: "Sports", path: "/shop/sunglasses/sports" },
-        { label: "Luxury Collection", path: "/shop/sunglasses/luxury" },
-        { label: "Aviator", path: "/shop/sunglasses/aviator" },
+        { label: "Aviator", path: "/shop/sunglasses" },
+        { label: "Wayfarer & Square", path: "/shop/sunglasses" },
+        { label: "Round Classics", path: "/shop/sunglasses" },
+        { label: "Cat-Eye Frames", path: "/shop/sunglasses" },
       ]},
       { title: "Featured", links: [
         { label: "New Arrivals", path: "/shop/new" },
         { label: "Best Sellers", path: "/shop/best" },
-        { label: "Sale", path: "/shop/sale" },
-        { label: "Gift Cards", path: "/gift-cards" },
+        { label: "Luxury Collection", path: "/shop/sunglasses/luxury" },
       ]},
     ],
   },
@@ -330,7 +325,10 @@ function BrandsMegaPanel({ onEnter, onLeave }: { onEnter: () => void; onLeave: (
   );
 }
 
-// ─── Navbar ──────────────────────────────────────────────────────────
+import { getCategories } from "@/lib/api/categories";
+import { getBrands } from "@/lib/api/products";
+import { useAuthStore } from "@/lib/stores/auth-store";
+
 export function Navbar() {
   const { isScrolled } = useScrollPosition();
   const { phase } = useReveal();
@@ -342,11 +340,72 @@ export function Navbar() {
   const setWishlistOpen = useUiStore((state) => state.setWishlistOpen);
   const setCartOpen = useUiStore((state) => state.setCartOpen);
   const cartCount = useCartStore((s) => s.getItemCount());
+  
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [megaLabel, setMegaLabel] = useState<string | null>(null);
   const megaTimeout = useRef<ReturnType<typeof setTimeout>>();
   const navRef = useRef<HTMLElement>(null);
+  
+  const [navData, setNavData] = useState<NavLink[]>(navLinks);
+  const [dynamicBrands, setDynamicBrands] = useState(brandLogos);
 
-  const currentLink = navLinks.find((l) => l.label === megaLabel);
+  useEffect(() => {
+    async function fetchNavData() {
+      try {
+        const [categories, brands] = await Promise.all([
+          getCategories(),
+          getBrands()
+        ]);
+        
+        const grouped = {
+          Category: categories.filter((c: any) => c.type === 'category'),
+          Styles: categories.filter((c: any) => c.type === 'style'),
+          Collections: categories.filter((c: any) => c.type === 'collection')
+        };
+        
+        const dynamicMega = [
+          {
+            title: "Category",
+            links: grouped.Category.map((c: any) => ({ label: c.name, path: `/shop?category=${c.slug}` }))
+          },
+          {
+            title: "Styles",
+            links: grouped.Styles.map((c: any) => ({ label: c.name, path: `/shop?category=${c.slug}` }))
+          },
+          {
+            title: "Collections",
+            links: grouped.Collections.map((c: any) => ({ label: c.name, path: `/shop?category=${c.slug}` }))
+          }
+        ].filter(col => col.links.length > 0);
+
+        if (dynamicMega.length > 0) {
+          setNavData(prev => prev.map(link => {
+            // Replace the mega menu for Eyeglasses/Sunglasses with real backend categories
+            if (link.label === "Eyeglasses" || link.label === "Sunglasses") {
+              return { ...link, mega: dynamicMega };
+            }
+            return link;
+          }));
+        }
+
+        if (brands && brands.length > 0) {
+          setDynamicBrands(brands.map((b: any) => ({
+            name: b.name,
+            initials: b.name.substring(0, 2).toUpperCase(),
+            color: "#19130D"
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to fetch categories/brands for navbar", err);
+      }
+    }
+    fetchNavData();
+  }, []);
+
+  const currentLink = navData.find((l) => l.label === megaLabel);
   const hasMega = !!(currentLink?.mega);
   const isBrands = megaLabel === "Brands";
 
@@ -389,7 +448,7 @@ export function Navbar() {
         <BrandMark />
 
         <nav className="hidden items-center gap-1 lg:flex">
-          {navLinks.map((link) => (
+          {navData.map((link) => (
             <div
               key={link.label}
               className="relative"
@@ -426,21 +485,63 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-1 lg:flex">
-          {[
-            { icon: Search, label: "Search", action: () => setSearchOpen(true) },
-            { icon: Heart, label: "Wishlist", action: () => setWishlistOpen(true) },
-            { icon: UserRound, label: "Account", path: "/account" },
-          ].map(({ icon: Icon, label, action, path }) => (
-            <button
-              key={label}
-              type="button"
-              onClick={action}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="relative flex h-10 w-10 items-center justify-center rounded-full text-[color:var(--color-text-secondary)] transition-all hover:scale-105 hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-brand-primary)]"
+            aria-label="Search"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setWishlistOpen(true)}
+            className="relative flex h-10 w-10 items-center justify-center rounded-full text-[color:var(--color-text-secondary)] transition-all hover:scale-105 hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-brand-primary)]"
+            aria-label="Wishlist"
+          >
+            <Heart className="h-4 w-4" />
+          </button>
+
+          {isAuthenticated && user ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-1.5 text-xs font-semibold text-[color:var(--color-text-primary)] transition-all hover:border-[color:var(--color-accent-teal)]"
+              >
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--color-brand-primary)] text-[10px] text-white">
+                  {user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"}
+                </div>
+                <span>{user.fullName ? user.fullName.split(" ")[0] : "Account"}</span>
+              </button>
+              {showUserMenu && (
+                <div className="absolute right-0 top-12 z-50 w-48 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-2 shadow-[var(--shadow-strong)] backdrop-blur-xl">
+                  <div className="border-b border-[color:var(--color-border)] px-3 py-2 text-xs">
+                    <p className="font-semibold text-[color:var(--color-text-primary)]">{user.fullName}</p>
+                    <p className="text-[10px] text-[color:var(--color-text-tertiary)]">{user.email}</p>
+                  </div>
+                  <Link to="/account" onClick={() => setShowUserMenu(false)} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]">
+                    Dashboard
+                  </Link>
+                  <Link to="/account/orders" onClick={() => setShowUserMenu(false)} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]">
+                    My Orders
+                  </Link>
+                  <button type="button" onClick={() => { logout(); setShowUserMenu(false); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-red-500 hover:bg-red-500/10">
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              to="/auth/login"
               className="relative flex h-10 w-10 items-center justify-center rounded-full text-[color:var(--color-text-secondary)] transition-all hover:scale-105 hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-brand-primary)]"
-              aria-label={label}
+              aria-label="Account"
             >
-              <Icon className="h-4 w-4" />
-            </button>
-          ))}
+              <UserRound className="h-4 w-4" />
+            </Link>
+          )}
+
           <button
             type="button"
             onClick={() => setCartOpen(true)}

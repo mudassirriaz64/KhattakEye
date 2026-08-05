@@ -1,13 +1,40 @@
+import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { ArrowLeft, Package, CreditCard, User, MapPin, FileText, HeadphonesIcon } from "lucide-react";
 import { mockOrder } from "@/lib/order-data";
 import { OrderTimeline } from "@/components/order/OrderTimeline";
 import { Button } from "@/components/primitives/Button";
+import { getOrderByIdApi } from "@/lib/api/orders";
 
 export function OrderDetailsPage() {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get("id") || mockOrder.orderNumber;
-  const order = mockOrder;
+  const [order, setOrder] = useState<any>(mockOrder);
+
+  useEffect(() => {
+    if (orderId) {
+      getOrderByIdApi(orderId).then((data) => {
+        if (data) {
+          setOrder({
+            orderNumber: data.orderNumber || orderId,
+            date: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
+            status: data.status || 'pending',
+            items: data.items || [],
+            subtotal: data.subtotal || 0,
+            shipping: data.shipping !== undefined ? data.shipping : 0,
+            discount: data.discount || 0,
+            total: data.total || 0,
+            paymentMethod: data.paymentMethod === 'cod' ? 'Cash on Delivery' : data.paymentMethod || 'Cash on Delivery',
+            customerName: data.customerName || 'Customer',
+            customerEmail: data.customerEmail || 'email@example.com',
+            customerPhone: data.customerPhone || 'Phone',
+            shippingAddress: data.shippingAddress ? `${data.shippingAddress.street || ''}, ${data.shippingAddress.area || ''}, ${data.shippingAddress.city || ''}` : 'Shipping Address',
+            timeline: data.timeline && data.timeline.length > 0 ? data.timeline : mockOrder.timeline
+          });
+        }
+      }).catch(() => {});
+    }
+  }, [orderId]);
 
   const details = [
     { icon: Package, label: "Products", value: order.items.map((i) => `${i.name} x${i.quantity}`).join(", ") },

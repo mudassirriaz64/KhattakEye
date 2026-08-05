@@ -1,11 +1,17 @@
-import { X, ShoppingBag } from "lucide-react";
+import { X, ShoppingBag, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 import { useUiStore } from "@/lib/stores/ui-store";
+import { useCartStore } from "@/lib/stores/cart-store";
+import { CartItem } from "@/components/cart/CartItem";
 import { Button } from "@/components/primitives/Button";
 
 export function CartDrawer() {
   const cartOpen = useUiStore((state) => state.cartOpen);
   const setCartOpen = useUiStore((state) => state.setCartOpen);
+  const items = useCartStore((s) => s.items);
+  const getItemCount = useCartStore((s) => s.getItemCount);
+  const getSubtotal = useCartStore((s) => s.getSubtotal);
 
   return (
     <AnimatePresence>
@@ -32,6 +38,11 @@ export function CartDrawer() {
                   <ShoppingBag className="h-4 w-4" />
                 </span>
                 <span className="font-display text-xl">Cart</span>
+                {getItemCount() > 0 && (
+                  <span className="rounded-full bg-[color:var(--color-surface-muted)] px-2 py-0.5 text-xs font-semibold text-[color:var(--color-text-secondary)]">
+                    {getItemCount()}
+                  </span>
+                )}
               </div>
               <button
                 type="button"
@@ -41,24 +52,57 @@ export function CartDrawer() {
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex flex-1 items-center justify-center p-6">
-              <div className="text-center">
-                <ShoppingBag className="mx-auto h-12 w-12 text-[color:var(--color-text-tertiary)]" />
-                <p className="mt-4 font-display text-2xl text-[color:var(--color-text-primary)]">
-                  Your cart is empty
-                </p>
-                <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
-                  Add items to your cart to get started.
-                </p>
-                <Button
-                  variant="primary"
-                  className="mt-6"
-                  onClick={() => setCartOpen(false)}
-                >
-                  Continue Shopping
-                </Button>
+
+            {items.length === 0 ? (
+              <div className="flex flex-1 items-center justify-center p-6">
+                <div className="text-center">
+                  <ShoppingBag className="mx-auto h-12 w-12 text-[color:var(--color-text-tertiary)]" />
+                  <p className="mt-4 font-display text-2xl text-[color:var(--color-text-primary)]">
+                    Your cart is empty
+                  </p>
+                  <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">
+                    Add items to your cart to get started.
+                  </p>
+                  <Button
+                    variant="primary"
+                    className="mt-6"
+                    onClick={() => setCartOpen(false)}
+                  >
+                    Continue Shopping
+                  </Button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+                  <AnimatePresence initial={false}>
+                    {items.map((item) => (
+                      <CartItem key={`${item.productId}-${item.color}`} item={item} />
+                    ))}
+                  </AnimatePresence>
+                </div>
+                <div className="space-y-4 border-t border-[color:var(--color-border)] px-6 py-5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-[color:var(--color-text-secondary)]">Subtotal</span>
+                    <span className="font-display text-lg text-[color:var(--color-text-primary)]">
+                      Rs. {getSubtotal().toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="grid gap-2">
+                    <Link to="/cart" onClick={() => setCartOpen(false)} className="block">
+                      <Button variant="primary" className="w-full">
+                        View Cart
+                      </Button>
+                    </Link>
+                    <Link to="/checkout" onClick={() => setCartOpen(false)} className="block">
+                      <Button variant="outline" className="w-full" iconRight={<ArrowRight className="h-4 w-4" />}>
+                        Checkout
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </>
+            )}
           </motion.div>
         </>
       )}

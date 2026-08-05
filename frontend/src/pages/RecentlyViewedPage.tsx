@@ -1,12 +1,24 @@
 import { Clock, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import { useShopStore } from "@/lib/stores/shop-store";
-import { allProducts } from "@/lib/shop-data";
+import { getProducts, mapProductCard } from "@/lib/api/products";
 import { Button } from "@/components/primitives/Button";
 
 export function RecentlyViewedPage() {
   const recentlyViewed = useShopStore((s) => s.recentlyViewed);
-  const products = allProducts.filter((p) => recentlyViewed.includes(p.id));
+  const [catalog, setCatalog] = useState<any[]>([]);
+
+  useEffect(() => {
+    getProducts({ limit: 100 }).then((data) => {
+      if (data && data.items) setCatalog(data.items.map(mapProductCard));
+    }).catch(() => setCatalog([]));
+  }, []);
+
+  const products = useMemo(
+    () => catalog.filter((p) => recentlyViewed.includes(p.id)),
+    [catalog, recentlyViewed],
+  );
 
   if (products.length === 0) {
     return (

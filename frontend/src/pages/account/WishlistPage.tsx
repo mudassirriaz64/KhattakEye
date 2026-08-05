@@ -2,14 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag, Trash2, GitCompare, Share2 } from "lucide-react";
-import { allProducts } from "@/lib/shop-data";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/primitives/Button";
 
-const initialWishlist = allProducts.slice(0, 4);
-
 export function AccountWishlistPage() {
-  const [items, setItems] = useState(initialWishlist);
+  const [items, setItems] = useState<any[]>([]);
 
   const removeItem = (id: string) => setItems((prev) => prev.filter((i) => i.id !== id));
 

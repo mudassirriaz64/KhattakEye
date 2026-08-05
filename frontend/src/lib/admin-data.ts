@@ -159,12 +159,18 @@ export const adminProducts: AdminProduct[] = [
 ];
 
 export const adminCategories: AdminCategory[] = [
-  { id: "cat-001", name: "Sunglasses", slug: "sunglasses", parent: null, description: "Premium sunglasses with UV400 protection", image: "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?image_size=portrait_4_3&prompt=premium+sunglasses+collection", productCount: 42, featured: true, status: "active", createdAt: "Jan 1, 2026" },
-  { id: "cat-002", name: "Eyeglasses", slug: "eyeglasses", parent: null, description: "Prescription eyewear with premium lenses", image: "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?image_size=portrait_4_3&prompt=premium+eyeglasses+collection", productCount: 58, featured: true, status: "active", createdAt: "Jan 1, 2026" },
-  { id: "cat-003", name: "Sports", slug: "sports", parent: null, description: "Performance eyewear for active lifestyles", image: "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?image_size=portrait_4_3&prompt=sports+eyewear+collection", productCount: 24, featured: false, status: "active", createdAt: "Jan 15, 2026" },
-  { id: "cat-004", name: "Kids", slug: "kids", parent: null, description: "Durable and stylish eyewear for children", image: "", productCount: 18, featured: false, status: "active", createdAt: "Feb 1, 2026" },
-  { id: "cat-005", name: "Blue Light", slug: "blue-light", parent: null, description: "Digital screen protection glasses", image: "", productCount: 14, featured: true, status: "active", createdAt: "Feb 15, 2026" },
-  { id: "cat-006", name: "Titanium", slug: "titanium", parent: "cat-001", description: "Ultra-light titanium frame sunglasss", image: "", productCount: 8, featured: false, status: "inactive", createdAt: "Mar 1, 2026" },
+  { id: "cat-001", name: "Sunglasses", slug: "sunglasses", parent: null, description: "Premium sunglasses with UV400 protection", image: "", productCount: 42, featured: true, status: "active", createdAt: "Jan 1, 2026" },
+  { id: "cat-002", name: "Eyeglasses", slug: "eyeglasses", parent: null, description: "Prescription & everyday optical frames", image: "", productCount: 58, featured: true, status: "active", createdAt: "Jan 1, 2026" },
+  // Sunglasses Subcategories
+  { id: "cat-010", name: "Polarized Shades", slug: "polarized-shades", parent: "cat-001", description: "Glare-reducing polarized lenses", image: "", productCount: 16, featured: true, status: "active", createdAt: "Feb 1, 2026" },
+  { id: "cat-011", name: "Driving Sunglasses", slug: "driving-sunglasses", parent: "cat-001", description: "High contrast lenses for optimal driving vision", image: "", productCount: 12, featured: false, status: "active", createdAt: "Feb 5, 2026" },
+  { id: "cat-012", name: "Fashion & Luxury", slug: "fashion-luxury", parent: "cat-001", description: "Statement fashion frames", image: "", productCount: 22, featured: true, status: "active", createdAt: "Feb 10, 2026" },
+  { id: "cat-013", name: "Sports Performance", slug: "sports-performance", parent: "cat-001", description: "Wrap-around aerodynamic frames", image: "", productCount: 9, featured: false, status: "active", createdAt: "Feb 12, 2026" },
+  // Eyeglasses Subcategories
+  { id: "cat-020", name: "Prescription Glasses", slug: "prescription-glasses", parent: "cat-002", description: "Single vision and progressive frames", image: "", productCount: 30, featured: true, status: "active", createdAt: "Feb 1, 2026" },
+  { id: "cat-021", name: "Computer & Blue Light", slug: "blue-light", parent: "cat-002", description: "Digital screen eye strain protection", image: "", productCount: 25, featured: true, status: "active", createdAt: "Feb 5, 2026" },
+  { id: "cat-022", name: "Reading Glasses", slug: "reading-glasses", parent: "cat-002", description: "Compact magnification frames", image: "", productCount: 14, featured: false, status: "active", createdAt: "Feb 10, 2026" },
+  { id: "cat-023", name: "Rimless & Minimalist", slug: "rimless-frames", parent: "cat-002", description: "Ultra lightweight rimless design", image: "", productCount: 18, featured: true, status: "active", createdAt: "Feb 15, 2026" },
 ];
 
 export type AdminOrderDetail = {
@@ -786,9 +792,11 @@ export const auditLogs: AuditLog[] = [
 ];
 
 export const adminBrands: AdminBrand[] = [
-  { id: "brd-001", name: "Khattak Atelier", slug: "khattak-atelier", logo: "", description: "Premium handcrafted eyewear using the finest materials", website: "https://khattak.com/atelier", featured: true, productCount: 38, status: "active", createdAt: "Jan 1, 2026" },
-  { id: "brd-002", name: "Khattak Signature", slug: "khattak-signature", logo: "", description: "Distinctive designs for the modern individual", website: "https://khattak.com/signature", featured: true, productCount: 45, status: "active", createdAt: "Jan 1, 2026" },
-  { id: "brd-003", name: "Khattak Heritage", slug: "khattak-heritage", logo: "", description: "Timeless classics inspired by tradition", website: "https://khattak.com/heritage", featured: true, productCount: 35, status: "active", createdAt: "Jan 15, 2026" },
-  { id: "brd-004", name: "Khattak Performance", slug: "khattak-performance", logo: "", description: "Engineered for athletes and active lifestyles", website: "https://khattak.com/performance", featured: false, productCount: 22, status: "active", createdAt: "Feb 1, 2026" },
-  { id: "brd-005", name: "Khattak Luxe", slug: "khattak-luxe", logo: "", description: "Ultra-premium limited edition collections", website: "https://khattak.com/luxe", featured: false, productCount: 16, status: "inactive", createdAt: "Mar 1, 2026" },
+  { id: "brd-001", name: "Louis Vuitton", slug: "louis-vuitton", logo: "", description: "Iconic French luxury fashion house renowned for high-end eyewear.", website: "https://louisvuitton.com", featured: true, productCount: 24, status: "active", createdAt: "Jan 1, 2026" },
+  { id: "brd-002", name: "Prada", slug: "prada", logo: "", description: "Italian luxury fashion house offering sophisticated and innovative frames.", website: "https://prada.com", featured: true, productCount: 32, status: "active", createdAt: "Jan 1, 2026" },
+  { id: "brd-003", name: "Gucci", slug: "gucci", logo: "", description: "Eclectic, contemporary, and romantic Italian luxury eyewear.", website: "https://gucci.com", featured: true, productCount: 28, status: "active", createdAt: "Jan 15, 2026" },
+  { id: "brd-004", name: "Ray-Ban", slug: "ray-ban", logo: "", description: "Timeless American-Italian brand creator of Aviator and Wayfarer classics.", website: "https://ray-ban.com", featured: true, productCount: 45, status: "active", createdAt: "Feb 1, 2026" },
+  { id: "brd-005", name: "Tom Ford", slug: "tom-ford", logo: "", description: "Glamorous and modern luxury frames crafted with unmatched precision.", website: "https://tomford.com", featured: true, productCount: 19, status: "active", createdAt: "Mar 1, 2026" },
+  { id: "brd-006", name: "Cartier", slug: "cartier", logo: "", description: "French luxury maison specializing in high-jewelry and precious metal eyewear.", website: "https://cartier.com", featured: true, productCount: 14, status: "active", createdAt: "Mar 15, 2026" },
+  { id: "brd-007", name: "Dior", slug: "dior", logo: "", description: "French luxury fashion house presenting elegant and bold eyewear silhouettes.", website: "https://dior.com", featured: false, productCount: 18, status: "active", createdAt: "Apr 1, 2026" },
 ];

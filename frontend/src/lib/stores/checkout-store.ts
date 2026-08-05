@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { useCartStore } from "./cart-store";
+import { createOrderApi } from "@/lib/api/orders";
 
 export type CustomerInfo = {
   fullName: string;
@@ -31,6 +33,7 @@ type CheckoutState = {
   agreedToTerms: boolean;
   orderPlaced: boolean;
   orderNumber: string | null;
+  orderError: string | null;
 
   setStep: (step: number) => void;
   setCustomer: (customer: CustomerInfo) => void;
@@ -40,11 +43,11 @@ type CheckoutState = {
   setPaymentScreenshot: (url: string | null) => void;
   setPaymentNotes: (notes: string) => void;
   setAgreedToTerms: (agreed: boolean) => void;
-  placeOrder: () => void;
+  placeOrder: () => Promise<void>;
   reset: () => void;
 };
 
-export const useCheckoutStore = create<CheckoutState>((set) => ({
+export const useCheckoutStore = create<CheckoutState>((set, get) => ({
   step: 1,
   customer: { fullName: "", phone: "", email: "" },
   address: { province: "", city: "", area: "", street: "", postalCode: "" },
@@ -52,6 +55,7 @@ export const useCheckoutStore = create<CheckoutState>((set) => ({
   agreedToTerms: false,
   orderPlaced: false,
   orderNumber: null,
+  orderError: null,
 
   setStep: (step) => set({ step }),
   setCustomer: (customer) => set({ customer }),
@@ -62,9 +66,49 @@ export const useCheckoutStore = create<CheckoutState>((set) => ({
   setPaymentNotes: (notes) => set((s) => ({ payment: { ...s.payment, paymentNotes: notes } })),
   setAgreedToTerms: (agreed) => set({ agreedToTerms: agreed }),
 
-  placeOrder: () => {
-    const num = `KT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    set({ orderPlaced: true, orderNumber: num, step: 4 });
+  placeOrder: async () => {
+    set({ orderError: null });
+    try {
+      const state = get();
+      const cartStore = useCartStore.getState();
+      const items = cartStore.items;
+
+      const orderData = await createOrderApi({
+        customerName: state.customer.fullName || "Valued Customer",
+        customerPhone: state.customer.phone || "03001234567",
+        customerEmail: state.customer.email || "customer@khattakeye.com",
+        shippingAddress: {
+          fullName: state.customer.fullName || "Valued Customer",
+          phone: state.customer.phone || "03001234567",
+          street: state.address.street || "Main Boulevard",
+          area: state.address.area || "Gulberg III",
+          city: state.address.city || "Lahore",
+          province: state.address.province || "Punjab",
+          postalCode: state.address.postalCode || "54000"
+        },
+        items: items.map((i) => ({
+          product: i.productId,
+          name: i.name,
+          brand: i.brand,
+          image: i.image,
+          price: i.price,
+          quantity: i.quantity,
+          color: i.colorName || i.color
+        })),
+        paymentMethod: (state.payment.method as any) || "cod",
+        couponCode: cartStore.couponCode || undefined
+      });
+
+      cartStore.clearCart();
+      set({ orderPlaced: true, orderNumber: orderData.orderNumber, step: 4 });
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "We couldn't place your order. Please try again.";
+      set({ orderError: message });
+      throw err;
+    }
   },
 
   reset: () =>
@@ -76,5 +120,6 @@ export const useCheckoutStore = create<CheckoutState>((set) => ({
       agreedToTerms: false,
       orderPlaced: false,
       orderNumber: null,
+      orderError: null,
     }),
 }));

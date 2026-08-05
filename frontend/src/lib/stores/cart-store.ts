@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export type CartItem = {
   productId: string;
@@ -37,103 +38,110 @@ type CartState = {
   getItemCount: () => number;
 };
 
-export const useCartStore = create<CartState>((set, get) => ({
-  items: [],
-  savedForLater: [],
-  couponCode: null,
-  couponDiscount: 0,
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      savedForLater: [],
+      couponCode: null,
+      couponDiscount: 0,
 
-  addItem: (item) =>
-    set((state) => {
-      const existing = state.items.find(
-        (i) => i.productId === item.productId && i.color === item.color,
-      );
-      if (existing) {
-        return {
-          items: state.items.map((i) =>
-            i.productId === item.productId && i.color === item.color
-              ? { ...i, quantity: Math.min(i.quantity + item.quantity, i.stock) }
-              : i,
+      addItem: (item) => {
+        const { items } = get();
+        const existing = items.find((i) => i.productId === item.productId && i.color === item.color);
+        if (existing) {
+          set({
+            items: items.map((i) =>
+              i.productId === item.productId && i.color === item.color
+                ? { ...i, quantity: i.quantity + item.quantity }
+                : i
+            ),
+          });
+        } else {
+          set({ items: [...items, item] });
+        }
+      },
+
+      removeItem: (productId, color) => {
+        set({ items: get().items.filter((i) => !(i.productId === productId && i.color === color)) });
+      },
+
+      updateQuantity: (productId, color, quantity) => {
+        if (quantity <= 0) {
+          get().removeItem(productId, color);
+          return;
+        }
+        set({
+          items: get().items.map((i) =>
+            i.productId === productId && i.color === color ? { ...i, quantity } : i
           ),
-        };
-      }
-      return { items: [...state.items, item] };
+        });
+      },
+
+      saveForLater: (productId, color) => {
+        const { items, savedForLater } = get();
+        const target = items.find((i) => i.productId === productId && i.color === color);
+        if (!target) return;
+        set({
+          items: items.filter((i) => !(i.productId === productId && i.color === color)),
+          savedForLater: [...savedForLater, target],
+        });
+      },
+
+      moveToCart: (productId, color) => {
+        const { items, savedForLater } = get();
+        const target = savedForLater.find((i) => i.productId === productId && i.color === color);
+        if (!target) return;
+        set({
+          savedForLater: savedForLater.filter((i) => !(i.productId === productId && i.color === color)),
+          items: [...items, target],
+        });
+      },
+
+      removeSaved: (productId, color) => {
+        set({ savedForLater: get().savedForLater.filter((i) => !(i.productId === productId && i.color === color)) });
+      },
+
+      clearCart: () => set({ items: [], couponCode: null, couponDiscount: 0 }),
+
+      applyCoupon: (code) => {
+        if (code.toUpperCase() === "KHATTAK10") {
+          set({ couponCode: "KHATTAK10", couponDiscount: 0.1 });
+          return true;
+        }
+        return false;
+      },
+
+      removeCoupon: () => set({ couponCode: null, couponDiscount: 0 }),
+
+      getSubtotal: () => {
+        const { items } = get();
+        return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      },
+
+      getDiscount: () => {
+        const { couponDiscount, getSubtotal } = get();
+        return getSubtotal() * couponDiscount;
+      },
+
+      getShipping: () => {
+        const subtotal = get().getSubtotal();
+        return subtotal >= 3000 ? 0 : 350;
+      },
+
+      getTotal: () => {
+        const subtotal = get().getSubtotal();
+        const discount = get().getDiscount();
+        const shipping = get().getShipping();
+        return subtotal - discount + shipping;
+      },
+
+      getItemCount: () => {
+        return get().items.reduce((sum, item) => sum + item.quantity, 0);
+      },
     }),
-
-  removeItem: (productId, color) =>
-    set((state) => ({
-      items: state.items.filter(
-        (i) => !(i.productId === productId && i.color === color),
-      ),
-    })),
-
-  updateQuantity: (productId, color, quantity) =>
-    set((state) => ({
-      items: state.items.map((i) =>
-        i.productId === productId && i.color === color
-          ? { ...i, quantity: Math.max(1, Math.min(quantity, i.stock)) }
-          : i,
-      ),
-    })),
-
-  saveForLater: (productId, color) =>
-    set((state) => {
-      const item = state.items.find((i) => i.productId === productId && i.color === color);
-      if (!item) return state;
-      return {
-        items: state.items.filter((i) => !(i.productId === productId && i.color === color)),
-        savedForLater: [...state.savedForLater.filter((i) => !(i.productId === productId && i.color === color)), item],
-      };
-    }),
-  moveToCart: (productId, color) =>
-    set((state) => {
-      const item = state.savedForLater.find((i) => i.productId === productId && i.color === color);
-      if (!item) return state;
-      return {
-        savedForLater: state.savedForLater.filter((i) => !(i.productId === productId && i.color === color)),
-        items: [...state.items, { ...item, quantity: 1 }],
-      };
-    }),
-  removeSaved: (productId, color) =>
-    set((state) => ({
-      savedForLater: state.savedForLater.filter((i) => !(i.productId === productId && i.color === color)),
-    })),
-  clearCart: () => set({ items: [], savedForLater: [], couponCode: null, couponDiscount: 0 }),
-
-  applyCoupon: (code) => {
-    const valid = code.toUpperCase() === "KHATTAK10";
-    if (valid) {
-      set({ couponCode: code, couponDiscount: 0.1 });
-      return true;
+    {
+      name: "khattak_cart_storage",
     }
-    return false;
-  },
-
-  removeCoupon: () => set({ couponCode: null, couponDiscount: 0 }),
-
-  getSubtotal: () => {
-    const { items } = get();
-    return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  },
-
-  getDiscount: () => {
-    const { couponDiscount, getSubtotal } = get();
-    return getSubtotal() * couponDiscount;
-  },
-
-  getShipping: () => {
-    const subtotal = get().getSubtotal();
-    return subtotal >= 3000 ? 0 : 350;
-  },
-
-  getTotal: () => {
-    const subtotal = get().getSubtotal();
-    const discount = get().getDiscount();
-    const shipping = get().getShipping();
-    return subtotal - discount + shipping;
-  },
-
-  getItemCount: () => {
-    return get().items.reduce((sum, item) => sum + item.quantity, 0);
-  },
-}));
+  )
+);

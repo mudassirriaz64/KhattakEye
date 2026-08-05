@@ -8,16 +8,24 @@ import { ManualPaymentForm } from "@/components/checkout/ManualPaymentForm";
 import { OrderReviewContent } from "@/components/checkout/OrderReview";
 import { OrderSuccess } from "@/components/order/OrderSuccess";
 import { ProductRecommendations } from "@/components/product/ProductRecommendations";
-import { allProducts } from "@/lib/shop-data";
+import { getProducts, mapProductCard } from "@/lib/api/products";
 import { motion, AnimatePresence } from "framer-motion";
 import { Navigate, Link } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export function CheckoutPage() {
   const step = useCheckoutStore((s) => s.step);
   const orderNumber = useCheckoutStore((s) => s.orderNumber);
   const orderPlaced = useCheckoutStore((s) => s.orderPlaced);
   const items = useCartStore((s) => s.items);
+  const [recommended, setRecommended] = useState<any[]>([]);
+
+  useEffect(() => {
+    getProducts({ limit: 8 }).then((data) => {
+      if (data && data.items) setRecommended(data.items.map(mapProductCard));
+    }).catch(() => setRecommended([]));
+  }, []);
 
   if (items.length === 0 && !orderPlaced) {
     return (
@@ -35,7 +43,7 @@ export function CheckoutPage() {
       <div className="mx-auto max-w-[1440px] px-4 py-10 md:px-8">
         <OrderSuccess orderNumber={orderNumber || "KT-UNKNOWN"} estimatedDelivery="August 5, 2026" />
         <div className="mt-14">
-          <ProductRecommendations title="You May Also Like" products={allProducts.slice(0, 4)} />
+          <ProductRecommendations title="You May Also Like" products={recommended.slice(0, 4)} />
         </div>
       </div>
     );

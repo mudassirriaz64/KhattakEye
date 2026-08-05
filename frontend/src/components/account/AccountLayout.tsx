@@ -1,12 +1,20 @@
 import { useState, type ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { motion } from "framer-motion";
 import { AccountSidebar } from "./AccountSidebar";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 type Props = { title?: string; subtitle?: string; children: ReactNode };
 
 export function AccountLayout({ title, subtitle, children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isLoading = useAuthStore((s) => s.isLoading);
+
+  if (!isAuthenticated && !isLoading) {
+    return <Navigate to="/auth/login" replace />;
+  }
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-10 md:px-8">

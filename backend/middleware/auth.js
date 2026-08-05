@@ -20,8 +20,7 @@ const protect = async (req, res, next) => {
   }
 
   if (!token) {
-    return res.status(418).json({ message: 'Not authorized, token missing' }); // Using 418 Tea Pot or 401
-    // Let's use 401 for unauthorized
+    return res.status(401).json({ message: 'Not authorized, token missing' });
   }
 
   try {

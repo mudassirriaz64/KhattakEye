@@ -1,34 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ClipboardList, Search, AlertTriangle, Plus, Minus, History, Filter } from "lucide-react";
-import { adminInventory, inventoryHistory, type InventoryItem, type InventoryHistory } from "@/lib/admin-data";
+import type { InventoryItem, InventoryHistory } from "@/lib/admin-data";
 import { StatusBadge, StockBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
+import { getPublicProductsApi, adminUpdateProductApi } from "@/lib/api/admin";
 
 const stockFilters = ["All", "In Stock", "Low Stock", "Out of Stock"];
 
 export function AdminInventoryPage() {
-  const [items, setItems] = useState(adminInventory);
+  const [items, setItems] = useState<InventoryItem[]>([]);
   const [search, setSearch] = useState("");
   const [stockFilter, setStockFilter] = useState("All");
   const [showHistory, setShowHistory] = useState(false);
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
-  const [editStock, setEditStock] = useState<{ id: string; value: number } | null>(null);
 
-  const filtered = items.filter((i) => {
-    const matchStock = stockFilter === "All" || i.status === stockFilter.toLowerCase().replace(/\s+/g, "-");
-    const matchSearch = !search || i.name.toLowerCase().includes(search.toLowerCase()) || i.sku.toLowerCase().includes(search.toLowerCase());
-    return matchStock && matchSearch;
-  });
+  useEffect(() => {
+    getPublicProductsApi(1, 100).then((data) => {
+      if (data && data.items) {
+        const mapped: InventoryItem[] = data.items.map((p: any) => {
+          const stock = p.stock !== undefined ? p.stock : 10;
+          const status = stock === 0 ? "out-of-stock" : stock <= 5 ? "low-stock" : "in-stock";
+          return {
+            id: p._id || p.id,
+            sku: p.sku || `KT-${p._id?.substring(0, 6) || "INV"}`,
+            name: p.name,
+            image: p.images && p.images[0] ? p.images[0] : "",
+            category: p.category || "Sunglasses",
+            stock,
+            reserved: 0,
+            available: stock,
+            reorderPoint: 5,
+            lowStockThreshold: 5,
+            status,
+            lastRestocked: p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : new Date().toLocaleDateString()
+          };
+        });
+        setItems(mapped);
+      }
+    }).catch(() => {});
+  }, []);
 
-  const updateStock = (id: string, delta: number) => {
+  const updateStock = async (id: string, delta: number) => {
+    const target = items.find((i) => i.id === id);
+    if (!target) return;
+    const newStock = Math.max(0, target.stock + delta);
     setItems((prev) => prev.map((item) => {
       if (item.id !== id) return item;
-      const newStock = Math.max(0, item.stock + delta);
       const status: "in-stock" | "low-stock" | "out-of-stock" = newStock === 0 ? "out-of-stock" : newStock <= item.lowStockThreshold ? "low-stock" : "in-stock";
       return { ...item, stock: newStock, available: newStock - item.reserved, status };
     }));
-    setEditStock(null);
+    try {
+      await adminUpdateProductApi(id, { stock: newStock });
+    } catch (err) {
+      console.error("Failed to update stock:", err);
+    }
   };
 
   const bulkUpdate = (amount: number) => {
@@ -41,7 +67,7 @@ export function AdminInventoryPage() {
   };
 
   const lowStockItems = items.filter((i) => i.status === "low-stock" || i.status === "out-of-stock");
-  const histForItem = selectedSku ? inventoryHistory.filter((h) => h.sku === selectedSku) : inventoryHistory;
+  const histForItem: InventoryHistory[] = [];
 
   return (
     <div>
@@ -147,7 +173,13 @@ export function AdminInventoryPage() {
             </div>
           </div>
           <div className="mt-4 space-y-2">
-            {histForItem.map((h, i) => (
+            {histForItem.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-[color:var(--color-border)] p-6 text-center">
+                <History className="mx-auto h-6 w-6 text-[color:var(--color-text-tertiary)]" />
+                <p className="mt-2 text-xs text-[color:var(--color-text-secondary)]">No inventory history available yet.</p>
+              </div>
+            ) : (
+            histForItem.map((h, i) => (
               <div key={h.id} className="flex items-center justify-between rounded-xl bg-[color:var(--color-surface-muted)] p-3">
                 <div className="flex items-center gap-3">
                   <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold", h.type === "restock" ? "bg-emerald-500/10 text-emerald-600" : h.type === "sale" ? "bg-[color:var(--color-brand-hover)]/10 text-[color:var(--color-brand-hover)]" : h.type === "adjustment" ? "bg-amber-500/10 text-amber-600" : "bg-[color:var(--color-brand-primary)]/10 text-[color:var(--color-brand-primary)]")}>
@@ -168,7 +200,7 @@ export function AdminInventoryPage() {
                   <p className="text-[10px] text-[color:var(--color-text-tertiary)]">{h.before} → {h.after}</p>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       )}

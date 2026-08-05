@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/layout/AppShell";
 import { GlobalLayout } from "@/components/global/GlobalLayout";
 import { PageTransition } from "@/components/shared/PageTransition";
+import { ScrollToTop } from "@/components/shared/ScrollToTop";
 import { ButtonsPage } from "@/pages/ButtonsPage";
 import { CardsPage } from "@/pages/CardsPage";
 import { ColorsPage } from "@/pages/ColorsPage";
@@ -74,6 +75,9 @@ import { AdminActivityLogsPage } from "@/pages/admin/ActivityLogsPage";
 import { AdminSystemNotificationsPage } from "@/pages/admin/SystemNotificationsPage";
 import { AdminSecurityPage } from "@/pages/admin/SecurityPage";
 import { AdminAuditLogsPage } from "@/pages/admin/AuditLogsPage";
+import { AboutPage } from "@/pages/AboutPage";
+import { ContactPage } from "@/pages/ContactPage";
+import { FAQPage } from "@/pages/FAQPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { OfflinePage } from "@/pages/OfflinePage";
@@ -186,6 +190,10 @@ function AppRoutes() {
         <Route path="/500" element={<PageTransition><ErrorPage /></PageTransition>} />
         <Route path="/offline" element={<PageTransition><OfflinePage /></PageTransition>} />
         <Route path="/maintenance" element={<PageTransition><MaintenancePage /></PageTransition>} />
+        <Route path="/about" element={<PageTransition><GlobalLayout><AboutPage /></GlobalLayout></PageTransition>} />
+        <Route path="/contact" element={<PageTransition><GlobalLayout><ContactPage /></GlobalLayout></PageTransition>} />
+        <Route path="/faq" element={<PageTransition><GlobalLayout><FAQPage /></GlobalLayout></PageTransition>} />
+        <Route path="/faqs" element={<PageTransition><GlobalLayout><FAQPage /></GlobalLayout></PageTransition>} />
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
     </AnimatePresence>
@@ -207,6 +215,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AppRoutes />
     </BrowserRouter>
   );

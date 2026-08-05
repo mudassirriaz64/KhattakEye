@@ -1,20 +1,53 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Package, Search, Plus, Download, Upload, MoreHorizontal, Eye, Edit3, Copy, Trash2, SlidersHorizontal } from "lucide-react";
-import { adminProducts, type AdminProduct } from "@/lib/admin-data";
+import { Package, Search, Plus, Download, Upload, MoreHorizontal, Eye, Edit3, Copy, Trash2, SlidersHorizontal, LoaderCircle } from "lucide-react";
 import { StatusBadge, StockBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { cn } from "@/lib/utils";
+import { adminGetProductsApi } from "@/lib/api/admin";
+import { useToastStore } from "@/lib/stores/toast-store";
 
 const statusFilters = ["All", "Active", "Draft", "Archived"];
 
 export function AdminProductsPage() {
-  const [products, setProducts] = useState(adminProducts);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [selected, setSelected] = useState<string[]>([]);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const addToast = useToastStore((s) => s.addToast);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const res = await adminGetProductsApi();
+      if (res && res.items) {
+        // Map backend schema to frontend table structure
+        const formatted = res.items.map((p: any) => ({
+          id: p._id,
+          name: p.name,
+          sku: p.sku || 'N/A',
+          category: p.category,
+          stock: p.stock || 0,
+          price: p.price,
+          status: p.status || 'draft',
+          featured: p.featured || false,
+          image: p.images && p.images.length > 0 ? p.images[0] : 'https://via.placeholder.com/150',
+        }));
+        setProducts(formatted);
+      }
+    } catch (error) {
+      addToast({ title: "Error", description: "Failed to load products", type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = products.filter((p) => {
     const matchStatus = activeFilter === "All" || p.status === activeFilter.toLowerCase();
@@ -92,7 +125,14 @@ export function AdminProductsPage() {
             </thead>
             <tbody>
               <AnimatePresence>
-                {filtered.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={9} className="py-16 text-center">
+                      <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-[color:var(--color-brand-primary)]" />
+                      <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">Loading products...</p>
+                    </td>
+                  </tr>
+                ) : filtered.length === 0 ? (
                   <tr><td colSpan={9} className="py-16 text-center"><Package className="mx-auto h-8 w-8 text-[color:var(--color-text-tertiary)]" /><p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">No products found</p></td></tr>
                 ) : (
                   filtered.map((product, i) => (

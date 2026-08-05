@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -7,16 +8,52 @@ import { StatCard } from "@/components/admin/StatCard";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { BarChart, DonutChart } from "@/components/admin/AdminCharts";
 import { dashboardStats, monthlyRevenue, recentOrders, latestCustomers, activityFeed } from "@/lib/admin-data";
+import { adminGetDashboardStatsApi, adminGetOrdersApi } from "@/lib/api/admin";
 
-const widgets = [
-  { label: "Total Revenue", value: "Rs. 2,456,800", icon: <DollarSign className="h-5 w-5" />, trend: { value: "12.5%", positive: true }, color: "text-emerald-600", bg: "bg-emerald-500/10" },
-  { label: "Total Orders", value: "1,247", icon: <ShoppingCart className="h-5 w-5" />, trend: { value: "8.2%", positive: true }, color: "text-[color:var(--color-accent-blue)]", bg: "bg-[color:var(--color-accent-blue)]/10" },
-  { label: "Pending Orders", value: "38", icon: <AlertTriangle className="h-5 w-5" />, trend: { value: "3.1%", positive: false }, color: "text-amber-500", bg: "bg-amber-500/10" },
-  { label: "Total Products", value: "156", icon: <Package className="h-5 w-5" />, trend: { value: "4", positive: true }, color: "text-[color:var(--color-brand-primary)]", bg: "bg-[color:var(--color-brand-primary)]/10" },
-  { label: "Total Customers", value: "892", icon: <Users className="h-5 w-5" />, trend: { value: "18.3%", positive: true }, color: "text-[color:var(--color-accent-teal)]", bg: "bg-[color:var(--color-accent-teal)]/10" },
-  { label: "Low Stock Items", value: "12", icon: <AlertTriangle className="h-5 w-5" />, trend: { value: "2", positive: false }, color: "text-red-500", bg: "bg-red-500/10" },
-  { label: "Today's Sales", value: "Rs. 128,500", icon: <TrendingUp className="h-5 w-5" />, trend: { value: "5.7%", positive: true }, color: "text-[color:var(--color-accent-teal)]", bg: "bg-[color:var(--color-accent-teal)]/10" },
-];
+export function AdminDashboardPage() {
+  const [stats, setStats] = useState({
+    totalRevenue: 2456800,
+    totalOrders: 1247,
+    pendingOrders: 38,
+    totalProducts: 156,
+    lowStockProducts: 12
+  });
+  const [liveRecentOrders, setLiveRecentOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    adminGetDashboardStatsApi().then((data) => {
+      if (data) {
+        setStats({
+          totalRevenue: data.totalRevenue || 0,
+          totalOrders: data.totalOrders || 0,
+          pendingOrders: data.pendingOrders || 0,
+          totalProducts: data.totalProducts || 0,
+          lowStockProducts: data.lowStockProducts || 0
+        });
+      }
+    }).catch(() => {});
+
+    adminGetOrdersApi(1, 5).then((data) => {
+      if (data && data.items) {
+        setLiveRecentOrders(data.items.map((o: any) => ({
+          id: o._id || o.id,
+          orderNumber: o.orderNumber,
+          customer: o.customerName || "Customer",
+          total: o.total || 0,
+          status: o.status || "pending",
+          date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : new Date().toLocaleDateString()
+        })));
+      }
+    }).catch(() => {});
+  }, []);
+
+  const liveWidgets = [
+    { label: "Total Revenue", value: `Rs. ${stats.totalRevenue.toLocaleString()}`, icon: <DollarSign className="h-5 w-5" />, trend: { value: "12.5%", positive: true }, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+    { label: "Total Orders", value: stats.totalOrders.toString(), icon: <ShoppingCart className="h-5 w-5" />, trend: { value: "8.2%", positive: true }, color: "text-[color:var(--color-accent-blue)]", bg: "bg-[color:var(--color-accent-blue)]/10" },
+    { label: "Pending Orders", value: stats.pendingOrders.toString(), icon: <AlertTriangle className="h-5 w-5" />, trend: { value: "3.1%", positive: false }, color: "text-amber-500", bg: "bg-amber-500/10" },
+    { label: "Total Products", value: stats.totalProducts.toString(), icon: <Package className="h-5 w-5" />, trend: { value: "4", positive: true }, color: "text-[color:var(--color-brand-primary)]", bg: "bg-[color:var(--color-brand-primary)]/10" },
+    { label: "Low Stock Items", value: stats.lowStockProducts.toString(), icon: <AlertTriangle className="h-5 w-5" />, trend: { value: "2", positive: false }, color: "text-red-500", bg: "bg-red-500/10" },
+  ];
 
 const orderStatusColors: Record<string, string> = {
   pending: "bg-amber-500/10 text-amber-600",
@@ -48,8 +85,6 @@ const bestSellers = [
   { name: "Verde Artisan Acetate", sales: 156, revenue: "Rs. 3,104,400", image: "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?image_size=portrait_4_3&prompt=emerald+acetate+eyewear+front+view" },
   { name: "Rose Gold Aviator", sales: 95, revenue: "Rs. 3,040,000", image: "https://coresg-normal.trae.ai/api/ide/v1/text_to_image?image_size=portrait_4_3&prompt=rose+gold+aviator+sunglasses+front+view" },
 ];
-
-export function AdminDashboardPage() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
@@ -68,7 +103,7 @@ export function AdminDashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {widgets.map((w, i) => (
+        {liveWidgets.map((w, i) => (
           <StatCard key={w.label} {...w} delay={i * 0.04} />
         ))}
       </div>
@@ -112,11 +147,11 @@ export function AdminDashboardPage() {
             <Link to="/admin/orders" className="text-[10px] font-medium text-[color:var(--color-accent-teal)] hover:underline">View All</Link>
           </div>
           <div className="mt-4 space-y-2">
-            {recentOrders.slice(0, 5).map((order) => (
+            {(liveRecentOrders.length > 0 ? liveRecentOrders : recentOrders.slice(0, 5)).map((order) => (
               <div key={order.id} className="flex items-center justify-between rounded-xl bg-[color:var(--color-surface-muted)] p-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium text-[color:var(--color-text-primary)]">{order.orderNumber}</p>
-                  <p className="text-[10px] text-[color:var(--color-text-tertiary)]">{order.customer} · {order.items} item{order.items > 1 ? "s" : ""}</p>
+                  <p className="text-[10px] text-[color:var(--color-text-tertiary)]">{order.customer}</p>
                 </div>
                 <span className={`rounded-lg px-2 py-0.5 text-[10px] font-semibold capitalize ${orderStatusColors[order.status] || "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]"}`}>{order.status}</span>
                 <span className="ml-3 text-xs font-semibold">Rs. {order.total.toLocaleString()}</span>

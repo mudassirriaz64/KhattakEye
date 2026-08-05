@@ -3,7 +3,6 @@ import { X, Heart, ShoppingBag, Star, ChevronLeft, ChevronRight } from "lucide-r
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useShopStore } from "@/lib/stores/shop-store";
-import { getProductById } from "@/lib/shop-data";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +13,9 @@ export function QuickViewModal() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [wishlisted, setWishlisted] = useState(false);
 
-  const product = quickViewProduct ? getProductById(quickViewProduct) : null;
+  const product = quickViewProduct;
+
+  if (!product) return null;
 
   return (
     <AnimatePresence>

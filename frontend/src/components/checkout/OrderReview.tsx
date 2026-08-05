@@ -1,4 +1,5 @@
-import { CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useCheckoutStore } from "@/lib/stores/checkout-store";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { Button } from "@/components/primitives/Button";
@@ -10,7 +11,9 @@ export function OrderReviewContent() {
   const agreedToTerms = useCheckoutStore((s) => s.agreedToTerms);
   const setAgreedToTerms = useCheckoutStore((s) => s.setAgreedToTerms);
   const placeOrder = useCheckoutStore((s) => s.placeOrder);
+  const orderError = useCheckoutStore((s) => s.orderError);
   const setStep = useCheckoutStore((s) => s.setStep);
+  const [submitting, setSubmitting] = useState(false);
 
   const items = useCartStore((s) => s.items);
   const getSubtotal = useCartStore((s) => s.getSubtotal);
@@ -106,18 +109,34 @@ export function OrderReviewContent() {
         </label>
       </div>
 
+      {orderError && (
+        <div className="flex items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-600">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>{orderError}</p>
+        </div>
+      )}
+
       <div className="flex gap-3">
-        <button type="button" onClick={() => setStep(3)} className="rounded-xl border border-[color:var(--color-border)] px-6 py-3.5 text-sm font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]">
+        <button type="button" onClick={() => setStep(3)} disabled={submitting} className="rounded-xl border border-[color:var(--color-border)] px-6 py-3.5 text-sm font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]">
           Back
         </button>
         <button
           type="button"
-          disabled={!agreedToTerms || items.length === 0}
-          onClick={placeOrder}
+          disabled={!agreedToTerms || items.length === 0 || submitting}
+          onClick={async () => {
+            setSubmitting(true);
+            try {
+              await placeOrder();
+            } catch {
+              // error message is stored in the checkout store
+            } finally {
+              setSubmitting(false);
+            }
+          }}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-[color:var(--color-brand-primary)] px-8 py-3.5 text-sm font-semibold text-white transition-all hover:bg-black disabled:bg-[color:var(--color-disabled-bg)] disabled:text-[color:var(--color-disabled-text)]"
         >
           <CheckCircle2 className="h-4 w-4" />
-          Place Order — Rs. {getTotal().toLocaleString()}
+          {submitting ? "Placing Order…" : `Place Order — Rs. ${getTotal().toLocaleString()}`}
         </button>
       </div>
     </div>

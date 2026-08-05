@@ -1,18 +1,39 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bookmark, Plus, Edit3, Trash2, Search, ExternalLink, X } from "lucide-react";
 import { adminBrands, type AdminBrand } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
+import { adminGetBrandsApi, adminCreateBrandApi, adminDeleteBrandApi } from "@/lib/api/admin";
 
 export function AdminBrandsPage() {
-  const [brands, setBrands] = useState(adminBrands);
+  const [brands, setBrands] = useState<AdminBrand[]>(adminBrands);
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editing, setEditing] = useState<AdminBrand | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<{ name: string; slug: string; description: string; website: string; featured: boolean; status: "active" | "inactive" }>({ name: "", slug: "", description: "", website: "", featured: false, status: "active" });
+
+  useEffect(() => {
+    adminGetBrandsApi().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped: AdminBrand[] = data.map((b: any) => ({
+          id: b._id || b.id,
+          name: b.name,
+          slug: b.slug || b.name.toLowerCase().replace(/\s+/g, "-"),
+          description: b.description || "",
+          logo: b.logo || "",
+          website: b.website || "#",
+          productCount: b.productCount || 0,
+          featured: b.featured !== undefined ? b.featured : true,
+          status: b.status || "active",
+          createdAt: b.createdAt ? new Date(b.createdAt).toLocaleDateString() : new Date().toLocaleDateString()
+        }));
+        setBrands(mapped);
+      }
+    }).catch(() => {});
+  }, []);
 
   const filtered = brands.filter((b) => !search || b.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -24,20 +45,34 @@ export function AdminBrandsPage() {
     setShowForm(true);
   };
 
-  const saveBrand = () => {
+  const saveBrand = async () => {
     if (editing) {
       setBrands((prev) => prev.map((b) => b.id === editing.id ? { ...b, ...form } : b));
     } else {
       const newBrand: AdminBrand = { id: `brd-${Date.now()}`, ...form, logo: "", productCount: 0, createdAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) };
       setBrands((prev) => [newBrand, ...prev]);
+      try {
+        await adminCreateBrandApi({ name: form.name });
+      } catch (err) {
+        console.error("Failed to create brand:", err);
+      }
     }
     setShowForm(false);
     setEditing(null);
     resetForm();
   };
 
-  const removeBrand = () => {
-    if (deleteId) { setBrands((prev) => prev.filter((b) => b.id !== deleteId)); setDeleteId(null); }
+  const removeBrand = async () => {
+    if (deleteId) {
+      const idToDelete = deleteId;
+      setBrands((prev) => prev.filter((b) => b.id !== deleteId));
+      setDeleteId(null);
+      try {
+        await adminDeleteBrandApi(idToDelete);
+      } catch (err) {
+        console.error("Failed to delete brand:", err);
+      }
+    }
   };
 
   return (

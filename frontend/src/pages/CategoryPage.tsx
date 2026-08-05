@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Breadcrumb } from "@/components/shop/Breadcrumb";
 import { FilterSidebar } from "@/components/shop/FilterSidebar";
@@ -6,33 +6,56 @@ import { ProductToolbar } from "@/components/shop/ProductToolbar";
 import { ProductGrid } from "@/components/shop/ProductGrid";
 import { ShopBanner } from "@/components/shop/ShopBanner";
 import { QuickViewModal } from "@/components/quickview/QuickViewModal";
-import { allProducts, categories, sortOptions } from "@/lib/shop-data";
+import { categories, sortOptions } from "@/lib/shop-data";
 import { useShopStore } from "@/lib/stores/shop-store";
+import { getProducts, mapProductCard } from "@/lib/api/products";
 
 export function CategoryPage() {
   const { category } = useParams<{ category: string }>();
   const [filterOpen, setFilterOpen] = useState(false);
+  const [dbProducts, setDbProducts] = useState<any[]>([]);
+
   const selectedFilters = useShopStore((s) => s.selectedFilters);
   const priceRange = useShopStore((s) => s.priceRange);
   const sortBy = useShopStore((s) => s.sortBy);
 
+  useEffect(() => {
+    getProducts({ category: category || undefined, limit: 100 }).then((data) => {
+      if (data && data.items) {
+        setDbProducts(data.items.map(mapProductCard));
+      } else {
+        setDbProducts([]);
+      }
+    }).catch(() => setDbProducts([]));
+  }, [category]);
+
   const catInfo = categories.find((c) => c.id === category);
 
   const filtered = useMemo(() => {
-    let result = [...allProducts];
+    let result = [...dbProducts];
 
     if (category) {
-      result = result.filter((p) => p.category === category);
+      const target = category.toLowerCase();
+      result = result.filter((p) => {
+        const pCat = p.category?.toLowerCase();
+        const pSub = p.subcategory?.toLowerCase();
+        return pCat === target || pSub === target || 
+               (target === 'sunglasses' && pCat === 'sunglasses') || 
+               (target === 'eyeglasses' && pCat === 'eyeglasses');
+      });
     }
 
     Object.entries(selectedFilters).forEach(([groupId, values]) => {
       if (values.length === 0) return;
-      if (groupId === "brand") result = result.filter((p) => values.includes(p.brand.toLowerCase().replace(/\s+/g, "-")));
-      else if (groupId === "gender") result = result.filter((p) => p.gender.some((g) => values.includes(g)));
-      else if (groupId === "frame-shape") result = result.filter((p) => values.includes(p.frameShape));
-      else if (groupId === "frame-material") result = result.filter((p) => values.includes(p.frameMaterial));
-      else if (groupId === "lens-type") result = result.filter((p) => values.includes(p.lensType));
-      else if (groupId === "frame-size") result = result.filter((p) => values.includes(p.frameSize));
+      if (groupId === "category") {
+        result = result.filter((p) => values.includes(p.subcategory?.toLowerCase()) || values.includes(p.category?.toLowerCase()));
+      }
+      else if (groupId === "brand") result = result.filter((p) => values.includes(p.brand.toLowerCase().replace(/\s+/g, "-")));
+      else if (groupId === "gender") result = result.filter((p) => p.gender && p.gender.some((g: string) => values.includes(g)));
+      else if (groupId === "frame-shape") result = result.filter((p) => values.includes(p.frameShape?.toLowerCase()));
+      else if (groupId === "frame-material") result = result.filter((p) => values.includes(p.frameMaterial?.toLowerCase()));
+      else if (groupId === "lens-type") result = result.filter((p) => values.includes(p.lensType?.toLowerCase()));
+      else if (groupId === "frame-size") result = result.filter((p) => values.includes(p.frameSize?.toLowerCase()));
       else if (groupId === "availability") result = result.filter((p) => values.includes(p.availability));
     });
 
@@ -51,7 +74,7 @@ export function CategoryPage() {
     }
 
     return result;
-  }, [category, selectedFilters, priceRange, sortBy]);
+  }, [category, dbProducts, selectedFilters, priceRange, sortBy]);
 
   const categoryName = catInfo?.name || category?.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "Category";
 

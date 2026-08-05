@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard, Package, Grid3X3, Bookmark, ShoppingCart, Users, FileText, BarChart3, Settings, LogOut, ChevronLeft, X,
   ShieldCheck, Star, MessageSquare, ClipboardList, Image, Tag, Mail, Globe, Layout,
-  TrendingUp, Lock, Bell, Activity, UserCog, ScrollText, Shield,
+  TrendingUp, Lock, Bell, Activity, UserCog, ScrollText, Shield, Plus,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/stores/admin-store";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,8 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
   { to: "/admin/orders", icon: ShoppingCart, label: "Orders", badge: "38" },
-  { to: "/admin/products", icon: Package, label: "Products" },
+  { to: "/admin/products", icon: Package, label: "Products", exact: true },
+  { to: "/admin/products/add", icon: Plus, label: "Add Product" },
   { to: "/admin/categories", icon: Grid3X3, label: "Categories" },
   { to: "/admin/brands", icon: Bookmark, label: "Brands" },
   { to: "/admin/payments", icon: ShieldCheck, label: "Payments" },

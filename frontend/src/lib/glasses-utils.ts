@@ -49,7 +49,13 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => resolve(img);
+    img.onerror = () => {
+      // Retry without crossOrigin if CORS fails
+      const fallbackImg = new Image();
+      fallbackImg.onload = () => resolve(fallbackImg);
+      fallbackImg.onerror = () => resolve(img);
+      fallbackImg.src = src;
+    };
     img.crossOrigin = "anonymous";
     img.src = src;
   });
@@ -65,7 +71,7 @@ export function imageToCanvas(img: HTMLImageElement): HTMLCanvasElement {
 
 export function removeBackground(
   img: HTMLImageElement,
-  tolerance = 40,
+  tolerance = 80,
 ): HTMLCanvasElement {
   const canvas = imageToCanvas(img);
   const ctx = canvas.getContext("2d")!;
@@ -73,30 +79,71 @@ export function removeBackground(
   try {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
-
     const w = canvas.width;
     const h = canvas.height;
-    const s = (idx: number) => data[idx];
-    const bgR =
-      (s(0) + s((w - 1) * 4) + s((h - 1) * w * 4) + s((h - 1) * w * 4 + (w - 1) * 4)) / 4;
-    const bgG =
-      (s(1) + s((w - 1) * 4 + 1) + s((h - 1) * w * 4 + 1) + s((h - 1) * w * 4 + (w - 1) * 4 + 1)) / 4;
-    const bgB =
-      (s(2) + s((w - 1) * 4 + 2) + s((h - 1) * w * 4 + 2) + s((h - 1) * w * 4 + (w - 1) * 4 + 2)) / 4;
+
+    const corners = [
+      [0, 0],
+      [w - 1, 0],
+      [0, h - 1],
+      [w - 1, h - 1],
+    ];
 
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
-      const dist = Math.sqrt((r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2);
-      if (dist < tolerance) {
+
+      // Remove all white, off-white, light grey, and cream studio backgrounds
+      if (r > 210 && g > 205 && b > 200) {
         data[i + 3] = 0;
+        continue;
+      }
+
+      // Check distance from corner background samples
+      for (const [cx, cy] of corners) {
+        const cIdx = (cy * w + cx) * 4;
+        const bgR = data[cIdx];
+        const bgG = data[cIdx + 1];
+        const bgB = data[cIdx + 2];
+        const dist = Math.sqrt((r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2);
+        if (dist < tolerance) {
+          data[i + 3] = 0;
+          break;
+        }
       }
     }
 
     ctx.putImageData(imageData, 0, 0);
+
+    // Tight bounding box crop around frame pixels only
+    let minX = w, minY = h, maxX = 0, maxY = 0;
+    let hasPixels = false;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const alpha = data[(y * w + x) * 4 + 3];
+        if (alpha > 30) {
+          hasPixels = true;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (hasPixels && maxX > minX && maxY > minY) {
+      const cropW = maxX - minX + 1;
+      const cropH = maxY - minY + 1;
+      const croppedCanvas = document.createElement("canvas");
+      croppedCanvas.width = cropW;
+      croppedCanvas.height = cropH;
+      const croppedCtx = croppedCanvas.getContext("2d")!;
+      croppedCtx.drawImage(canvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+      return croppedCanvas;
+    }
   } catch {
-    // CORS tainted canvas — return raw image canvas
+    // CORS tainted canvas fallback
   }
 
   return canvas;

@@ -1,11 +1,11 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { ShoppingBag, Package, Heart, Gift, ChevronRight, Eye, Star } from "lucide-react";
 import { AccountLayout } from "@/components/account/AccountLayout";
-import { recentOrders, mockReviews } from "@/lib/account-data";
-import { allProducts } from "@/lib/shop-data";
 import { Button } from "@/components/primitives/Button";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { getMyOrdersApi } from "@/lib/api/orders";
 
 const cards = [
   { label: "Total Orders", value: "3", icon: ShoppingBag, color: "text-[color:var(--color-accent-blue)]", bg: "bg-[color:var(--color-accent-blue)]/10" },
@@ -24,6 +24,23 @@ const statusColor: Record<string, string> = {
 
 export function DashboardPage() {
   const { user } = useAuthStore();
+  const [orders, setOrders] = useState<any[]>([]);
+
+  useEffect(() => {
+    getMyOrdersApi().then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        const mapped = data.map((o: any) => ({
+          id: o._id,
+          orderNumber: o.orderNumber,
+          date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
+          status: o.status || "pending",
+          total: o.total || 0,
+          items: o.items ? o.items.length : 1,
+        }));
+        setOrders(mapped);
+      }
+    }).catch(() => {});
+  }, []);
 
   return (
     <AccountLayout>
@@ -56,8 +73,15 @@ export function DashboardPage() {
             <h3 className="font-display text-lg text-[color:var(--color-text-primary)]">Recent Orders</h3>
             <Link to="/account/orders" className="text-xs font-medium text-[color:var(--color-accent-teal)] hover:underline">View All</Link>
           </div>
+          {orders.length === 0 ? (
+            <div className="mt-4 rounded-xl border border-dashed border-[color:var(--color-border)] p-8 text-center">
+              <Package className="mx-auto h-8 w-8 text-[color:var(--color-text-tertiary)]" />
+              <p className="mt-3 text-sm text-[color:var(--color-text-secondary)]">No orders yet. Start shopping to see your orders here.</p>
+              <Link to="/shop"><Button variant="primary" className="mt-4">Explore Collection</Button></Link>
+            </div>
+          ) : (
           <div className="mt-4 space-y-3">
-            {recentOrders.slice(0, 3).map((order) => (
+            {orders.slice(0, 3).map((order) => (
               <Link key={order.id} to={`/account/orders?id=${order.orderNumber}`} className="flex items-center gap-4 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-4 transition-colors hover:bg-[color:var(--color-surface-muted)]">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[color:var(--color-surface-muted)]">
                   <Package className="h-5 w-5 text-[color:var(--color-text-tertiary)]" />
@@ -72,6 +96,7 @@ export function DashboardPage() {
               </Link>
             ))}
           </div>
+          )}
         </div>
 
         <div>
@@ -98,22 +123,9 @@ export function DashboardPage() {
           </div>
 
           <h3 className="mt-8 font-display text-lg text-[color:var(--color-text-primary)]">Recent Reviews</h3>
-          <div className="mt-4 space-y-3">
-            {mockReviews.slice(0, 2).map((rev) => (
-              <div key={rev.id} className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-4">
-                <div className="flex items-center gap-2.5">
-                  <img src={rev.productImage} alt="" className="h-10 w-10 rounded-lg object-cover" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-[color:var(--color-text-primary)]">{rev.productName}</p>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <svg key={i} className={`h-3 w-3 ${i < rev.rating ? "text-amber-400" : "text-[color:var(--color-text-tertiary)]"}`} fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="mt-4 rounded-xl border border-dashed border-[color:var(--color-border)] p-6 text-center">
+            <Star className="mx-auto h-6 w-6 text-[color:var(--color-text-tertiary)]" />
+            <p className="mt-2 text-xs text-[color:var(--color-text-secondary)]">No reviews yet. Your reviews will appear here.</p>
           </div>
         </div>
       </div>
