@@ -6,7 +6,6 @@ import { WishlistDrawer } from "./WishlistDrawer";
 import { CartDrawer } from "./CartDrawer";
 import { Footer } from "./Footer";
 import { BackToTop } from "./BackToTop";
-import { WhatsAppButton } from "./WhatsAppButton";
 import { ScrollProgress } from "./ScrollProgress";
 import { CookieConsent } from "./CookieConsent";
 import { CommandPalette } from "@/components/shared/CommandPalette";
@@ -41,7 +40,6 @@ export function GlobalLayout({ children }: PropsWithChildren) {
       {children}
       <Footer />
       <BackToTop />
-      <WhatsAppButton />
       <CookieConsent />
     </>
   );
