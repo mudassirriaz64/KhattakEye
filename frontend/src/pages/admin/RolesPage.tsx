@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Shield, Users, Check, X } from "lucide-react";
-import { adminRoles, allPermissions, type AdminRole, type Permission } from "@/lib/admin-data";
-import { Button } from "@/components/primitives/Button";
+import { adminRoles, allPermissions, type AdminRole } from "@/lib/admin-data";
 import { cn } from "@/lib/utils";
 
 export function AdminRolesPage() {

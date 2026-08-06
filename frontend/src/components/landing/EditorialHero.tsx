@@ -15,8 +15,29 @@ const item: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
 };
 
+import { useState, useEffect } from "react";
+import axios from "@/lib/api/axios";
+
 export function EditorialHero() {
-  const slide = heroSlides[0];
+  const [banners, setBanners] = useState<{ image?: string; title?: string }[]>([]);
+
+  useEffect(() => {
+    axios.get("/banners?type=homepage-slider")
+      .then((res) => {
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+          setBanners(res.data);
+        }
+      })
+      .catch((err) => console.error("Failed to load hero banners:", err));
+  }, []);
+
+  const slide = banners.length > 0 ? {
+    desktopImage: banners[0].image,
+    headline: banners[0].title || heroSlides[0].headline,
+    subtitle: heroSlides[0].subtitle,
+    floatingProduct: heroSlides[0].floatingProduct,
+    discountBadge: banners[0].title ? undefined : heroSlides[0].discountBadge
+  } : heroSlides[0];
 
   return (
     <section className="relative overflow-hidden bg-[color:var(--color-app-bg)]">
@@ -43,11 +64,17 @@ export function EditorialHero() {
             variants={item}
             className="mt-7 font-display text-[44px] font-semibold leading-[1.05] text-[color:var(--color-text-primary)] md:text-7xl lg:text-[84px]"
           >
-            Eyewear that
-            <br />
-            <span className="italic text-gradient-brand">speaks</span> before
-            <br />
-            you do.
+            {slide.headline === heroSlides[0].headline ? (
+              <>
+                Eyewear that
+                <br />
+                <span className="italic text-gradient-brand">speaks</span> before
+                <br />
+                you do.
+              </>
+            ) : (
+              slide.headline
+            )}
           </motion.h1>
 
           <motion.p

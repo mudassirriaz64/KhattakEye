@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, ShoppingBag, Heart, MapPin, Star, Bell, Settings, LogOut, ChevronLeft, User, X,
+  LayoutDashboard, ShoppingBag, Heart, MapPin, Star, Bell, Settings, LogOut, X,
 } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { cn } from "@/lib/utils";

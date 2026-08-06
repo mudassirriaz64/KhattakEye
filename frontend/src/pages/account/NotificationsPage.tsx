@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Package, Tag, Megaphone, Info, CheckCheck, Trash2 } from "lucide-react";
 import { AccountLayout } from "@/components/account/AccountLayout";
-import { mockNotifications, type NotificationItem } from "@/lib/account-data";
+import { mockNotifications } from "@/lib/account-data";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
 

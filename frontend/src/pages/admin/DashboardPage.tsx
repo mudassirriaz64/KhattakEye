@@ -1,14 +1,21 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
-  DollarSign, ShoppingCart, Package, Users, AlertTriangle, TrendingUp, Eye, Plus, Settings,
+  DollarSign, ShoppingCart, Package, AlertTriangle, Plus, Settings,
 } from "lucide-react";
 import { StatCard } from "@/components/admin/StatCard";
-import { StatusBadge } from "@/components/admin/StatusBadge";
 import { BarChart, DonutChart } from "@/components/admin/AdminCharts";
-import { dashboardStats, monthlyRevenue, recentOrders, latestCustomers, activityFeed } from "@/lib/admin-data";
+import { monthlyRevenue, recentOrders, latestCustomers, activityFeed } from "@/lib/admin-data";
 import { adminGetDashboardStatsApi, adminGetOrdersApi } from "@/lib/api/admin";
+
+type LiveOrder = {
+  id: string;
+  orderNumber: string;
+  customer: string;
+  total: number;
+  status: string;
+  date: string;
+};
 
 export function AdminDashboardPage() {
   const [stats, setStats] = useState({
@@ -18,7 +25,7 @@ export function AdminDashboardPage() {
     totalProducts: 156,
     lowStockProducts: 12
   });
-  const [liveRecentOrders, setLiveRecentOrders] = useState<any[]>([]);
+  const [liveRecentOrders, setLiveRecentOrders] = useState<LiveOrder[]>([]);
 
   useEffect(() => {
     adminGetDashboardStatsApi().then((data) => {
@@ -35,9 +42,9 @@ export function AdminDashboardPage() {
 
     adminGetOrdersApi(1, 5).then((data) => {
       if (data && data.items) {
-        setLiveRecentOrders(data.items.map((o: any) => ({
-          id: o._id || o.id,
-          orderNumber: o.orderNumber,
+        setLiveRecentOrders(data.items.map((o: { _id?: string; id?: string; orderNumber?: string; customerName?: string; total?: number; status?: string; createdAt?: string }) => ({
+          id: o._id || o.id || "",
+          orderNumber: o.orderNumber || "",
           customer: o.customerName || "Customer",
           total: o.total || 0,
           status: o.status || "pending",

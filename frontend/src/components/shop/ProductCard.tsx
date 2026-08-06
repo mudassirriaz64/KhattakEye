@@ -16,7 +16,7 @@ type ProductCardProps = {
 export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
   const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist);
-  const isWishlisted = isInWishlist(product.id || (product as any)._id);
+  const isWishlisted = isInWishlist(product.id);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const addToRecentlyViewed = useShopStore((s) => s.addToRecentlyViewed);
@@ -61,10 +61,10 @@ export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
       image: images[0],
       price: product.price,
       quantity: 1,
-      color: (product as any).colors?.[0]?.hex || "#000",
-      colorName: (product as any).colors?.[0]?.name || "Standard",
-      size: (product as any).size || "Medium",
-      lensType: (product as any).lensType || "Standard",
+      color: product.variants[0]?.color || "#000",
+      colorName: product.variants[0]?.colorName || "Standard",
+      size: product.frameSize || "Medium",
+      lensType: product.lensType || "Standard",
       sku: product.sku || product.id,
       stock: product.stock || 10
     });

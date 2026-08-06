@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 type Crumb = { label: string; path?: string };
 

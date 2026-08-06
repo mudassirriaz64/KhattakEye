@@ -95,16 +95,17 @@ export const useCheckoutStore = create<CheckoutState>((set, get) => ({
           quantity: i.quantity,
           color: i.colorName || i.color
         })),
-        paymentMethod: (state.payment.method as any) || "cod",
+        paymentMethod: state.payment.method || "cod",
         couponCode: cartStore.couponCode || undefined
       });
 
       cartStore.clearCart();
       set({ orderPlaced: true, orderNumber: orderData.orderNumber, step: 4 });
-    } catch (err: any) {
+    } catch (err) {
+      const apiErr = err as { response?: { data?: { message?: string } }; message?: string };
       const message =
-        err?.response?.data?.message ||
-        err?.message ||
+        apiErr?.response?.data?.message ||
+        apiErr?.message ||
         "We couldn't place your order. Please try again.";
       set({ orderError: message });
       throw err;

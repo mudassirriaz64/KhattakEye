@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ShoppingBag, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { type Product } from "@/lib/shop-data";
 import { useShopStore } from "@/lib/stores/shop-store";
 

@@ -90,7 +90,7 @@ const createTestimonial = async (req, res, next) => {
 const updateTestimonial = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const updated = await Testimonial.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+    const updated = await Testimonial.findByIdAndUpdate(id, req.body, { returnDocument: 'after', runValidators: true });
     if (!updated) return res.status(404).json({ message: 'Testimonial not found' });
     res.status(200).json(updated);
   } catch (error) {

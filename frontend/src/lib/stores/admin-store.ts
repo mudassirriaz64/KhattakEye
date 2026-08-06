@@ -15,7 +15,7 @@ type AdminState = {
   isLoading: boolean;
   sidebarCollapsed: boolean;
   checkAuth: () => Promise<void>;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   toggleSidebar: () => void;
 };
@@ -38,7 +38,7 @@ export const useAdminStore = create<AdminState>((set) => ({
       } else {
         set({ user: null, isAuthenticated: false });
       }
-    } catch (err) {
+    } catch {
       set({ user: null, isAuthenticated: false });
     } finally {
       set({ isLoading: false });
@@ -53,10 +53,12 @@ export const useAdminStore = create<AdminState>((set) => ({
         isAuthenticated: true,
         user: data.user
       });
-      return true;
+      return { success: true };
     } catch (err) {
       console.error("Admin login failed:", err);
-      return false;
+      const apiErr = err as { response?: { data?: { message?: string } }; message?: string };
+      const errorMsg = apiErr?.response?.data?.message || apiErr?.message || "Invalid admin credentials";
+      return { success: false, error: errorMsg };
     } finally {
       set({ isLoading: false });
     }

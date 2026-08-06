@@ -1,15 +1,28 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Star, Search, CheckCircle, XCircle, MessageSquare, Heart, Sparkles } from "lucide-react";
-import { adminReviewsManage, type AdminReviewManage } from "@/lib/admin-data";
-import { StatusBadge } from "@/components/admin/StatusBadge";
+import { adminReviewsManage } from "@/lib/admin-data";
 import { cn } from "@/lib/utils";
 import axios from "@/lib/api/axios";
 
 type Tab = "pending" | "approved" | "rejected";
 
+type ReviewRow = {
+  id: string;
+  product: string;
+  productImage: string;
+  customer: string;
+  rating: number;
+  date: string;
+  status: "pending" | "approved" | "rejected";
+  featured: boolean;
+  title: string;
+  text: string;
+  reply?: string;
+};
+
 export function AdminReviewsManagePage() {
-  const [reviews, setReviews] = useState<any[]>(adminReviewsManage);
+  const [reviews, setReviews] = useState<ReviewRow[]>(adminReviewsManage);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [replyText, setReplyText] = useState<string | null>(null);
@@ -22,7 +35,7 @@ export function AdminReviewsManagePage() {
     try {
       const res = await axios.get("/admin/reviews");
       if (res.data && res.data.items && Array.isArray(res.data.items) && res.data.items.length > 0) {
-        setReviews(res.data.items.map((r: any) => ({
+        setReviews(res.data.items.map((r: { _id: string; productName?: string; product?: { name?: string; images?: string[] }; productImage?: string; user?: { fullName?: string }; rating: number; text: string; createdAt?: string; status?: string; adminReply?: string }) => ({
           id: r._id,
           product: r.productName || r.product?.name || "Product",
           productImage: r.productImage || r.product?.images?.[0] || "",
@@ -34,7 +47,9 @@ export function AdminReviewsManagePage() {
           reply: r.adminReply || undefined
         })));
       }
-    } catch (err) {}
+    } catch {
+      /* review list is optional; keep existing data */
+    }
   };
 
   const filtered = reviews.filter((r) => {
@@ -52,7 +67,7 @@ export function AdminReviewsManagePage() {
     try {
       await axios.put(`/admin/reviews/${id}/status`, { status: apiStatus });
       await fetchReviews();
-    } catch (err) {
+    } catch {
       setReviews((prev) => prev.map((r) => r.id === id ? { ...r, status } : r));
     }
   };
@@ -61,7 +76,7 @@ export function AdminReviewsManagePage() {
     try {
       await axios.put(`/admin/reviews/${id}/status`, { adminReply: reply });
       await fetchReviews();
-    } catch (err) {
+    } catch {
       setReviews((prev) => prev.map((r) => r.id === id ? { ...r, reply } : r));
     }
     setReplyText(null);

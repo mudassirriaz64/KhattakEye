@@ -15,8 +15,8 @@ const fourCategories = [
     subcategories: [
       { name: 'Prescription Glasses', slug: 'prescription-glasses', description: 'Single vision and progressive frames', group: 'Category' },
       { name: 'Computer & Blue Light', slug: 'blue-light', description: 'Digital screen eye strain protection', group: 'Category' },
-      { name: 'Reading Glasses', slug: 'reading-glasses', description: 'Compact magnification frames', group: 'Category' },
-      { name: 'Rimless & Minimalist', slug: 'rimless-frames', description: 'Ultra lightweight rimless design', group: 'Category' }
+      { name: 'Reading Glasses', slug: 'reading-glasses', description: 'Compact magnification frames', group: 'Styles' },
+      { name: 'Rimless & Minimalist', slug: 'rimless-frames', description: 'Ultra lightweight rimless design', group: 'Collections' }
     ]
   },
   {
@@ -29,10 +29,10 @@ const fourCategories = [
     order: 2,
     status: 'active',
     subcategories: [
-      { name: 'Polarized Shades', slug: 'polarized-shades', description: 'Glare-reducing polarized lenses', group: 'Styles' },
+      { name: 'Polarized Shades', slug: 'polarized-shades', description: 'Glare-reducing polarized lenses', group: 'Category' },
       { name: 'Driving Sunglasses', slug: 'driving-sunglasses', description: 'High contrast lenses for optimal driving vision', group: 'Styles' },
-      { name: 'Fashion & Luxury', slug: 'fashion-luxury', description: 'Statement fashion frames', group: 'Styles' },
-      { name: 'Sports Performance', slug: 'sports-performance', description: 'Wrap-around aerodynamic frames', group: 'Styles' }
+      { name: 'Fashion & Luxury', slug: 'fashion-luxury', description: 'Statement fashion frames', group: 'Featured' },
+      { name: 'Sports Performance', slug: 'sports-performance', description: 'Wrap-around aerodynamic frames', group: 'Category' }
     ]
   },
   {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, TrendingDown, Users, ShoppingCart, DollarSign, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import { monthlyRevenue, salesFunnel, conversionMetrics, bestProducts, customerGrowth } from "@/lib/admin-data";
 import { BarChart, DonutChart } from "@/components/admin/AdminCharts";
 import { cn } from "@/lib/utils";

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Image, FileText, Upload, Trash2, Search, FolderOpen } from "lucide-react";
-import { cmsMediaItems, type CmsMediaItem } from "@/lib/admin-data";
+import { cmsMediaItems } from "@/lib/admin-data";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";

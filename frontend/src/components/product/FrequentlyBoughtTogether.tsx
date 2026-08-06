@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { ShoppingBag, Plus } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
-import { cn } from "@/lib/utils";
 
 type Product = {
   id: string;
@@ -29,7 +28,7 @@ export function FrequentlyBoughtTogether({ products, mainProductName, mainProduc
         <div className="flex-shrink-0">
           <img src={mainProductImage} alt={mainProductName} className="h-20 w-20 rounded-xl object-cover" />
         </div>
-        {products.map((product, i) => (
+        {products.map((product) => (
           <div key={product.id} className="flex items-center gap-4">
             <Plus className="h-4 w-4 text-[color:var(--color-text-tertiary)]" />
             <motion.img

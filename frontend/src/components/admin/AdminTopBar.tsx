@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Bell, Menu, LogOut, User, Settings } from "lucide-react";
+import { Search, Bell, Menu, LogOut, Settings } from "lucide-react";
 import { useAdminStore } from "@/lib/stores/admin-store";
-import { cn } from "@/lib/utils";
 
 type Props = { onMenuClick: () => void };
 

@@ -1,12 +1,8 @@
 import { useRef, useState } from "react";
-import { motion } from "framer-motion";
-import type { ReactNode, ButtonHTMLAttributes } from "react";
+import { motion, type HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-type MagneticButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  children: ReactNode;
-  className?: string;
-};
+type MagneticButtonProps = HTMLMotionProps<"button">;
 
 export function MagneticButton({ children, className, ...props }: MagneticButtonProps) {
   const ref = useRef<HTMLButtonElement>(null);
@@ -30,7 +26,7 @@ export function MagneticButton({ children, className, ...props }: MagneticButton
       onMouseLeave={handleLeave}
       animate={{ x: position.x, y: position.y }}
       transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
-      {...(props as any)}
+      {...props}
     >
       {children}
     </motion.button>

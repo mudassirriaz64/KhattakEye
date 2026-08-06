@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowLeft, Save, Plus, X, ImagePlus, LoaderCircle, Glasses } from "lucide-react";
+import { ArrowLeft, Save, X, ImagePlus, LoaderCircle, Glasses } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
-import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
-import { createProductApi, getCategoriesApi, adminGetProductByIdApi } from "@/lib/api/admin";
+import { createProductApi, adminGetProductByIdApi } from "@/lib/api/admin";
 import { useToastStore } from "@/lib/stores/toast-store";
+import { isAxiosError } from "axios";
 
 export function AdminAddGlassesPage() {
   const { id } = useParams<{ id?: string }>();
@@ -47,7 +46,7 @@ export function AdminAddGlassesPage() {
 
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [variants, setVariants] = useState<any[]>([]);
+  const [variants, setVariants] = useState<{ color: string; colorName: string; stock: number }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -161,9 +160,13 @@ export function AdminAddGlassesPage() {
       await createProductApi(formData);
       addToast({ title: "Success", description: id ? "Glasses updated successfully" : "Glasses added successfully", type: "success" });
       navigate("/admin/products");
-    } catch (err: any) {
+    } catch (err) {
+      let message = "Failed to save product";
+      if (isAxiosError(err)) {
+        message = err.response?.data?.message || message;
+      }
       console.error(err);
-      addToast({ title: "Error", description: err.response?.data?.message || "Failed to save product", type: "error" });
+      addToast({ title: "Error", description: message, type: "error" });
     } finally {
       setIsSubmitting(false);
     }

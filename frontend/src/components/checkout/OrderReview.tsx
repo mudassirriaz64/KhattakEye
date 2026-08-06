@@ -2,7 +2,6 @@ import { useState } from "react";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { useCheckoutStore } from "@/lib/stores/checkout-store";
 import { useCartStore } from "@/lib/stores/cart-store";
-import { Button } from "@/components/primitives/Button";
 
 export function OrderReviewContent() {
   const customer = useCheckoutStore((s) => s.customer);

@@ -18,6 +18,7 @@ export type AdminProduct = {
 
 export type AdminCategory = {
   id: string;
+  _id?: string;
   name: string;
   slug: string;
   parent: string | null;
@@ -28,7 +29,34 @@ export type AdminCategory = {
   status: "active" | "inactive";
   productKind?: "glasses" | "lenses";
   type?: "category" | "style" | "collection";
+  group?: string;
   createdAt: string;
+};
+
+export type ApiSubcategory = {
+  _id?: string;
+  id?: string;
+  name: string;
+  slug: string;
+  description?: string;
+  group?: string;
+  productCount?: number;
+};
+
+export type ApiCategory = {
+  _id?: string;
+  id?: string;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  productCount?: number;
+  featured?: boolean;
+  status?: "active" | "inactive";
+  productKind?: "glasses" | "lenses";
+  type?: "category" | "style" | "collection";
+  createdAt?: string;
+  subcategories?: ApiSubcategory[];
 };
 
 export type AdminBrand = {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Send, Trash2, Search, Users } from "lucide-react";
-import { cmsSubscribers, type CmsSubscriber } from "@/lib/admin-data";
+import { cmsSubscribers } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";

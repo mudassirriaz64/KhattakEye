@@ -54,7 +54,6 @@ import { EyeCareTipsPage } from "@/pages/EyeCareTipsPage";
 import { AdminLoginPage } from "@/pages/admin/AdminLoginPage";
 import { AdminDashboardPage } from "@/pages/admin/DashboardPage";
 import { AdminProductsPage } from "@/pages/admin/ProductsPage";
-import { AddEditProductPage } from "@/pages/admin/AddEditProductPage";
 import { AdminAddGlassesPage } from "@/pages/admin/AdminAddGlassesPage";
 import { AdminAddLensesPage } from "@/pages/admin/AdminAddLensesPage";
 import { AdminCategoriesPage } from "@/pages/admin/CategoriesPage";
@@ -173,6 +172,7 @@ function AppRoutes() {
         <Route path="/" element={<PageTransition><GlobalLayout><LandingPage /></GlobalLayout></PageTransition>} />
         <Route path="/shop" element={<PageTransition><GlobalLayout><ShopPage /></GlobalLayout></PageTransition>} />
         <Route path="/shop/:category" element={<PageTransition><GlobalLayout><CategoryPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/:category/:subcategory" element={<PageTransition><GlobalLayout><CategoryPage /></GlobalLayout></PageTransition>} />
         <Route path="/search" element={<PageTransition><GlobalLayout><SearchResultsPage /></GlobalLayout></PageTransition>} />
         <Route path="/product/:slug" element={<PageTransition><GlobalLayout><ProductDetailsPage /></GlobalLayout></PageTransition>} />
         <Route path="/virtual-try-on" element={<PageTransition><GlobalLayout><VirtualTryOnPage /></GlobalLayout></PageTransition>} />

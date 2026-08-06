@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ArrowLeft, Package, CreditCard, User, MapPin, FileText, HeadphonesIcon, Download } from "lucide-react";
 import { mockOrder } from "@/lib/order-data";
 import { OrderTimeline } from "@/components/order/OrderTimeline";
@@ -6,8 +6,6 @@ import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/primitives/Button";
 
 export function AccountOrderDetailsPage() {
-  const [searchParams] = useSearchParams();
-  const orderId = searchParams.get("id") || mockOrder.orderNumber;
   const order = mockOrder;
 
   const details = [

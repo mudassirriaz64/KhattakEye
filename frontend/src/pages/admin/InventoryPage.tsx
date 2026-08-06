@@ -1,15 +1,27 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ClipboardList, Search, AlertTriangle, Plus, Minus, History, Filter } from "lucide-react";
+import { Search, AlertTriangle, Plus, Minus, History } from "lucide-react";
 import type { InventoryItem, InventoryHistory } from "@/lib/admin-data";
-import { StatusBadge, StockBadge } from "@/components/admin/StatusBadge";
+import { StockBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
 import { getPublicProductsApi, adminUpdateProductApi } from "@/lib/api/admin";
 
 const stockFilters = ["All", "In Stock", "Low Stock", "Out of Stock"];
 
+type ApiProduct = {
+  _id?: string;
+  id?: string;
+  sku?: string;
+  name: string;
+  images?: string[];
+  category?: string;
+  stock?: number;
+  updatedAt?: string;
+};
+
 export function AdminInventoryPage() {
   const [items, setItems] = useState<InventoryItem[]>([]);
+  const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
   const [stockFilter, setStockFilter] = useState("All");
   const [showHistory, setShowHistory] = useState(false);
@@ -17,9 +29,9 @@ export function AdminInventoryPage() {
   const [editStock, setEditStock] = useState<{ id: string; value: number } | null>(null);
 
   useEffect(() => {
-    getPublicProductsApi(1, 100).then((data) => {
+    getPublicProductsApi(1, 1000).then((data) => {
       if (data && data.items) {
-        const mapped: InventoryItem[] = data.items.map((p: any) => {
+        const mapped: InventoryItem[] = data.items.map((p: ApiProduct) => {
           const stock = p.stock !== undefined ? p.stock : 10;
           const status = stock === 0 ? "out-of-stock" : stock <= 5 ? "low-stock" : "in-stock";
           return {
@@ -38,6 +50,7 @@ export function AdminInventoryPage() {
           };
         });
         setItems(mapped);
+        setTotal(data.total || mapped.length);
       }
     }).catch(() => {});
   }, []);
@@ -80,7 +93,7 @@ export function AdminInventoryPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl text-[color:var(--color-text-primary)] md:text-3xl">Inventory</h1>
-          <p className="mt-0.5 text-sm text-[color:var(--color-text-secondary)]">{items.length} products · {lowStockItems.length} need attention</p>
+          <p className="mt-0.5 text-sm text-[color:var(--color-text-secondary)]">{total} products · {lowStockItems.length} need attention</p>
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={() => setShowHistory(!showHistory)} className="flex items-center gap-2 rounded-xl border border-[color:var(--color-border)] px-4 py-2.5 text-xs font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)]">
@@ -185,7 +198,7 @@ export function AdminInventoryPage() {
                 <p className="mt-2 text-xs text-[color:var(--color-text-secondary)]">No inventory history available yet.</p>
               </div>
             ) : (
-            histForItem.map((h, i) => (
+            histForItem.map((h) => (
               <div key={h.id} className="flex items-center justify-between rounded-xl bg-[color:var(--color-surface-muted)] p-3">
                 <div className="flex items-center gap-3">
                   <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold", h.type === "restock" ? "bg-emerald-500/10 text-emerald-600" : h.type === "sale" ? "bg-[color:var(--color-brand-hover)]/10 text-[color:var(--color-brand-hover)]" : h.type === "adjustment" ? "bg-amber-500/10 text-amber-600" : "bg-[color:var(--color-brand-primary)]/10 text-[color:var(--color-brand-primary)]")}>

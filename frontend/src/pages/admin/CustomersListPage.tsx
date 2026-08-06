@@ -1,15 +1,29 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Search, Eye, Ban, CheckCircle, Mail } from "lucide-react";
+import { Search, Eye, Ban, CheckCircle } from "lucide-react";
 import { adminCustomerDetails } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { cn } from "@/lib/utils";
 import axios from "@/lib/api/axios";
 
+type CustomerRow = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  totalOrders: number;
+  totalSpent: number;
+  blocked: boolean;
+  gender: string;
+  dateOfBirth: string;
+  joined?: string;
+  joinedDate?: string;
+};
+
 export function AdminCustomersListPage() {
-  const [customers, setCustomers] = useState<any[]>(adminCustomerDetails);
+  const [customers, setCustomers] = useState<CustomerRow[]>(adminCustomerDetails);
   const [search, setSearch] = useState("");
   const [blockId, setBlockId] = useState<string | null>(null);
 
@@ -21,7 +35,7 @@ export function AdminCustomersListPage() {
     try {
       const res = await axios.get("/admin/users");
       if (res.data && res.data.items && Array.isArray(res.data.items) && res.data.items.length > 0) {
-        setCustomers(res.data.items.map((u: any) => ({
+        setCustomers(res.data.items.map((u: { _id: string; fullName?: string; email: string; phone?: string; ordersCount?: number; totalSpent?: number; isBlocked?: boolean; createdAt?: string }) => ({
           id: u._id,
           name: u.fullName || "Customer",
           email: u.email,
@@ -29,10 +43,14 @@ export function AdminCustomersListPage() {
           totalOrders: u.ordersCount || 0,
           totalSpent: u.totalSpent || 0,
           blocked: u.isBlocked || false,
+          gender: "",
+          dateOfBirth: "",
           joinedDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "Recent"
         })));
       }
-    } catch (err) {}
+    } catch {
+      /* user list is optional; keep existing data */
+    }
   };
 
   const filtered = customers.filter((c) => !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase()));
@@ -42,7 +60,7 @@ export function AdminCustomersListPage() {
       try {
         await axios.put(`/admin/users/${blockId}/block`);
         await fetchUsers();
-      } catch (err) {
+      } catch {
         setCustomers((prev) => prev.map((c) => c.id === blockId ? { ...c, blocked: !c.blocked } : c));
       }
       setBlockId(null);

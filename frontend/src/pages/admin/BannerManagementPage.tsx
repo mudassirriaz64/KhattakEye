@@ -10,9 +10,9 @@ import axios from "@/lib/api/axios";
 const defaultForm = { title: "", subtitle: "", link: "", active: true, type: "homepage-slider", position: 1, image: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=1200&fit=crop" };
 
 export function AdminBannerManagementPage() {
-  const [banners, setBanners] = useState<any[]>(cmsBanners);
+  const [banners, setBanners] = useState<CmsBanner[]>(cmsBanners);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<CmsBanner | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(defaultForm);
 
@@ -24,7 +24,7 @@ export function AdminBannerManagementPage() {
     try {
       const res = await axios.get("/admin/banners");
       if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        setBanners(res.data.map(b => ({
+        setBanners(res.data.map((b: { _id: string; title: string; link: string; isActive: boolean; type: string; order: number; image: string }) => ({
           id: b._id,
           title: b.title || "Banner",
           subtitle: "",
@@ -35,12 +35,14 @@ export function AdminBannerManagementPage() {
           image: b.image
         })));
       }
-    } catch (err) {}
+    } catch {
+      /* banner list is optional; keep existing data */
+    }
   };
 
   const resetForm = () => setForm(defaultForm);
 
-  const openEdit = (b: any) => {
+  const openEdit = (b: CmsBanner) => {
     setForm({ title: b.title, subtitle: b.subtitle || "", link: b.link, active: b.active, type: b.type || "homepage-slider", position: b.position || 1, image: b.image || "" });
     setEditing(b);
     setShowForm(true);
@@ -76,7 +78,9 @@ export function AdminBannerManagementPage() {
       if (!deleteId.startsWith("bn-")) {
         try {
           await axios.delete(`/admin/banners/${deleteId}`);
-        } catch (err) {}
+        } catch {
+          /* best-effort delete on the server */
+        }
       }
       setBanners((prev) => prev.filter((b) => b.id !== deleteId));
       setDeleteId(null);

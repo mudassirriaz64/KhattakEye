@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Package, Truck, CreditCard, MapPin, FileText, Printer, Download, CheckCircle, XCircle, MessageSquare } from "lucide-react";
-import { adminOrders } from "@/lib/admin-data";
+import { ArrowLeft, Package, CreditCard, MapPin, Printer, Download, CheckCircle, MessageSquare } from "lucide-react";
+import { adminOrders, type AdminOrderDetail } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,7 @@ const statusFlow = ["pending", "payment-verification", "confirmed", "processing"
 
 export function AdminOrderDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const [order, setOrder] = useState<any>(adminOrders[0]);
+  const [order, setOrder] = useState<AdminOrderDetail>(adminOrders[0]);
   const [currentStatus, setCurrentStatus] = useState("pending");
   const [showStatusMenu, setShowStatusMenu] = useState(false);
 
@@ -27,13 +27,20 @@ export function AdminOrderDetailsPage() {
             customer: {
               name: data.customerName || "Customer",
               email: data.customerEmail || "customer@example.com",
-              phone: data.customerPhone || ""
+              phone: data.customerPhone || "",
+              avatar: null
             },
+            status: data.status || "pending",
             shippingAddress: data.shippingAddress ? `${data.shippingAddress.street}, ${data.shippingAddress.city}` : "Address",
             items: data.items || [],
+            subtotal: data.subtotal ?? adminOrders[0].subtotal,
+            shipping: data.shipping ?? adminOrders[0].shipping,
+            discount: data.discount ?? adminOrders[0].discount,
             total: data.total || 0,
             paymentMethod: data.paymentMethod || "COD",
-            status: data.status || "pending",
+            transactionId: data.transactionId ?? adminOrders[0].transactionId,
+            paymentStatus: data.paymentStatus ?? adminOrders[0].paymentStatus,
+            estimatedDelivery: data.estimatedDelivery ?? adminOrders[0].estimatedDelivery,
             date: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
             timeline: data.timeline || adminOrders[0].timeline
           });

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Plus, Edit3, Trash2, X, Star } from "lucide-react";
-import { adminTestimonials, type Testimonial } from "@/lib/admin-data";
+import { adminTestimonials } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
@@ -10,10 +10,22 @@ import { cn } from "@/lib/utils";
 
 const defaultForm = { name: "", role: "", text: "", rating: 5, featured: false, avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop" };
 
+type TestimonialView = {
+  id: string;
+  name: string;
+  role: string;
+  avatar: string | null;
+  text: string;
+  rating: number;
+  featured: boolean;
+  createdAt: string;
+  status?: "active" | "inactive";
+};
+
 export function AdminTestimonialsPage() {
-  const [testimonials, setTestimonials] = useState<any[]>(adminTestimonials);
+  const [testimonials, setTestimonials] = useState<TestimonialView[]>(adminTestimonials);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<TestimonialView | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(defaultForm);
 
@@ -25,23 +37,25 @@ export function AdminTestimonialsPage() {
     try {
       const res = await axios.get("/admin/testimonials");
       if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        setTestimonials(res.data.map(t => ({
+        setTestimonials(res.data.map((t: { _id: string; customerName: string; text: string; rating: number; isActive: boolean; customerImage?: string; createdAt?: string }) => ({
           id: t._id,
           name: t.customerName,
           role: "Verified Customer",
           text: t.text,
           rating: t.rating,
           featured: t.isActive,
-          avatar: t.customerImage,
+          avatar: t.customerImage || null,
           createdAt: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : "Recent"
         })));
       }
-    } catch (err) {}
+    } catch {
+      /* testimonial list is optional; keep existing data */
+    }
   };
 
   const resetForm = () => setForm(defaultForm);
 
-  const openEdit = (t: any) => {
+  const openEdit = (t: TestimonialView) => {
     setForm({ name: t.name, role: t.role || "", text: t.text, rating: t.rating, featured: t.featured, avatar: t.avatar || "" });
     setEditing(t);
     setShowForm(true);
@@ -76,7 +90,9 @@ export function AdminTestimonialsPage() {
       if (!deleteId.startsWith("tst-")) {
         try {
           await axios.delete(`/admin/testimonials/${deleteId}`);
-        } catch (err) {}
+        } catch {
+          /* best-effort delete on the server */
+        }
       }
       setTestimonials((prev) => prev.filter((t) => t.id !== deleteId));
       setDeleteId(null);

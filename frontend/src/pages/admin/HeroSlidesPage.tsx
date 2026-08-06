@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, Eye, EyeOff, GripVertical, Copy, Trash2, ChevronDown, ChevronUp,
+  Plus, Eye, EyeOff, Copy, Trash2, ChevronDown, ChevronUp,
   ImageIcon, Link as LinkIcon, Calendar,
 } from "lucide-react";
 import { Button } from "@/components/primitives/Button";

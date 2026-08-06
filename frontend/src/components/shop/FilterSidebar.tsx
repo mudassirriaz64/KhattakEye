@@ -6,7 +6,7 @@ import { useShopStore } from "@/lib/stores/shop-store";
 import { Button } from "@/components/primitives/Button";
 import { FilterGroup, FilterCheckbox } from "./FilterGroup";
 import { PriceSlider } from "./PriceSlider";
-import { getProducts } from "@/lib/api/products";
+import { getProducts, type ApiProduct } from "@/lib/api/products";
 
 type FilterSidebarProps = {
   open: boolean;
@@ -20,7 +20,7 @@ export function FilterSidebar({ open, onClose }: FilterSidebarProps) {
   const setPriceRange = useShopStore((s) => s.setPriceRange);
   const resetFilters = useShopStore((s) => s.resetFilters);
 
-  const [dbProducts, setDbProducts] = useState<any[]>([]);
+  const [dbProducts, setDbProducts] = useState<ApiProduct[]>([]);
 
   useEffect(() => {
     getProducts({ limit: 100 }).then((data) => {
@@ -75,7 +75,7 @@ export function FilterSidebar({ open, onClose }: FilterSidebarProps) {
                 const optVal = opt.value.toLowerCase();
                 const optLabel = opt.label.toLowerCase();
 
-                const dynamicCount = activeProductsList.filter((p: any) => {
+                const dynamicCount = activeProductsList.filter((p: ApiProduct) => {
                   const pCat = (p.category || "").toLowerCase();
                   const pSub = (p.subcategory || "").toLowerCase();
                   const pBrand = (p.brand || "").toLowerCase().replace(/\s+/g, "-");

@@ -110,7 +110,7 @@ const upsertCMSPage = async (req, res, next) => {
     const page = await CMSPage.findOneAndUpdate(
       { slug: slug.toLowerCase() },
       { title, content, slug: slug.toLowerCase() },
-      { upsert: true, new: true, runValidators: true }
+      { upsert: true, returnDocument: 'after', runValidators: true }
     );
 
     res.status(200).json(page);
@@ -177,7 +177,7 @@ const createBanner = async (req, res, next) => {
 const updateBanner = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const updated = await Banner.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+    const updated = await Banner.findByIdAndUpdate(id, req.body, { returnDocument: 'after', runValidators: true });
     if (!updated) return res.status(404).json({ message: 'Banner not found' });
     res.status(200).json(updated);
   } catch (error) {
@@ -215,7 +215,7 @@ const updateSettings = async (req, res, next) => {
     const settings = await SiteSettings.findByIdAndUpdate(
       'site-settings',
       { $set: req.body },
-      { new: true, upsert: true, runValidators: true }
+      { returnDocument: 'after', upsert: true, runValidators: true }
     );
     res.status(200).json(settings);
   } catch (error) {

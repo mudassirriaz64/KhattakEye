@@ -3,7 +3,6 @@ import { Search, X, TrendingUp, Clock, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useUiStore } from "@/lib/stores/ui-store";
-import { cn } from "@/lib/utils";
 
 const popularSearches = [
   "Titanium frames",
