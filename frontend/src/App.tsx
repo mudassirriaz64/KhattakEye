@@ -84,6 +84,10 @@ import { AdminSystemNotificationsPage } from "@/pages/admin/SystemNotificationsP
 import { AdminSecurityPage } from "@/pages/admin/SecurityPage";
 import { AdminAuditLogsPage } from "@/pages/admin/AuditLogsPage";
 import { AboutPage } from "@/pages/AboutPage";
+import { StoryPage } from "@/pages/StoryPage";
+import { CraftsmanshipPage } from "@/pages/CraftsmanshipPage";
+import { CareersPage } from "@/pages/CareersPage";
+import { PressPage } from "@/pages/PressPage";
 import { ContactPage } from "@/pages/ContactPage";
 import { FAQPage } from "@/pages/FAQPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
@@ -206,6 +210,10 @@ function AppRoutes() {
         <Route path="/offline" element={<PageTransition><OfflinePage /></PageTransition>} />
         <Route path="/maintenance" element={<PageTransition><MaintenancePage /></PageTransition>} />
         <Route path="/about" element={<PageTransition><GlobalLayout><AboutPage /></GlobalLayout></PageTransition>} />
+        <Route path="/story" element={<PageTransition><GlobalLayout><StoryPage /></GlobalLayout></PageTransition>} />
+        <Route path="/craftsmanship" element={<PageTransition><GlobalLayout><CraftsmanshipPage /></GlobalLayout></PageTransition>} />
+        <Route path="/careers" element={<PageTransition><GlobalLayout><CareersPage /></GlobalLayout></PageTransition>} />
+        <Route path="/press" element={<PageTransition><GlobalLayout><PressPage /></GlobalLayout></PageTransition>} />
         <Route path="/contact" element={<PageTransition><GlobalLayout><ContactPage /></GlobalLayout></PageTransition>} />
         <Route path="/faq" element={<PageTransition><GlobalLayout><FAQPage /></GlobalLayout></PageTransition>} />
         <Route path="/faqs" element={<PageTransition><GlobalLayout><FAQPage /></GlobalLayout></PageTransition>} />
