@@ -10,6 +10,9 @@ const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI);
     isConnected = true;
+    // Register discriminators eagerly
+    require('../models/Glasses');
+    require('../models/Lenses');
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error(`MongoDB Connection Error: ${error.message}`);

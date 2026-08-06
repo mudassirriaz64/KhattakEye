@@ -223,6 +223,18 @@ const updateSettings = async (req, res, next) => {
   }
 };
 
+const getSiteSettings = async (req, res, next) => {
+  try {
+    let settings = await SiteSettings.findById('site-settings');
+    if (!settings) {
+      settings = await SiteSettings.create(defaultSettings);
+    }
+    res.status(200).json(settings.payment || {});
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCMSPage,
   getAllCMSPages,
@@ -233,5 +245,6 @@ module.exports = {
   updateBanner,
   deleteBanner,
   getSettings,
-  updateSettings
+  updateSettings,
+  getSiteSettings
 };

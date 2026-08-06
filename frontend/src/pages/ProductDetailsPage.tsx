@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { Heart, Truck, Shield, RefreshCw, BadgeCheck, Star, GitCompare, Minus, Plus, Glasses } from "lucide-react";
 import { motion } from "framer-motion";
 import { Breadcrumb } from "@/components/shop/Breadcrumb";
@@ -12,7 +12,6 @@ import { Button } from "@/components/primitives/Button";
 import { getProductBySlug as getApiProductBySlug, getProducts, mapProductCard } from "@/lib/api/products";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useShopStore } from "@/lib/stores/shop-store";
-import { QuickCheckoutModal } from "@/components/shop/QuickCheckoutModal";
 
 import { cn } from "@/lib/utils";
 import { type Product } from "@/lib/shop-data";
@@ -58,11 +57,11 @@ interface ProductDetailsData {
 
 export function ProductDetailsPage() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
   const [product, setProduct] = useState<ProductDetailsData | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
 
   const [wishlisted, setWishlisted] = useState(false);
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState(0);
   const addToRecentlyViewed = useShopStore((s) => s.addToRecentlyViewed);
@@ -366,7 +365,7 @@ export function ProductDetailsPage() {
                     sku: product.sku || product.id,
                     stock: product.stock || 10
                   });
-                  setCheckoutOpen(true);
+                  navigate("/cart");
                 }}
               >
                 <span className="font-bold text-sm sm:text-base tracking-wider text-white">BUY NOW</span>
@@ -376,7 +375,7 @@ export function ProductDetailsPage() {
               <Button 
                 variant="outline" 
                 className="w-full py-4 border-[#B81D1D] text-[#B81D1D] hover:bg-[#B81D1D]/5 flex flex-col items-center justify-center gap-0.5 h-auto rounded-xl"
-                onClick={() => setCheckoutOpen(true)}
+                onClick={() => navigate(`/product/${product.slug}/select-lenses`, { state: { selectedVariant } })}
               >
                 <span className="font-bold text-sm sm:text-base tracking-wider text-[#B81D1D]">SELECT LENSES</span>
                 <span className="text-xs font-normal text-[#B81D1D]/80">eyesight or customise glasses color</span>
@@ -388,11 +387,6 @@ export function ProductDetailsPage() {
               To order sunglasses with your eyesight number or customize sunglasses lens color, Choose <strong>SELECT LENSES</strong>.
             </div>
 
-            <QuickCheckoutModal
-              open={checkoutOpen}
-              onClose={() => setCheckoutOpen(false)}
-              product={{ name: product.name, price: product.price, currency: product.currency, image: product.images[0] }}
-            />
 
             <ProductAccordion items={accordionItems} />
           </motion.div>

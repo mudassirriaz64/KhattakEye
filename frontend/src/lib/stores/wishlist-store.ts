@@ -61,33 +61,34 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
     const productId = product._id || product.id;
     const isAuth = useAuthStore.getState().isAuthenticated;
 
+    const currentItems = get().items;
+    const inList = get().isInWishlist(productId);
+    let updatedItems: WishlistItem[];
+    if (inList) {
+      updatedItems = currentItems.filter((i) => (i._id || i.id) !== productId);
+    } else {
+      updatedItems = [...currentItems, product as unknown as WishlistItem];
+    }
+
+    // Optimistically update frontend state instantly
+    set({ items: updatedItems });
+
     if (isAuth) {
-      set({ isLoading: true });
       try {
-        const inList = get().isInWishlist(productId);
         let items: WishlistItem[];
         if (inList) {
           items = await removeFromWishlistApi(productId);
         } else {
           items = await addToWishlistApi(productId);
         }
+        // Sync with verified server response
         set({ items });
       } catch (err) {
-        console.error("Failed to update wishlist server-side:", err);
-      } finally {
-        set({ isLoading: false });
+        console.error("Failed to update wishlist server-side, rolling back:", err);
+        set({ items: currentItems });
       }
     } else {
-      const current = get().items;
-      const exists = current.some((i) => (i._id || i.id) === productId);
-      let updated: WishlistItem[];
-      if (exists) {
-        updated = current.filter((i) => (i._id || i.id) !== productId);
-      } else {
-        updated = [...current, product as unknown as WishlistItem];
-      }
-      saveGuestWishlist(updated);
-      set({ items: updated });
+      saveGuestWishlist(updatedItems);
     }
   },
 

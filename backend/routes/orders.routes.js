@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
+const upload = require('../utils/upload');
 const ordersController = require('../controllers/orders.controller');
 
 // Public order creation and tracking routes
-router.post('/', ordersController.createOrder);
+router.post('/', upload.single('prescriptionFile'), ordersController.createOrder);
 router.get('/:id', ordersController.getOrderById);
 
 // Authenticated customer order history

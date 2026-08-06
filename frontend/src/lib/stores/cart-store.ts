@@ -15,7 +15,25 @@ export type CartItem = {
   lensType: string;
   sku: string;
   stock: number;
+  customization?: {
+    prescriptionType: "none" | "manual" | "file" | "written";
+    prescriptionData?: {
+      od: { sph: string; cyl: string; axis: string; add: string };
+      os: { sph: string; cyl: string; axis: string; add: string };
+      pd: string;
+      pdTwo?: { od: string; os: string };
+    };
+    prescriptionFileCacheKey?: string;
+    prescriptionText?: string;
+    lensType: string;
+    tintColor?: string;
+    tintStrength?: string;
+    priceAdded: number;
+  };
 };
+
+// Memory cache for uploaded files (since File objects cannot be persisted in LocalStorage)
+export const prescriptionFilesCache = new Map<string, File>();
 
 type CartState = {
   items: CartItem[];
@@ -23,8 +41,8 @@ type CartState = {
   couponCode: string | null;
   couponDiscount: number;
   addItem: (item: CartItem) => void;
-  removeItem: (productId: string, color: string) => void;
-  updateQuantity: (productId: string, color: string, quantity: number) => void;
+  removeItem: (productId: string, color: string, customization?: any) => void;
+  updateQuantity: (productId: string, color: string, quantity: number, customization?: any) => void;
   saveForLater: (productId: string, color: string) => void;
   moveToCart: (productId: string, color: string) => void;
   removeSaved: (productId: string, color: string) => void;
@@ -48,11 +66,18 @@ export const useCartStore = create<CartState>()(
 
       addItem: (item) => {
         const { items } = get();
-        const existing = items.find((i) => i.productId === item.productId && i.color === item.color);
+        const existing = items.find(
+          (i) =>
+            i.productId === item.productId &&
+            i.color === item.color &&
+            JSON.stringify(i.customization) === JSON.stringify(item.customization)
+        );
         if (existing) {
           set({
             items: items.map((i) =>
-              i.productId === item.productId && i.color === item.color
+              i.productId === item.productId &&
+              i.color === item.color &&
+              JSON.stringify(i.customization) === JSON.stringify(item.customization)
                 ? { ...i, quantity: i.quantity + item.quantity }
                 : i
             ),
@@ -62,18 +87,33 @@ export const useCartStore = create<CartState>()(
         }
       },
 
-      removeItem: (productId, color) => {
-        set({ items: get().items.filter((i) => !(i.productId === productId && i.color === color)) });
+      removeItem: (productId, color, customization) => {
+        set({
+          items: get().items.filter(
+            (i) =>
+              !(
+                i.productId === productId &&
+                i.color === color &&
+                (customization === undefined ||
+                  JSON.stringify(i.customization) === JSON.stringify(customization))
+              )
+          ),
+        });
       },
 
-      updateQuantity: (productId, color, quantity) => {
+      updateQuantity: (productId, color, quantity, customization) => {
         if (quantity <= 0) {
-          get().removeItem(productId, color);
+          get().removeItem(productId, color, customization);
           return;
         }
         set({
           items: get().items.map((i) =>
-            i.productId === productId && i.color === color ? { ...i, quantity } : i
+            i.productId === productId &&
+            i.color === color &&
+            (customization === undefined ||
+              JSON.stringify(i.customization) === JSON.stringify(customization))
+              ? { ...i, quantity }
+              : i
           ),
         });
       },

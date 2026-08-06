@@ -1,9 +1,23 @@
 const mongoose = require('mongoose');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
 const { sendOrderConfirmationEmail } = require('../utils/email');
 const Coupon = require('../models/Coupon');
 const { resolveImageUrl } = require('../utils/cloudinary');
+
+// Helper to write buffer to temp file
+const writeTempFile = (buffer, originalName) => {
+  return new Promise((resolve, reject) => {
+    const tempPath = path.join(os.tmpdir(), `temp_upload_${Date.now()}_${originalName}`);
+    fs.writeFile(tempPath, buffer, (err) => {
+      if (err) reject(err);
+      else resolve(tempPath);
+    });
+  });
+};
 
 // Helper to format order images
 const formatOrder = (order) => {
@@ -33,7 +47,7 @@ exports.createOrder = async (req, res, next) => {
   const decremented = [];
 
   try {
-    const {
+    let {
       customerName,
       customerPhone,
       customerEmail,
@@ -42,6 +56,23 @@ exports.createOrder = async (req, res, next) => {
       paymentMethod,
       couponCode
     } = req.body;
+
+    // Parse stringified JSON fields if they are sent as strings in multipart request
+    if (typeof shippingAddress === 'string') {
+      try {
+        shippingAddress = JSON.parse(shippingAddress);
+      } catch (err) {
+        return res.status(400).json({ message: 'Invalid shippingAddress JSON format' });
+      }
+    }
+
+    if (typeof items === 'string') {
+      try {
+        items = JSON.parse(items);
+      } catch (err) {
+        return res.status(400).json({ message: 'Invalid items JSON format' });
+      }
+    }
 
     if (!customerName || !customerPhone || !customerEmail || !shippingAddress ||
         !Array.isArray(items) || items.length === 0 || !paymentMethod) {
@@ -57,9 +88,54 @@ exports.createOrder = async (req, res, next) => {
       return res.status(400).json({ message: 'Invalid payment method' });
     }
 
-    // Pass 1: resolve products and compute totals using SERVER-side prices only.
-    // Client-supplied prices are ignored. Nothing is mutated here, so any
-    // validation error below leaves the database untouched.
+    // Try to get authenticated user if not already set by middleware (since this is public endpoint)
+    let authenticatedUserId = req.user ? req.user._id : null;
+    if (!authenticatedUserId) {
+      let token = null;
+      if (req.cookies && req.cookies.token) {
+        token = req.cookies.token;
+      } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        token = req.headers.authorization.split(' ')[1];
+      }
+      if (token) {
+        try {
+          const { verifyToken } = require('../utils/jwt');
+          const User = require('../models/User');
+          const decoded = verifyToken(token, 'customer');
+          const user = await User.findById(decoded.id).select('_id');
+          if (user) {
+            authenticatedUserId = user._id;
+          }
+        } catch (err) {
+          // Ignore invalid tokens for public order routing
+        }
+      }
+    }
+
+    // Upload prescription file if present
+    let prescriptionFilePublicId = null;
+    if (req.file) {
+      let tempPath = null;
+      let compressedPath = null;
+      try {
+        const { compressMedia } = require('../utils/mediaCompression');
+        const { uploadMedia, getCloudinaryFolder } = require('../utils/cloudinary');
+        
+        tempPath = await writeTempFile(req.file.buffer, req.file.originalname);
+        compressedPath = await compressMedia(tempPath, 'image');
+        
+        const folder = getCloudinaryFolder('prescriptions');
+        const cloudinaryResult = await uploadMedia(compressedPath, folder);
+        prescriptionFilePublicId = cloudinaryResult.public_id;
+      } catch (err) {
+        console.error("Prescription upload error:", err);
+      } finally {
+        if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+        if (compressedPath && fs.existsSync(compressedPath)) fs.unlinkSync(compressedPath);
+      }
+    }
+
+    let hasLensCustomization = false;
     let subtotal = 0;
     const formattedItems = [];
 
@@ -78,17 +154,44 @@ exports.createOrder = async (req, res, next) => {
         return res.status(400).json({ message: `Product "${raw.name || raw.product || 'unknown'}" not found` });
       }
 
-      const price = product.price;
-      subtotal += price * qty;
+      let customization = null;
+      let priceAdded = 0;
+
+      if (raw.customization) {
+        hasLensCustomization = true;
+        const cust = raw.customization;
+        priceAdded = Number(cust.priceAdded) || 0;
+
+        // Resolve prescription file ID: use server-uploaded file ID if type is file
+        let fileId = cust.prescriptionFilePublicId || null;
+        if (cust.prescriptionType === 'file' && prescriptionFilePublicId) {
+          fileId = prescriptionFilePublicId;
+        }
+
+        customization = {
+          prescriptionType: cust.prescriptionType,
+          prescriptionData: cust.prescriptionData || undefined,
+          prescriptionFilePublicId: fileId || undefined,
+          prescriptionText: cust.prescriptionText || undefined,
+          lensType: cust.lensType || undefined,
+          tintColor: cust.tintColor || undefined,
+          tintStrength: cust.tintStrength || undefined,
+          priceAdded
+        };
+      }
+
+      const itemPrice = product.price + priceAdded;
+      subtotal += itemPrice * qty;
 
       formattedItems.push({
         product: product._id,
         name: product.name,
         brand: product.brand,
         image: (product.images && product.images[0]) || '',
-        price,
+        price: itemPrice,
         quantity: qty,
-        color: raw.color || 'Default'
+        color: raw.color || 'Default',
+        customization
       });
     }
 
@@ -141,9 +244,11 @@ exports.createOrder = async (req, res, next) => {
       { status: 'delivered', label: 'Delivered', date: new Date(), description: 'Delivered to customer.', completed: false }
     ];
 
+    const paymentType = hasLensCustomization ? 'advance' : 'full';
+
     const order = new Order({
       orderNumber: await buildOrderNumber(),
-      user: req.user ? req.user._id : null,
+      user: authenticatedUserId,
       customerName,
       customerPhone,
       customerEmail,
@@ -162,6 +267,7 @@ exports.createOrder = async (req, res, next) => {
       discount,
       total,
       paymentMethod,
+      paymentType,
       status: 'pending',
       timeline: defaultTimeline,
       couponCode: appliedCoupon ? appliedCoupon.code : undefined,

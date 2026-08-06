@@ -350,6 +350,7 @@ function BrandsMegaPanel({ onEnter, onLeave }: { onEnter: () => void; onLeave: (
 import { getCategories, type Category } from "@/lib/api/categories";
 import { getBrands } from "@/lib/api/products";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { useWishlistStore } from "@/lib/stores/wishlist-store";
 
 export function Navbar() {
   const { isScrolled } = useScrollPosition();
@@ -362,6 +363,7 @@ export function Navbar() {
   const setWishlistOpen = useUiStore((state) => state.setWishlistOpen);
   const setCartOpen = useUiStore((state) => state.setCartOpen);
   const cartCount = useCartStore((s) => s.getItemCount());
+  const wishlistCount = useWishlistStore((s) => s.items.length);
   
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
@@ -535,6 +537,11 @@ export function Navbar() {
             aria-label="Wishlist"
           >
             <Heart className="h-4 w-4" />
+            {wishlistCount > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[color:var(--color-brand-primary)] text-[9px] font-bold text-white shadow-[var(--glow-brand)]">
+                {wishlistCount}
+              </span>
+            )}
           </button>
 
           {isAuthenticated && user ? (

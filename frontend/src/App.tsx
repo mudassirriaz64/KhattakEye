@@ -19,6 +19,7 @@ import { ShopPage } from "@/pages/ShopPage";
 import { CategoryPage } from "@/pages/CategoryPage";
 import { SearchResultsPage } from "@/pages/SearchResultsPage";
 import { ProductDetailsPage } from "@/pages/ProductDetailsPage";
+import { SelectLensesPage } from "@/pages/SelectLensesPage";
 import { VirtualTryOnPage } from "@/pages/VirtualTryOnPage";
 import { WishlistPage } from "@/pages/WishlistPage";
 import { ComparePage } from "@/pages/ComparePage";
@@ -84,6 +85,10 @@ import { AdminSystemNotificationsPage } from "@/pages/admin/SystemNotificationsP
 import { AdminSecurityPage } from "@/pages/admin/SecurityPage";
 import { AdminAuditLogsPage } from "@/pages/admin/AuditLogsPage";
 import { AboutPage } from "@/pages/AboutPage";
+import { StoryPage } from "@/pages/StoryPage";
+import { CraftsmanshipPage } from "@/pages/CraftsmanshipPage";
+import { CareersPage } from "@/pages/CareersPage";
+import { PressPage } from "@/pages/PressPage";
 import { ContactPage } from "@/pages/ContactPage";
 import { FAQPage } from "@/pages/FAQPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
@@ -175,6 +180,7 @@ function AppRoutes() {
         <Route path="/shop/:category/:subcategory" element={<PageTransition><GlobalLayout><CategoryPage /></GlobalLayout></PageTransition>} />
         <Route path="/search" element={<PageTransition><GlobalLayout><SearchResultsPage /></GlobalLayout></PageTransition>} />
         <Route path="/product/:slug" element={<PageTransition><GlobalLayout><ProductDetailsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/product/:slug/select-lenses" element={<PageTransition><GlobalLayout><SelectLensesPage /></GlobalLayout></PageTransition>} />
         <Route path="/virtual-try-on" element={<PageTransition><GlobalLayout><VirtualTryOnPage /></GlobalLayout></PageTransition>} />
         <Route path="/wishlist" element={<PageTransition><GlobalLayout><WishlistPage /></GlobalLayout></PageTransition>} />
         <Route path="/compare" element={<PageTransition><GlobalLayout><ComparePage /></GlobalLayout></PageTransition>} />
@@ -206,6 +212,10 @@ function AppRoutes() {
         <Route path="/offline" element={<PageTransition><OfflinePage /></PageTransition>} />
         <Route path="/maintenance" element={<PageTransition><MaintenancePage /></PageTransition>} />
         <Route path="/about" element={<PageTransition><GlobalLayout><AboutPage /></GlobalLayout></PageTransition>} />
+        <Route path="/story" element={<PageTransition><GlobalLayout><StoryPage /></GlobalLayout></PageTransition>} />
+        <Route path="/craftsmanship" element={<PageTransition><GlobalLayout><CraftsmanshipPage /></GlobalLayout></PageTransition>} />
+        <Route path="/careers" element={<PageTransition><GlobalLayout><CareersPage /></GlobalLayout></PageTransition>} />
+        <Route path="/press" element={<PageTransition><GlobalLayout><PressPage /></GlobalLayout></PageTransition>} />
         <Route path="/contact" element={<PageTransition><GlobalLayout><ContactPage /></GlobalLayout></PageTransition>} />
         <Route path="/faq" element={<PageTransition><GlobalLayout><FAQPage /></GlobalLayout></PageTransition>} />
         <Route path="/faqs" element={<PageTransition><GlobalLayout><FAQPage /></GlobalLayout></PageTransition>} />
@@ -249,15 +259,22 @@ function AppRoutes() {
 import { useEffect } from "react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAdminStore } from "@/lib/stores/admin-store";
+import { useWishlistStore } from "@/lib/stores/wishlist-store";
 
 export default function App() {
   const checkCustomerAuth = useAuthStore((s) => s.checkAuth);
   const checkAdminAuth = useAdminStore((s) => s.checkAuth);
+  const fetchWishlist = useWishlistStore((s) => s.fetchWishlist);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
     checkCustomerAuth();
     checkAdminAuth();
   }, [checkCustomerAuth, checkAdminAuth]);
+
+  useEffect(() => {
+    fetchWishlist();
+  }, [isAuthenticated, fetchWishlist]);
 
   return (
     <BrowserRouter>
