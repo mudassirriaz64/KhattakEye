@@ -93,7 +93,8 @@ export const useCheckoutStore = create<CheckoutState>((set, get) => ({
           image: i.image,
           price: i.price,
           quantity: i.quantity,
-          color: i.colorName || i.color
+          color: i.colorName || i.color,
+          customization: i.customization
         })),
         paymentMethod: state.payment.method || "cod",
         couponCode: cartStore.couponCode || undefined

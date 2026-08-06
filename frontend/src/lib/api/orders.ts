@@ -1,4 +1,5 @@
 import api from './axios';
+import { prescriptionFilesCache } from '../stores/cart-store';
 
 export type CreateOrderPayload = {
   customerName: string;
@@ -21,6 +22,7 @@ export type CreateOrderPayload = {
     price: number;
     quantity: number;
     color: string;
+    customization?: any;
   }>;
   paymentMethod: 'cod' | 'bank-transfer' | 'jazzcash' | 'easypaisa';
   couponCode?: string;
@@ -28,8 +30,62 @@ export type CreateOrderPayload = {
 };
 
 export const createOrderApi = async (payload: CreateOrderPayload) => {
-  const response = await api.post('/orders', payload);
-  return response.data;
+  let fileToUpload: File | null = null;
+  
+  if (payload.items && Array.isArray(payload.items)) {
+    for (const item of payload.items) {
+      if (item.customization?.prescriptionFileCacheKey) {
+        const file = prescriptionFilesCache.get(item.customization.prescriptionFileCacheKey);
+        if (file) {
+          fileToUpload = file;
+          break;
+        }
+      }
+    }
+  }
+
+  if (fileToUpload) {
+    const formData = new FormData();
+    formData.append("customerName", payload.customerName);
+    formData.append("customerPhone", payload.customerPhone);
+    formData.append("customerEmail", payload.customerEmail);
+    formData.append("shippingAddress", JSON.stringify(payload.shippingAddress));
+    formData.append("paymentMethod", payload.paymentMethod);
+    if (payload.couponCode) {
+      formData.append("couponCode", payload.couponCode);
+    }
+    if (payload.notes) {
+      formData.append("notes", payload.notes);
+    }
+
+    // Strip binary file details from customized items JSON to keep payload clean
+    const serializedItems = payload.items.map((item: any) => {
+      if (item.customization) {
+        const { prescriptionFile, ...rest } = item.customization;
+        return {
+          ...item,
+          customization: rest
+        };
+      }
+      return item;
+    });
+
+    formData.append("items", JSON.stringify(serializedItems));
+    formData.append("prescriptionFile", fileToUpload);
+
+    const response = await api.post('/orders', formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
+    });
+    
+    // Clear files from memory cache after successful upload
+    prescriptionFilesCache.clear();
+    return response.data;
+  } else {
+    const response = await api.post('/orders', payload);
+    return response.data;
+  }
 };
 
 export const getOrderByIdApi = async (id: string) => {

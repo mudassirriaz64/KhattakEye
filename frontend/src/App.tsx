@@ -19,6 +19,7 @@ import { ShopPage } from "@/pages/ShopPage";
 import { CategoryPage } from "@/pages/CategoryPage";
 import { SearchResultsPage } from "@/pages/SearchResultsPage";
 import { ProductDetailsPage } from "@/pages/ProductDetailsPage";
+import { SelectLensesPage } from "@/pages/SelectLensesPage";
 import { VirtualTryOnPage } from "@/pages/VirtualTryOnPage";
 import { WishlistPage } from "@/pages/WishlistPage";
 import { ComparePage } from "@/pages/ComparePage";
@@ -179,6 +180,7 @@ function AppRoutes() {
         <Route path="/shop/:category/:subcategory" element={<PageTransition><GlobalLayout><CategoryPage /></GlobalLayout></PageTransition>} />
         <Route path="/search" element={<PageTransition><GlobalLayout><SearchResultsPage /></GlobalLayout></PageTransition>} />
         <Route path="/product/:slug" element={<PageTransition><GlobalLayout><ProductDetailsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/product/:slug/select-lenses" element={<PageTransition><GlobalLayout><SelectLensesPage /></GlobalLayout></PageTransition>} />
         <Route path="/virtual-try-on" element={<PageTransition><GlobalLayout><VirtualTryOnPage /></GlobalLayout></PageTransition>} />
         <Route path="/wishlist" element={<PageTransition><GlobalLayout><WishlistPage /></GlobalLayout></PageTransition>} />
         <Route path="/compare" element={<PageTransition><GlobalLayout><ComparePage /></GlobalLayout></PageTransition>} />

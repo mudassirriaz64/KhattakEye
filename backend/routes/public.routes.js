@@ -7,7 +7,7 @@ const {
   getProductBySlug
 } = require('../controllers/public.controller');
 
-const { getCMSPage, getBanners, getSettings } = require('../controllers/cms.controller');
+const { getCMSPage, getBanners, getSettings, getSiteSettings } = require('../controllers/cms.controller');
 const { getPublicTestimonials } = require('../controllers/testimonials.controller');
 
 // Public catalog routes (no auth required)
@@ -18,6 +18,7 @@ router.get('/products/:slug', getProductBySlug);
 router.get('/cms/:slug', getCMSPage);
 router.get('/banners', getBanners);
 router.get('/settings', getSettings);
+router.get('/site-settings', getSiteSettings);
 router.get('/testimonials', getPublicTestimonials);
 
 module.exports = router;

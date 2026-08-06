@@ -64,8 +64,13 @@ export function OrderReviewContent() {
             <div key={`${item.productId}-${item.color}`} className="flex items-center gap-4 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-app-bg)] p-3">
               <img src={item.image} alt={item.name} className="h-16 w-16 rounded-lg object-cover" />
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-[color:var(--color-text-primary)]">{item.name}</p>
+                <p className="text-xs font-semibold text-[color:var(--color-text-primary)]">{item.name}</p>
                 <p className="text-xs text-[color:var(--color-text-tertiary)]">Qty: {item.quantity} × Rs. {item.price.toLocaleString()}</p>
+                {item.customization && (
+                  <p className="text-[10px] text-[color:var(--color-brand-primary)] font-bold mt-0.5">
+                    Customized Lens: {item.customization.lensType} ({item.customization.tintColor || "Standard"})
+                  </p>
+                )}
               </div>
               <p className="text-sm font-semibold">Rs. {(item.price * item.quantity).toLocaleString()}</p>
             </div>

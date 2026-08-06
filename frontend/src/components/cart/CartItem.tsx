@@ -49,15 +49,15 @@ export function CartItem({ item }: CartItemProps) {
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="flex items-center rounded-lg border border-[color:var(--color-border)]">
-              <button type="button" onClick={() => updateQuantity(item.productId, item.color, item.quantity - 1)} className="flex h-8 w-8 items-center justify-center text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]">
+              <button type="button" onClick={() => updateQuantity(item.productId, item.color, item.quantity - 1, item.customization)} className="flex h-8 w-8 items-center justify-center text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]">
                 <Minus className="h-3 w-3" />
               </button>
               <span className="flex h-8 w-10 items-center justify-center text-xs font-medium text-[color:var(--color-text-primary)]">{item.quantity}</span>
-              <button type="button" onClick={() => updateQuantity(item.productId, item.color, item.quantity + 1)} className="flex h-8 w-8 items-center justify-center text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]">
+              <button type="button" onClick={() => updateQuantity(item.productId, item.color, item.quantity + 1, item.customization)} className="flex h-8 w-8 items-center justify-center text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]">
                 <Plus className="h-3 w-3" />
               </button>
             </div>
-            <button type="button" onClick={() => removeItem(item.productId, item.color)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-danger)]">
+            <button type="button" onClick={() => removeItem(item.productId, item.color, item.customization)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-danger)]">
               <Trash2 className="h-3.5 w-3.5" />
             </button>
             <button type="button" className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]" aria-label="Save for later">

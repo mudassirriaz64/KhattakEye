@@ -12,6 +12,35 @@ const ShippingAddressSchema = new Schema({
   postalCode: { type: String, required: true, trim: true }
 }, { _id: false });
 
+const CustomizationSchema = new Schema({
+  prescriptionType: { type: String, enum: ["manual", "file", "written"] },
+  prescriptionData: {
+    od: {
+      sph: { type: Number },
+      cyl: { type: Number },
+      axis: { type: Number },
+      add: { type: Number }
+    },
+    os: {
+      sph: { type: Number },
+      cyl: { type: Number },
+      axis: { type: Number },
+      add: { type: Number }
+    },
+    pd: { type: Schema.Types.Mixed },
+    pdTwo: {
+      od: { type: Number },
+      os: { type: Number }
+    }
+  },
+  prescriptionFilePublicId: { type: String },
+  prescriptionText: { type: String },
+  lensType: { type: String },
+  tintColor: { type: String },
+  tintStrength: { type: String },
+  priceAdded: { type: Number, default: 0 }
+}, { _id: false });
+
 const OrderItemSchema = new Schema({
   product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
   name: { type: String, required: true, trim: true },
@@ -19,13 +48,15 @@ const OrderItemSchema = new Schema({
   image: { type: String, required: true },
   price: { type: Number, required: true, min: 0 },
   quantity: { type: Number, required: true, min: 1 },
-  color: { type: String, required: true }
+  color: { type: String, required: true },
+  customization: { type: CustomizationSchema, default: null }
 }, { _id: false });
 
 const PaymentProofSchema = new Schema({
   transactionId: { type: String, trim: true },
   screenshotUrl: { type: String },
   notes: { type: String, trim: true },
+  amountPaid: { type: Number },
   verifiedBy: { type: Schema.Types.ObjectId, ref: 'AdminUser', default: null },
   verifiedAt: { type: Date }
 }, { _id: false });
@@ -56,6 +87,7 @@ const OrderSchema = new Schema({
     required: true
   },
   paymentProof: { type: PaymentProofSchema },
+  paymentType: { type: String, enum: ["full", "advance"], default: "full", required: true },
   status: {
     type: String,
     enum: ORDER_STATUS_LIST,
