@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Command, ArrowRight, Clock, TrendingUp, X } from "lucide-react";
+import { Search, ArrowRight, Clock, TrendingUp, X } from "lucide-react";
 import { useUiStore } from "@/lib/stores/ui-store";
 import { cn } from "@/lib/utils";
 
@@ -32,10 +32,10 @@ export function CommandPalette() {
     (s) => !query || s.toLowerCase().includes(query.toLowerCase()),
   );
 
-  const allItems = [
+  const allItems = useMemo(() => [
     ...filteredActions.map((a) => ({ type: "action" as const, ...a })),
     ...filteredRecent.map((s) => ({ type: "search" as const, label: s, path: `/search?q=${encodeURIComponent(s)}`, icon: Clock })),
-  ];
+  ], [filteredActions, filteredRecent]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

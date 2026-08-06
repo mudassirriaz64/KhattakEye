@@ -1,6 +1,4 @@
-import { Link } from "react-router-dom";
-import { ShieldCheck, Lock, Eye, FileText, Database, UserCheck, MessageCircle } from "lucide-react";
-import { Button } from "@/components/primitives/Button";
+import { Lock, Eye, Database, UserCheck } from "lucide-react";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
 
 const privacySections = [

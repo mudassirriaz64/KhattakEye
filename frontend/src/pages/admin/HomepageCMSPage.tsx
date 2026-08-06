@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FileText, Eye, EyeOff, GripVertical } from "lucide-react";
-import { cmsHomepageSections, type CmsHomepageSection } from "@/lib/admin-data";
+import { Eye, EyeOff, GripVertical } from "lucide-react";
+import { cmsHomepageSections } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
 

@@ -1,19 +1,33 @@
 import { useState, useEffect } from "react";
-import { Star, ThumbsUp, Send, CheckCircle2, MessageSquare } from "lucide-react";
+import { Star, Send, CheckCircle2, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import axios from "@/lib/api/axios";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { Button } from "@/components/primitives/Button";
 
+type ReviewItem = {
+  _id?: string;
+  id?: string;
+  user?: { fullName?: string };
+  customer?: string;
+  name?: string;
+  createdAt?: string;
+  date?: string;
+  rating: number;
+  title?: string;
+  text: string;
+  adminReply?: string;
+};
+
 type ProductReviewsProps = {
   productId?: string;
-  reviews?: any[];
+  reviews?: ReviewItem[];
   rating: number;
   reviewCount: number;
 };
 
 export function ProductReviews({ productId, reviews: initialReviews = [], rating, reviewCount }: ProductReviewsProps) {
-  const [liveReviews, setLiveReviews] = useState<any[]>(initialReviews);
+  const [liveReviews, setLiveReviews] = useState<ReviewItem[]>(initialReviews);
   const [userRating, setUserRating] = useState(5);
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
@@ -56,7 +70,7 @@ export function ProductReviews({ productId, reviews: initialReviews = [], rating
       setSubmitted(true);
       setText("");
       setTitle("");
-    } catch (err: any) {
+    } catch (err) {
       setErrorMsg(err.response?.data?.message || "Failed to submit review.");
     } finally {
       setSubmitting(false);

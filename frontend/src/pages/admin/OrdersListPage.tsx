@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ShoppingCart, Search, SlidersHorizontal, ChevronDown, Eye, Download, FileText, Calendar } from "lucide-react";
+import { ShoppingCart, Search, Eye, Download } from "lucide-react";
 import { adminOrders } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
@@ -17,18 +17,29 @@ const paymentColors: Record<string, string> = {
   cod: "bg-amber-500/10 text-amber-600",
 };
 
+type OrderRow = {
+  id: string;
+  orderNumber: string;
+  customer: { name: string; email: string; phone: string };
+  items: unknown[];
+  total: number;
+  paymentMethod: string;
+  status: string;
+  date: string;
+};
+
 export function AdminOrdersListPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [paymentFilter, setPaymentFilter] = useState("All Methods");
-  const [dbOrders, setDbOrders] = useState<any[]>([]);
+  const [dbOrders, setDbOrders] = useState<OrderRow[]>([]);
 
   useEffect(() => {
     adminGetOrdersApi(1, 100).then((data) => {
       if (data && data.items) {
-        const mapped = data.items.map((o: any) => ({
-          id: o._id || o.id,
-          orderNumber: o.orderNumber,
+        const mapped = data.items.map((o: { _id?: string; id?: string; orderNumber?: string; customerName?: string; customerEmail?: string; customerPhone?: string; items?: unknown[]; total?: number; paymentMethod?: string; status?: string; createdAt?: string }) => ({
+          id: o._id || o.id || "",
+          orderNumber: o.orderNumber || "",
           customer: {
             name: o.customerName || "Customer",
             email: o.customerEmail || "customer@example.com",

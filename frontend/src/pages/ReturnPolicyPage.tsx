@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { RotateCcw, ShieldCheck, RefreshCw, CheckCircle2, AlertCircle, HeadphonesIcon, MessageCircle, ArrowRight } from "lucide-react";
+import { RotateCcw, ShieldCheck, RefreshCw, CheckCircle2, AlertCircle, MessageCircle } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
 import { ProductAccordion } from "@/components/product/ProductAccordion";

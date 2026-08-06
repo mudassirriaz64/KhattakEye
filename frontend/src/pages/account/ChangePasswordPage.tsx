@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Eye, EyeOff, AlertCircle, LoaderCircle, CheckCircle2 } from "lucide-react";
+import { Lock, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/primitives/Button";

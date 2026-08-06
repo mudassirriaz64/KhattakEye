@@ -1,37 +1,64 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, Plus, Edit3, Trash2, Search, X, FolderOpen, ArrowRight, Layers } from "lucide-react";
-import { adminLensesCategories, type AdminCategory } from "@/lib/admin-data";
+import { Grid3X3, Plus, Edit3, Trash2, Search, X, FolderOpen, ArrowRight, Layers, Columns } from "lucide-react";
+import { type AdminCategory } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
-import { getCategoriesApi, adminCreateCategoryApi, adminDeleteCategoryApi } from "@/lib/api/admin";
+import { getCategoriesApi, adminCreateCategoryApi, adminDeleteCategoryApi, adminUpdateCategoryApi } from "@/lib/api/admin";
 
 export function AdminLensesCategoriesPage() {
-  const [categories, setCategories] = useState<AdminCategory[]>(adminLensesCategories);
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  
-  useEffect(() => {
+
+  const fetchCategories = () => {
     getCategoriesApi("lenses").then((data) => {
-      if (Array.isArray(data) && data.length > 0) {
-        const mapped: AdminCategory[] = data.map((c: any) => ({
-          id: c._id || c.id,
-          name: c.name,
-          slug: c.slug || c.name.toLowerCase().replace(/\s+/g, "-"),
-          description: c.description || "",
-          productCount: c.productCount || 0,
-          parent: c.parent || null,
-          featured: c.featured !== undefined ? c.featured : true,
-          status: c.status || "active",
-          image: c.image || "",
-          productKind: c.productKind || "lenses",
-          type: c.type || "category",
-          createdAt: c.createdAt || new Date().toISOString()
-        }));
+      if (Array.isArray(data)) {
+        const mapped: AdminCategory[] = [];
+        data.forEach((c) => {
+          const parentId = c._id || c.id || "";
+          mapped.push({
+            id: parentId,
+            name: c.name,
+            slug: c.slug || c.name.toLowerCase().replace(/\s+/g, "-"),
+            description: c.description || "",
+            productCount: c.productCount || 0,
+            parent: null,
+            featured: c.featured !== undefined ? c.featured : true,
+            status: c.status || "active",
+            image: c.image || "",
+            createdAt: c.createdAt || new Date().toISOString()
+          });
+
+          if (Array.isArray(c.subcategories)) {
+            c.subcategories.forEach((sub) => {
+              mapped.push({
+                id: sub._id || sub.id || `${parentId}-${sub.slug}`,
+                _id: sub._id,
+                name: sub.name,
+                slug: sub.slug || sub.name.toLowerCase().replace(/\s+/g, "-"),
+                description: sub.description || "",
+                productCount: sub.productCount || 0,
+                parent: parentId,
+                featured: false,
+                status: "active",
+                image: "",
+                group: sub.group || "Category",
+                createdAt: c.createdAt || new Date().toISOString()
+              });
+            });
+          }
+        });
         setCategories(mapped);
       }
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error("Failed to fetch lenses categories:", err);
+    });
+  };
+  
+  useEffect(() => {
+    fetchCategories();
   }, []);
 
   const [selectedParent, setSelectedParent] = useState<AdminCategory | null>(null);
@@ -50,82 +77,158 @@ export function AdminLensesCategoriesPage() {
   
   const [newSubName, setNewSubName] = useState("");
   const [newSubDescription, setNewSubDescription] = useState("");
+  const [selectedGroupOption, setSelectedGroupOption] = useState("Category");
+  const [customGroup, setCustomGroup] = useState("");
 
   const parentCategories = categories.filter((c) => !c.parent && (!search || c.name.toLowerCase().includes(search.toLowerCase())));
-  const getSubcategories = (parentId: string) => categories.filter((c) => c.parent === parentId);
+  const getSubcategories = useCallback(
+    (parentId: string) => categories.filter((c) => c.parent === parentId),
+    [categories]
+  );
+
+  // Distinct mega-menu groups/columns under a parent (e.g. Shop by Type, Shop by Need)
+  const getMegaMenuColumns = (parentId: string) =>
+    new Set(getSubcategories(parentId).map((s) => s.group).filter(Boolean)).size;
+
+  // Derive distinct existing groups for the selected parent
+  const existingGroups = useMemo(() => {
+    if (!selectedParent) return [];
+    return Array.from(
+      new Set(
+        getSubcategories(selectedParent.id)
+          .map((s) => s.group)
+          .filter(Boolean)
+      )
+    ) as string[];
+  }, [selectedParent, getSubcategories]);
+
+  // Set default selected group option when existingGroups change
+  useEffect(() => {
+    if (existingGroups.length > 0) {
+      setSelectedGroupOption(existingGroups[0]);
+      setCustomGroup("");
+    } else {
+      setSelectedGroupOption("_new_");
+      setCustomGroup("Category");
+    }
+  }, [existingGroups]);
+
+  // Sync selectedParent on categories state update (e.g. after reload)
+  useEffect(() => {
+    if (selectedParent) {
+      const updated = categories.find(c => c.id === selectedParent.id);
+      if (updated) setSelectedParent(updated);
+    }
+  }, [categories, selectedParent]);
 
   const resetParentForm = () => {
     setParentForm({ name: "", slug: "", description: "", productKind: "lenses", type: "category", featured: true, status: "active" });
     setEditingCat(null);
   };
 
-  const openEditParent = (cat: any) => {
+  const openEditParent = (cat: AdminCategory) => {
     setParentForm({ name: cat.name, slug: cat.slug, description: cat.description, productKind: "lenses", type: cat.type || "category", featured: cat.featured, status: cat.status });
     setEditingCat(cat);
     setShowParentForm(true);
   };
 
   const saveParentCategory = async () => {
-    if (editingCat) {
-      setCategories((prev) => prev.map((c) => c.id === editingCat.id ? { ...c, ...parentForm } : c));
-    } else {
-      const newCat: AdminCategory = {
-        id: `cat-lns-${Date.now()}`,
-        ...parentForm,
-        parent: null,
-        productCount: 0,
-        image: "",
-        createdAt: new Date().toISOString()
-      };
-      setCategories((prev) => [newCat, ...prev]);
-      try {
+    try {
+      if (editingCat) {
+        await adminUpdateCategoryApi(editingCat.id, parentForm);
+      } else {
         await adminCreateCategoryApi({
           name: parentForm.name,
           description: parentForm.description,
           productKind: "lenses",
           type: parentForm.type
         });
-      } catch (err) {
-        console.error("Failed to create lenses category:", err);
       }
+      fetchCategories();
+    } catch (err) {
+      console.error("Failed to save lenses category:", err);
     }
     setShowParentForm(false);
     resetParentForm();
   };
 
-  const handleAddSubcategory = () => {
+  const handleAddSubcategory = async () => {
     if (!selectedParent || !newSubName.trim()) return;
     const slug = newSubName.toLowerCase().replace(/\s+/g, "-");
-    const newSub: AdminCategory = {
-      id: `cat-sub-lns-${Date.now()}`,
+    const groupToSave = (existingGroups.length === 0 || selectedGroupOption === "_new_") 
+      ? (customGroup.trim() || "Category") 
+      : selectedGroupOption;
+
+    const newSub = {
       name: newSubName,
       slug,
-      parent: selectedParent.id,
       description: newSubDescription || `${newSubName} under ${selectedParent.name}`,
-      image: "",
-      productCount: 0,
-      featured: false,
-      status: "active",
-      createdAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+      group: groupToSave,
+      productCount: 0
     };
-    setCategories((prev) => [...prev, newSub]);
-    setNewSubName("");
-    setNewSubDescription("");
+
+    const currentSubs = getSubcategories(selectedParent.id).map(s => ({
+      _id: s._id || s.id,
+      name: s.name,
+      slug: s.slug,
+      description: s.description,
+      group: s.group || "Category",
+      productCount: s.productCount
+    }));
+
+    try {
+      await adminUpdateCategoryApi(selectedParent.id, {
+        subcategories: [...currentSubs, newSub]
+      });
+      setNewSubName("");
+      setNewSubDescription("");
+      if (existingGroups.length > 0) {
+        setSelectedGroupOption(existingGroups[0]);
+        setCustomGroup("");
+      } else {
+        setSelectedGroupOption("_new_");
+        setCustomGroup("Category");
+      }
+      fetchCategories();
+    } catch (err) {
+      console.error("Failed to add subcategory option:", err);
+    }
   };
 
   const removeCategory = async () => {
-    if (deleteId) {
-      const idToDelete = deleteId;
-      setCategories((prev) => prev.filter((c) => c.id !== deleteId && c.parent !== deleteId));
-      if (selectedParent && selectedParent.id === deleteId) {
-        setSelectedParent(null);
-      }
-      setDeleteId(null);
-      try {
+    if (!deleteId) return;
+    const idToDelete = deleteId;
+    setDeleteId(null);
+
+    const cat = categories.find(c => c.id === idToDelete);
+    if (!cat) return;
+
+    try {
+      if (cat.parent) {
+        // It is a subcategory, update parent document
+        const currentSubs = categories
+          .filter(c => c.parent === cat.parent && c.id !== idToDelete)
+          .map(s => ({
+            _id: s._id || s.id,
+            name: s.name,
+            slug: s.slug,
+            description: s.description,
+            group: s.group || "Category",
+            productCount: s.productCount
+          }));
+        await adminUpdateCategoryApi(cat.parent, {
+          subcategories: currentSubs
+        });
+      } else {
+        // It is a parent category
         await adminDeleteCategoryApi(idToDelete);
-      } catch (err) {
-        console.error("Failed to delete category:", err);
+        if (selectedParent && selectedParent.id === idToDelete) {
+          setSelectedParent(null);
+        }
       }
+      fetchCategories();
+    } catch (err) {
+      console.error("Failed to delete category:", err);
     }
   };
 
@@ -134,13 +237,13 @@ export function AdminLensesCategoriesPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <Eye className="h-6 w-6 text-teal-600" />
+            <Grid3X3 className="h-6 w-6 text-[color:var(--color-brand-primary)]" />
             <h1 className="font-display text-2xl text-[color:var(--color-text-primary)] md:text-3xl">Contact Lenses Categories</h1>
           </div>
           <p className="mt-0.5 text-sm text-[color:var(--color-text-secondary)]">Manage main Contact Lenses categories (Shop by Type, Shop by Need) & their subcategories</p>
         </div>
-        <Button variant="primary" iconLeft={<Plus className="h-4 w-4" />} onClick={() => { resetParentForm(); setShowParentForm(true); }} className="text-xs bg-teal-600 hover:bg-teal-700 text-white">
-          Add Lenses Parent Category
+        <Button variant="primary" iconLeft={<Plus className="h-4 w-4" />} onClick={() => { resetParentForm(); setShowParentForm(true); }} className="text-xs">
+          Add Parent Category
         </Button>
       </div>
 
@@ -148,7 +251,7 @@ export function AdminLensesCategoriesPage() {
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-6 overflow-hidden">
           <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-5">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">{editingCat ? "Edit Contact Lenses Group" : "New Contact Lenses Parent Category"}</h3>
+              <h3 className="text-sm font-semibold">{editingCat ? "Edit Parent Category" : "New Parent Category"}</h3>
               <button type="button" onClick={() => setShowParentForm(false)}><X className="h-4 w-4" /></button>
             </div>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -160,20 +263,13 @@ export function AdminLensesCategoriesPage() {
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Slug</label>
                 <input type="text" value={parentForm.slug} onChange={(e) => setParentForm((p) => ({ ...p, slug: e.target.value }))} placeholder="e.g. shop-by-type" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm" />
               </div>
-              <div>
-                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Mega-Menu Column</label>
-                <select value={parentForm.type} onChange={(e) => setParentForm((p) => ({ ...p, type: e.target.value as any }))} className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm">
-                  <option value="category">Category (Column 1 - e.g. Shop by Type)</option>
-                  <option value="style">Style / Need (Column 2 - e.g. Shop by Need)</option>
-                </select>
-              </div>
-              <div>
+               <div className="sm:col-span-2">
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Description</label>
                 <input type="text" value={parentForm.description} onChange={(e) => setParentForm((p) => ({ ...p, description: e.target.value }))} placeholder="Category description..." className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm" />
               </div>
             </div>
             <div className="mt-4 flex gap-2">
-              <Button variant="primary" onClick={saveParentCategory} className="text-xs bg-teal-600 hover:bg-teal-700 text-white">{editingCat ? "Update" : "Create"} Lenses Group</Button>
+              <Button variant="primary" onClick={saveParentCategory} className="text-xs">{editingCat ? "Update" : "Create"} Parent Category</Button>
               <Button variant="ghost" onClick={() => setShowParentForm(false)} className="text-xs">Cancel</Button>
             </div>
           </div>
@@ -193,9 +289,10 @@ export function AdminLensesCategoriesPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-[color:var(--color-border)]">
-                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Lenses Parent Group</th>
-                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Mega-Menu Column</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Parent Category</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Subcategories Options</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Mega-Menu Columns</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Total Products</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Status</th>
                 <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Actions</th>
               </tr>
@@ -215,37 +312,45 @@ export function AdminLensesCategoriesPage() {
                     >
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/10 text-teal-600 font-bold">
-                            <Eye className="h-5 w-5" />
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-brand-primary)]/10 text-[color:var(--color-brand-primary)]">
+                            <Grid3X3 className="h-5 w-5" />
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-[color:var(--color-text-primary)] group-hover:text-teal-600 transition-colors">{parent.name}</p>
+                            <p className="text-sm font-semibold text-[color:var(--color-text-primary)] group-hover:text-[color:var(--color-brand-primary)] transition-colors">{parent.name}</p>
                             <p className="text-xs text-[color:var(--color-text-tertiary)]">{parent.description}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-4 text-xs font-semibold text-teal-600 uppercase tracking-wider">
-                        {parent.type === "style" ? "Shop by Need (Col 2)" : "Shop by Type (Col 1)"}
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[color:var(--color-text-secondary)] border border-[color:var(--color-border)]">
+                            <Layers className="h-3.5 w-3.5 text-[color:var(--color-brand-primary)]" />
+                            {subs.length} Options
+                          </span>
+                        </div>
                       </td>
                       <td className="px-4 py-4">
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[color:var(--color-text-secondary)] border border-[color:var(--color-border)]">
-                            <Layers className="h-3.5 w-3.5 text-teal-600" />
-                            {subs.length} Options
+                            <Columns className="h-3.5 w-3.5 text-[color:var(--color-brand-primary)]" />
+                            {getMegaMenuColumns(parent.id)} Columns
                           </span>
                         </div>
+                      </td>
+                      <td className="px-4 py-4 text-sm font-semibold text-[color:var(--color-text-primary)]">
+                        {parent.productCount} products
                       </td>
                       <td className="px-4 py-4"><StatusBadge status={parent.status} /></td>
                       <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
                           <Button 
                             variant="outline" 
-                            className="text-xs h-8 hover:border-teal-500 hover:text-teal-600"
+                            className="text-xs h-8"
                             onClick={() => setSelectedParent(parent)}
                           >
                             Manage Subcategories <ArrowRight className="ml-1 h-3 w-3" />
                           </Button>
-                          <button type="button" onClick={() => openEditParent(parent)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-teal-600"><Edit3 className="h-3.5 w-3.5" /></button>
+                          <button type="button" onClick={() => openEditParent(parent)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]"><Edit3 className="h-3.5 w-3.5" /></button>
                           <button type="button" onClick={() => setDeleteId(parent.id)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-danger)]"><Trash2 className="h-3.5 w-3.5" /></button>
                         </div>
                       </td>
@@ -267,8 +372,8 @@ export function AdminLensesCategoriesPage() {
               {/* Header */}
               <div className="flex items-center justify-between border-b border-[color:var(--color-border)] px-6 py-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-white font-bold">
-                    <Eye className="h-5 w-5" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-brand-primary)] text-white">
+                    <Grid3X3 className="h-5 w-5" />
                   </div>
                   <div>
                     <h2 className="font-display text-lg text-[color:var(--color-text-primary)]">{selectedParent.name} Options</h2>
@@ -286,7 +391,7 @@ export function AdminLensesCategoriesPage() {
                 {/* Add Subcategory Form */}
                 <div className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-[color:var(--color-text-secondary)] mb-3">Add Subcategory to {selectedParent.name}</h4>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-3">
                     <input 
                       type="text" 
                       value={newSubName} 
@@ -294,18 +399,50 @@ export function AdminLensesCategoriesPage() {
                       placeholder="e.g. Daily Disposable, Toric, Colored" 
                       className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs" 
                     />
+                    {existingGroups.length > 0 ? (
+                      <div className="flex flex-col gap-2">
+                        <select
+                          value={selectedGroupOption}
+                          onChange={(e) => setSelectedGroupOption(e.target.value)}
+                          className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs w-full"
+                        >
+                          {existingGroups.map((g) => (
+                            <option key={g} value={g}>{g}</option>
+                          ))}
+                          <option value="_new_">+ Add New Group</option>
+                        </select>
+                        {selectedGroupOption === "_new_" && (
+                          <input 
+                            type="text" 
+                            value={customGroup} 
+                            onChange={(e) => setCustomGroup(e.target.value)} 
+                            placeholder="New Group Name" 
+                            className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs w-full" 
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <input 
+                        type="text" 
+                        value={customGroup} 
+                        onChange={(e) => setCustomGroup(e.target.value)} 
+                        placeholder="Group (e.g. Shop by Type, Shop by Need)" 
+                        className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs" 
+                      />
+                    )}
                     <input 
                       type="text" 
                       value={newSubDescription} 
                       onChange={(e) => setNewSubDescription(e.target.value)} 
                       placeholder="Description (optional)" 
-                      className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs" 
+                      className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs sm:col-span-3" 
                     />
                   </div>
                   <Button 
+                    variant="primary"
                     onClick={handleAddSubcategory} 
                     disabled={!newSubName.trim()} 
-                    className="mt-3 text-xs bg-teal-600 hover:bg-teal-700 text-white"
+                    className="mt-3 text-xs"
                     iconLeft={<Plus className="h-3.5 w-3.5" />}
                   >
                     Add Option to {selectedParent.name}

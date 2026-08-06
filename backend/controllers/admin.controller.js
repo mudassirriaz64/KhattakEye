@@ -169,11 +169,24 @@ const createProduct = async (req, res, next) => {
   }
 };
 
+const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const getProducts = async (req, res, next) => {
   try {
-    const { page = 1, limit = 50, kind } = req.query;
+    const { page = 1, limit = 50, kind, category, subcategory, brand, stock, featured, search } = req.query;
     const filter = {};
     if (kind) filter.kind = kind;
+    if (category) filter.category = category;
+    if (subcategory) filter.subcategory = subcategory;
+    if (brand) filter.brand = new RegExp(`^${escapeRegex(brand)}$`, 'i');
+    if (stock) filter.availability = stock;
+    if (featured === 'true') filter.featured = true;
+    else if (featured === 'false') filter.featured = false;
+    if (search) filter.$or = [
+      { name: new RegExp(escapeRegex(search), 'i') },
+      { brand: new RegExp(escapeRegex(search), 'i') },
+      { sku: new RegExp(escapeRegex(search), 'i') }
+    ];
 
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -258,7 +271,7 @@ const updateProduct = async (req, res, next) => {
       updateData.images = req.files.map(file => file.path || file.filename);
     }
 
-    const updated = await Product.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    const updated = await Product.findByIdAndUpdate(id, updateData, { returnDocument: 'after', runValidators: true });
     if (!updated) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -392,7 +405,7 @@ const deleteCategory = async (req, res, next) => {
 const updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, description, image, productKind, type } = req.body;
+    const { name, description, image, productKind, type, subcategories } = req.body;
     const updateData = {};
     if (name) {
       updateData.name = name;
@@ -402,8 +415,9 @@ const updateCategory = async (req, res, next) => {
     if (image !== undefined) updateData.image = image;
     if (productKind !== undefined) updateData.productKind = productKind;
     if (type !== undefined) updateData.type = type;
+    if (subcategories !== undefined) updateData.subcategories = subcategories;
 
-    const category = await Category.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    const category = await Category.findByIdAndUpdate(id, updateData, { returnDocument: 'after', runValidators: true });
     if (!category) return res.status(404).json({ message: 'Category not found' });
     res.status(200).json(category);
   } catch (error) {

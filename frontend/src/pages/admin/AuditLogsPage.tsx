@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ClipboardList, Search, Filter, ArrowUpDown } from "lucide-react";
-import { auditLogs, type AuditLog } from "@/lib/admin-data";
-import { StatusBadge } from "@/components/admin/StatusBadge";
+import { ClipboardList, Search, ArrowUpDown } from "lucide-react";
+import { auditLogs } from "@/lib/admin-data";
 import { cn } from "@/lib/utils";
 
 type SeverityFilter = "all" | "low" | "medium" | "high" | "critical";

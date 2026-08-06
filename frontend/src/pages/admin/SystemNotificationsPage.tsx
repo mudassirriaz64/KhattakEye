@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, Mail, ShoppingCart, AlertTriangle, CheckCircle, XCircle, Clock } from "lucide-react";
-import { systemNotifications, type SystemNotification } from "@/lib/admin-data";
+import { systemNotifications } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
 

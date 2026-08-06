@@ -1,8 +1,8 @@
-import { X, Star, Check, Minus } from "lucide-react";
+import { X, Star, Minus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useShopStore } from "@/lib/stores/shop-store";
-import { getProducts, mapProductCard } from "@/lib/api/products";
+import { getProducts, mapProductCard, type ProductCard } from "@/lib/api/products";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +24,7 @@ export function ComparePage() {
   const removeFromCompare = useShopStore((s) => s.removeFromCompare);
   const clearCompare = useShopStore((s) => s.clearCompare);
 
-  const [catalog, setCatalog] = useState<any[]>([]);
+  const [catalog, setCatalog] = useState<ProductCard[]>([]);
 
   useEffect(() => {
     getProducts({ limit: 100 }).then((data) => {

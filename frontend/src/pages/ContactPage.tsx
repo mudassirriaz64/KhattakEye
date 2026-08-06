@@ -51,7 +51,6 @@ const inquiryTypes = [
 
 export function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -64,14 +63,11 @@ export function ContactPage() {
       message: formData.get("message"),
     };
 
-    setLoading(true);
     try {
       await axios.post("/contact", body);
       setSubmitted(true);
     } catch (err) {
       console.error("Contact submission error:", err);
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -1,35 +1,64 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Grid3X3, Plus, Edit3, Trash2, Search, X, FolderOpen, ArrowRight, Layers } from "lucide-react";
-import { adminCategories, type AdminCategory } from "@/lib/admin-data";
+import { Grid3X3, Plus, Edit3, Trash2, Search, X, FolderOpen, ArrowRight, Layers, Columns } from "lucide-react";
+import { type AdminCategory } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
-import { getCategoriesApi, adminCreateCategoryApi, adminDeleteCategoryApi } from "@/lib/api/admin";
+import { getCategoriesApi, adminCreateCategoryApi, adminDeleteCategoryApi, adminUpdateCategoryApi } from "@/lib/api/admin";
 
 export function AdminCategoriesPage() {
-  const [categories, setCategories] = useState<AdminCategory[]>(adminCategories);
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  
-  useEffect(() => {
+
+  const fetchCategories = () => {
     getCategoriesApi("glasses").then((data) => {
-      if (Array.isArray(data) && data.length > 0) {
-        const mapped: AdminCategory[] = data.map((c: any) => ({
-          id: c._id || c.id,
-          name: c.name,
-          slug: c.slug || c.name.toLowerCase().replace(/\s+/g, "-"),
-          description: c.description || "",
-          productCount: c.productCount || 0,
-          parent: c.parent || null,
-          featured: c.featured !== undefined ? c.featured : true,
-          status: c.status || "active",
-          image: c.image || "",
-          createdAt: c.createdAt || new Date().toISOString()
-        }));
+      if (Array.isArray(data)) {
+        const mapped: AdminCategory[] = [];
+        data.forEach((c) => {
+          const parentId = c._id || c.id || "";
+          mapped.push({
+            id: parentId,
+            name: c.name,
+            slug: c.slug || c.name.toLowerCase().replace(/\s+/g, "-"),
+            description: c.description || "",
+            productCount: c.productCount || 0,
+            parent: null,
+            featured: c.featured !== undefined ? c.featured : true,
+            status: c.status || "active",
+            image: c.image || "",
+            createdAt: c.createdAt || new Date().toISOString()
+          });
+
+          if (Array.isArray(c.subcategories)) {
+            c.subcategories.forEach((sub) => {
+              mapped.push({
+                id: sub._id || sub.id || `${parentId}-${sub.slug}`,
+                _id: sub._id,
+                name: sub.name,
+                slug: sub.slug || sub.name.toLowerCase().replace(/\s+/g, "-"),
+                description: sub.description || "",
+                productCount: sub.productCount || 0,
+                parent: parentId,
+                featured: false,
+                status: "active",
+                image: "",
+                group: sub.group || "Category",
+                createdAt: c.createdAt || new Date().toISOString()
+              });
+            });
+          }
+        });
         setCategories(mapped);
       }
-    }).catch(() => {});
+    }).catch((err) => {
+      console.error("Failed to fetch categories:", err);
+    });
+  };
+
+  useEffect(() => {
+    fetchCategories();
   }, []);
 
   const [selectedParent, setSelectedParent] = useState<AdminCategory | null>(null);
@@ -40,77 +69,153 @@ export function AdminCategoriesPage() {
   
   const [newSubName, setNewSubName] = useState("");
   const [newSubDescription, setNewSubDescription] = useState("");
+  const [selectedGroupOption, setSelectedGroupOption] = useState("Category");
+  const [customGroup, setCustomGroup] = useState("");
 
   const parentCategories = categories.filter((c) => !c.parent && (!search || c.name.toLowerCase().includes(search.toLowerCase())));
-  const getSubcategories = (parentId: string) => categories.filter((c) => c.parent === parentId);
+  const getSubcategories = useCallback(
+    (parentId: string) => categories.filter((c) => c.parent === parentId),
+    [categories]
+  );
+
+  // Distinct mega-menu groups/columns under a parent (e.g. Category, Styles, Collections)
+  const getMegaMenuColumns = (parentId: string) =>
+    new Set(getSubcategories(parentId).map((s) => s.group).filter(Boolean)).size;
+
+  // Derive distinct existing groups for the selected parent
+  const existingGroups = useMemo(() => {
+    if (!selectedParent) return [];
+    return Array.from(
+      new Set(
+        getSubcategories(selectedParent.id)
+          .map((s) => s.group)
+          .filter(Boolean)
+      )
+    ) as string[];
+  }, [selectedParent, getSubcategories]);
+
+  // Set default selected group option when existingGroups change
+  useEffect(() => {
+    if (existingGroups.length > 0) {
+      setSelectedGroupOption(existingGroups[0]);
+      setCustomGroup("");
+    } else {
+      setSelectedGroupOption("_new_");
+      setCustomGroup("Category");
+    }
+  }, [existingGroups]);
+
+  // Sync selectedParent on categories state update (e.g. after reload)
+  useEffect(() => {
+    if (selectedParent) {
+      const updated = categories.find(c => c.id === selectedParent.id);
+      if (updated) setSelectedParent(updated);
+    }
+  }, [categories, selectedParent]);
 
   const resetParentForm = () => {
     setParentForm({ name: "", slug: "", description: "", productKind: "glasses", type: "category", featured: true, status: "active" });
     setEditingCat(null);
   };
 
-  const openEditParent = (cat: any) => {
+  const openEditParent = (cat: AdminCategory) => {
     setParentForm({ name: cat.name, slug: cat.slug, description: cat.description, productKind: cat.productKind || "glasses", type: cat.type || "category", featured: cat.featured, status: cat.status });
     setEditingCat(cat);
     setShowParentForm(true);
   };
 
   const saveParentCategory = async () => {
-    if (editingCat) {
-      setCategories((prev) => prev.map((c) => c.id === editingCat.id ? { ...c, ...parentForm } : c));
-    } else {
-      const newCat: AdminCategory = {
-        id: `cat-${Date.now()}`,
-        ...parentForm,
-        parent: null,
-        productCount: 0,
-        image: "",
-        createdAt: new Date().toISOString()
-      };
-      setCategories((prev) => [newCat, ...prev]);
-      try {
+    try {
+      if (editingCat) {
+        await adminUpdateCategoryApi(editingCat.id, parentForm);
+      } else {
         await adminCreateCategoryApi({ name: parentForm.name, description: parentForm.description, productKind: parentForm.productKind, type: parentForm.type });
-      } catch (err) {
-        console.error("Failed to create category:", err);
       }
+      fetchCategories();
+    } catch (err) {
+      console.error("Failed to save category:", err);
     }
     setShowParentForm(false);
     resetParentForm();
   };
 
-  const handleAddSubcategory = () => {
+  const handleAddSubcategory = async () => {
     if (!selectedParent || !newSubName.trim()) return;
     const slug = newSubName.toLowerCase().replace(/\s+/g, "-");
-    const newSub: AdminCategory = {
-      id: `cat-sub-${Date.now()}`,
+    const groupToSave = (existingGroups.length === 0 || selectedGroupOption === "_new_") 
+      ? (customGroup.trim() || "Category") 
+      : selectedGroupOption;
+
+    const newSub = {
       name: newSubName,
       slug,
-      parent: selectedParent.id,
       description: newSubDescription || `${newSubName} under ${selectedParent.name}`,
-      image: "",
-      productCount: 0,
-      featured: false,
-      status: "active",
-      createdAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+      group: groupToSave,
+      productCount: 0
     };
-    setCategories((prev) => [...prev, newSub]);
-    setNewSubName("");
-    setNewSubDescription("");
+
+    const currentSubs = getSubcategories(selectedParent.id).map(s => ({
+      _id: s._id || s.id,
+      name: s.name,
+      slug: s.slug,
+      description: s.description,
+      group: s.group || "Category",
+      productCount: s.productCount
+    }));
+
+    try {
+      await adminUpdateCategoryApi(selectedParent.id, {
+        subcategories: [...currentSubs, newSub]
+      });
+      setNewSubName("");
+      setNewSubDescription("");
+      if (existingGroups.length > 0) {
+        setSelectedGroupOption(existingGroups[0]);
+        setCustomGroup("");
+      } else {
+        setSelectedGroupOption("_new_");
+        setCustomGroup("Category");
+      }
+      fetchCategories();
+    } catch (err) {
+      console.error("Failed to add subcategory option:", err);
+    }
   };
 
   const removeCategory = async () => {
-    if (deleteId) {
-      const idToDelete = deleteId;
-      setCategories((prev) => prev.filter((c) => c.id !== deleteId && c.parent !== deleteId));
-      if (selectedParent && selectedParent.id === deleteId) {
-        setSelectedParent(null);
-      }
-      setDeleteId(null);
-      try {
+    if (!deleteId) return;
+    const idToDelete = deleteId;
+    setDeleteId(null);
+
+    const cat = categories.find(c => c.id === idToDelete);
+    if (!cat) return;
+
+    try {
+      if (cat.parent) {
+        // It is a subcategory, update parent document
+        const currentSubs = categories
+          .filter(c => c.parent === cat.parent && c.id !== idToDelete)
+          .map(s => ({
+            _id: s._id || s.id,
+            name: s.name,
+            slug: s.slug,
+            description: s.description,
+            group: s.group || "Category",
+            productCount: s.productCount
+          }));
+        await adminUpdateCategoryApi(cat.parent, {
+          subcategories: currentSubs
+        });
+      } else {
+        // It is a parent category
         await adminDeleteCategoryApi(idToDelete);
-      } catch (err) {
-        console.error("Failed to delete category:", err);
+        if (selectedParent && selectedParent.id === idToDelete) {
+          setSelectedParent(null);
+        }
       }
+      fetchCategories();
+    } catch (err) {
+      console.error("Failed to delete category:", err);
     }
   };
 
@@ -142,19 +247,11 @@ export function AdminCategoriesPage() {
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Slug</label>
                 <input type="text" value={parentForm.slug} onChange={(e) => setParentForm((p) => ({ ...p, slug: e.target.value }))} placeholder="e.g. sunglasses" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm" />
               </div>
-              <div>
+               <div className="sm:col-span-2">
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Product Kind</label>
-                <select value={parentForm.productKind} onChange={(e) => setParentForm((p) => ({ ...p, productKind: e.target.value as any }))} className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm">
+                <select value={parentForm.productKind} onChange={(e) => setParentForm((p) => ({ ...p, productKind: e.target.value as "glasses" | "lenses" }))} className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm">
                   <option value="glasses">Glasses (Eyeglasses / Sunglasses)</option>
                   <option value="lenses">Lenses (Contact Lenses)</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Mega-Menu Column Type</label>
-                <select value={parentForm.type} onChange={(e) => setParentForm((p) => ({ ...p, type: e.target.value as any }))} className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm">
-                  <option value="category">Category (Column 1)</option>
-                  <option value="style">Style / Need (Column 2)</option>
-                  <option value="collection">Collection (Column 3)</option>
                 </select>
               </div>
               <div className="sm:col-span-2">
@@ -185,6 +282,7 @@ export function AdminCategoriesPage() {
               <tr className="border-b border-[color:var(--color-border)]">
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Parent Category</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Subcategories Options</th>
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Mega-Menu Columns</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Total Products</th>
                 <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Status</th>
                 <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Actions</th>
@@ -222,6 +320,14 @@ export function AdminCategoriesPage() {
                           </span>
                         </div>
                       </td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-surface-muted)] px-2.5 py-1 text-xs font-semibold text-[color:var(--color-text-secondary)] border border-[color:var(--color-border)]">
+                            <Columns className="h-3.5 w-3.5 text-[color:var(--color-brand-primary)]" />
+                            {getMegaMenuColumns(parent.id)} Columns
+                          </span>
+                        </div>
+                      </td>
                       <td className="px-4 py-4 text-sm font-semibold text-[color:var(--color-text-primary)]">
                         {parent.productCount} products
                       </td>
@@ -233,7 +339,7 @@ export function AdminCategoriesPage() {
                             className="text-xs h-8"
                             onClick={() => setSelectedParent(parent)}
                           >
-                            Manage Options <ArrowRight className="ml-1 h-3 w-3" />
+                            Manage Subcategories <ArrowRight className="ml-1 h-3 w-3" />
                           </Button>
                           <button type="button" onClick={() => openEditParent(parent)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]"><Edit3 className="h-3.5 w-3.5" /></button>
                           <button type="button" onClick={() => setDeleteId(parent.id)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-danger)]"><Trash2 className="h-3.5 w-3.5" /></button>
@@ -276,7 +382,7 @@ export function AdminCategoriesPage() {
                 {/* Add Subcategory Form */}
                 <div className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-[color:var(--color-text-secondary)] mb-3">Add New Option to {selectedParent.name}</h4>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-3">
                     <input 
                       type="text" 
                       value={newSubName} 
@@ -284,12 +390,43 @@ export function AdminCategoriesPage() {
                       placeholder="Option Name (e.g. Polarized Shades)" 
                       className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs" 
                     />
+                    {existingGroups.length > 0 ? (
+                      <div className="flex flex-col gap-2">
+                        <select
+                          value={selectedGroupOption}
+                          onChange={(e) => setSelectedGroupOption(e.target.value)}
+                          className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs w-full"
+                        >
+                          {existingGroups.map((g) => (
+                            <option key={g} value={g}>{g}</option>
+                          ))}
+                          <option value="_new_">+ Add New Group</option>
+                        </select>
+                        {selectedGroupOption === "_new_" && (
+                          <input 
+                            type="text" 
+                            value={customGroup} 
+                            onChange={(e) => setCustomGroup(e.target.value)} 
+                            placeholder="New Group Name" 
+                            className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs w-full" 
+                          />
+                        )}
+                      </div>
+                    ) : (
+                      <input 
+                        type="text" 
+                        value={customGroup} 
+                        onChange={(e) => setCustomGroup(e.target.value)} 
+                        placeholder="Group (e.g. Category, Styles, Collections)" 
+                        className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs" 
+                      />
+                    )}
                     <input 
                       type="text" 
                       value={newSubDescription} 
                       onChange={(e) => setNewSubDescription(e.target.value)} 
                       placeholder="Description (optional)" 
-                      className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs" 
+                      className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs sm:col-span-3" 
                     />
                   </div>
                   <Button 

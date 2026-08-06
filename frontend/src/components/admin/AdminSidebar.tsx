@@ -1,20 +1,29 @@
 import { useState, useEffect } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard, Package, Grid3X3, Eye, Bookmark, ShoppingCart, Users, FileText, BarChart3, Settings, LogOut, ChevronLeft, X,
+  LayoutDashboard, Package, Grid3X3, Eye, Bookmark, ShoppingCart, Users, FileText, BarChart3, Settings, LogOut, ChevronLeft,
   ShieldCheck, Star, MessageSquare, ClipboardList, Image, Tag, Mail, Globe, Layout,
-  TrendingUp, Lock, Bell, Activity, UserCog, ScrollText, Shield, Plus,
+  TrendingUp, Lock, Bell, Activity, UserCog, ScrollText, Shield, type LucideIcon,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/stores/admin-store";
 import { cn } from "@/lib/utils";
 
-const navItems = [
+type NavItem = {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  badge?: string;
+  exact?: boolean;
+  matches?: string[];
+};
+
+const navItems: NavItem[] = [
   { to: "/admin", icon: LayoutDashboard, label: "Dashboard", exact: true },
   { to: "/admin/orders", icon: ShoppingCart, label: "Orders", badge: "38" },
   { to: "/admin/products", icon: Package, label: "Products", exact: true },
-  { to: "/admin/categories", icon: Grid3X3, label: "Glasses Categories" },
-  { to: "/admin/categories/lenses", icon: Eye, label: "Lenses Categories" },
+  // "matches" disambiguates the shared /admin/categories prefix so the two items never both activate.
+  { to: "/admin/categories", icon: Grid3X3, label: "Glasses Categories", matches: ["/admin/categories", "/admin/categories/glasses"] },
+  { to: "/admin/categories/lenses", icon: Eye, label: "Lenses Categories", matches: ["/admin/categories/lenses"] },
   { to: "/admin/brands", icon: Bookmark, label: "Brands" },
   { to: "/admin/payments", icon: ShieldCheck, label: "Payments" },
   { to: "/admin/inventory", icon: ClipboardList, label: "Inventory" },
@@ -51,6 +60,14 @@ export function AdminSidebar({ onClose }: Props) {
   const { sidebarCollapsed, toggleSidebar, user, logout } = useAdminStore();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const isNavItemActive = (item: NavItem): boolean => {
+    const path = location.pathname;
+    if (item.matches) return item.matches.includes(path);
+    if (item.exact) return path === item.to;
+    return path === item.to || path.startsWith(item.to + "/");
+  };
+
   const [cmsExpanded, setCmsExpanded] = useState(location.pathname.startsWith("/admin/cms"));
   const [enterpriseExpanded, setEnterpriseExpanded] = useState(location.pathname.startsWith("/admin/reports") || location.pathname.startsWith("/admin/analytics") || location.pathname.startsWith("/admin/roles") || location.pathname.startsWith("/admin/admin-users") || location.pathname.startsWith("/admin/activity-logs") || location.pathname.startsWith("/admin/notifications") || location.pathname.startsWith("/admin/security") || location.pathname.startsWith("/admin/audit-logs"));
 
@@ -90,28 +107,27 @@ export function AdminSidebar({ onClose }: Props) {
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {navItems.map((item) => {
           if (item.to === "/admin/settings") return null;
+          const active = isNavItemActive(item);
           return (
-            <NavLink
+            <Link
               key={item.to}
               to={item.to}
-              end={item.exact}
               onClick={onClose}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  sidebarCollapsed && "justify-center px-2",
-                  isActive
-                    ? "bg-[color:var(--color-brand-primary)] text-white shadow-[var(--shadow-soft)]"
-                    : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]",
-                )
-              }
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                sidebarCollapsed && "justify-center px-2",
+                active
+                  ? "bg-[color:var(--color-brand-primary)] text-white shadow-[var(--shadow-soft)]"
+                  : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]",
+              )}
             >
               <item.icon className="h-4.5 w-4.5 shrink-0" />
               {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
               {!sidebarCollapsed && item.badge && (
                 <span className="ml-auto rounded-lg bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-600">{item.badge}</span>
               )}
-            </NavLink>
+            </Link>
           );
         })}
 

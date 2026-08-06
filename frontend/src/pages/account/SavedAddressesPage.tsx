@@ -2,12 +2,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Plus, Edit3, Trash2, CheckCircle2 } from "lucide-react";
 import { AccountLayout } from "@/components/account/AccountLayout";
-import { mockAddresses, type Address } from "@/lib/account-data";
+import { mockAddresses } from "@/lib/account-data";
 import { Button } from "@/components/primitives/Button";
 
 export function SavedAddressesPage() {
   const [addresses, setAddresses] = useState(mockAddresses);
-  const [editingId, setEditingId] = useState<string | null>(null);
 
   const setDefault = (id: string) => {
     setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })));

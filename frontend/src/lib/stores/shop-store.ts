@@ -1,10 +1,11 @@
 import { create } from "zustand";
-import { getProducts, ProductFilters } from "../api/products";
+import { getProducts, ProductFilters, mapProductCard } from "../api/products";
+import { type Product } from "../shop-data";
 
 type ViewMode = "grid" | "list";
 
 type ShopState = {
-  products: any[];
+  products: Product[];
   totalProducts: number;
   totalPages: number;
   isLoading: boolean;
@@ -13,7 +14,7 @@ type ShopState = {
   sortBy: string;
   viewMode: ViewMode;
   currentPage: number;
-  quickViewProduct: any | null;
+  quickViewProduct: Product | null;
   compareList: string[];
   recentlyViewed: string[];
 
@@ -24,7 +25,7 @@ type ShopState = {
   setViewMode: (mode: ViewMode) => void;
   setCurrentPage: (page: number) => void;
   resetFilters: () => void;
-  setQuickViewProduct: (product: any | null) => void;
+  setQuickViewProduct: (product: Product | null) => void;
   toggleCompare: (id: string) => void;
   addToRecentlyViewed: (id: string) => void;
   removeFromCompare: (id: string) => void;
@@ -32,7 +33,7 @@ type ShopState = {
 };
 
 const initialState = {
-  products: [] as any[],
+  products: [] as Product[],
   totalProducts: 0,
   totalPages: 1,
   isLoading: false,
@@ -41,7 +42,7 @@ const initialState = {
   sortBy: "popular",
   viewMode: "grid" as ViewMode,
   currentPage: 1,
-  quickViewProduct: null as any | null,
+  quickViewProduct: null as Product | null,
   compareList: [] as string[],
   recentlyViewed: [] as string[],
 };
@@ -86,7 +87,7 @@ export const useShopStore = create<ShopState>((set, get) => ({
       const response = await getProducts(filters);
       
       set({ 
-        products: response.items,
+        products: response.items.map(mapProductCard) as unknown as Product[],
         totalProducts: response.total,
         totalPages: response.totalPages,
         isLoading: false 

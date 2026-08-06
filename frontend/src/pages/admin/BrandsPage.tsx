@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bookmark, Plus, Edit3, Trash2, Search, ExternalLink, X } from "lucide-react";
+import { Bookmark, Plus, Edit3, Trash2, ExternalLink, X } from "lucide-react";
 import { adminBrands, type AdminBrand } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
@@ -9,7 +9,7 @@ import { adminGetBrandsApi, adminCreateBrandApi, adminDeleteBrandApi } from "@/l
 
 export function AdminBrandsPage() {
   const [brands, setBrands] = useState<AdminBrand[]>(adminBrands);
-  const [search, setSearch] = useState("");
+  const [search] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editing, setEditing] = useState<AdminBrand | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -18,8 +18,8 @@ export function AdminBrandsPage() {
   useEffect(() => {
     adminGetBrandsApi().then((data) => {
       if (Array.isArray(data) && data.length > 0) {
-        const mapped: AdminBrand[] = data.map((b: any) => ({
-          id: b._id || b.id,
+        const mapped: AdminBrand[] = data.map((b: { _id?: string; id?: string; name: string; slug?: string; description?: string; logo?: string; website?: string; productCount?: number; featured?: boolean; status?: string; createdAt?: string }) => ({
+          id: b._id || b.id || "",
           name: b.name,
           slug: b.slug || b.name.toLowerCase().replace(/\s+/g, "-"),
           description: b.description || "",
@@ -27,7 +27,7 @@ export function AdminBrandsPage() {
           website: b.website || "#",
           productCount: b.productCount || 0,
           featured: b.featured !== undefined ? b.featured : true,
-          status: b.status || "active",
+          status: (b.status === "inactive" ? "inactive" : "active") as "active" | "inactive",
           createdAt: b.createdAt ? new Date(b.createdAt).toLocaleDateString() : new Date().toLocaleDateString()
         }));
         setBrands(mapped);

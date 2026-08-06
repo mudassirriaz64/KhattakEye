@@ -1,8 +1,10 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
-import { categories } from "@/lib/landing-data";
 import { cn } from "@/lib/utils";
+import { getCategories } from "@/lib/api/products";
+import { categories as fallbackCategories, type Category } from "@/lib/landing-data";
 
 const tiles = [
   { colClass: "lg:col-span-7 lg:row-span-2", itemClass: "aspect-[16/10] lg:aspect-auto lg:h-full", wrapClass: "lg:h-full" },
@@ -10,7 +12,61 @@ const tiles = [
   { colClass: "lg:col-span-5", itemClass: "aspect-[16/10]", wrapClass: "" },
 ];
 
+function CategoryGridSkeleton() {
+  return (
+    <div className="mt-12 grid gap-6 lg:grid-cols-12">
+      <div className="lg:col-span-7 lg:row-span-2 lg:h-[480px] animate-pulse rounded-[36px] bg-[color:var(--color-surface-muted)]" />
+      <div className="lg:col-span-5 h-[230px] animate-pulse rounded-[36px] bg-[color:var(--color-surface-muted)]" />
+      <div className="lg:col-span-5 h-[230px] animate-pulse rounded-[36px] bg-[color:var(--color-surface-muted)]" />
+    </div>
+  );
+}
+
 export function FeaturedCollections() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getCategories({ featured: true })
+      .then((data) => {
+        if (data && Array.isArray(data) && data.length > 0) {
+          setCategories(data.map((c) => ({
+            title: c.name,
+            image: c.image || "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=800",
+            description: c.description || "Premium designer frames",
+            count: `${c.productCount || 0} products`,
+            path: `/shop/${c.slug}`
+          })));
+        } else {
+          // Fallback to landing-data categories if none found in DB
+          setCategories(fallbackCategories);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load featured categories:", err);
+        setCategories(fallbackCategories);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="bg-[color:var(--color-panel)] py-20 md:py-28">
+        <div className="mx-auto max-w-[1440px] px-4 md:px-8">
+          <div className="max-w-xl space-y-4">
+            <p className="editorial-eyebrow">Featured Collections</p>
+            <h2 className="font-display text-4xl leading-tight text-[color:var(--color-text-primary)] md:text-6xl">
+              Curated for the <span className="italic text-gradient-brand">connoisseur</span>
+            </h2>
+          </div>
+          <CategoryGridSkeleton />
+        </div>
+      </section>
+    );
+  }
+
+  if (categories.length === 0) return null;
+
   return (
     <section className="bg-[color:var(--color-panel)] py-20 md:py-28">
       <div className="mx-auto max-w-[1440px] px-4 md:px-8">
@@ -66,7 +122,7 @@ export function FeaturedCollections() {
                     </p>
                   </div>
                   <span className="mb-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur transition-all duration-300 group-hover:bg-[color:var(--color-brand-primary)] group-hover:border-[color:var(--color-brand-primary)]">
-                    <ArrowUpRight className="h-5 w-5" />
+                     <ArrowUpRight className="h-5 w-5" />
                   </span>
                 </div>
               </Link>

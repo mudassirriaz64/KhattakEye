@@ -42,7 +42,7 @@ type AuthState = {
   resetPassword: (token: string, password: string) => Promise<boolean>;
 };
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   isLoading: false,
@@ -61,7 +61,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       } else {
         set({ user: null, isAuthenticated: false, isEmailVerified: false });
       }
-    } catch (err) {
+    } catch {
       set({ user: null, isAuthenticated: false, isEmailVerified: false });
     } finally {
       set({ isLoading: false });

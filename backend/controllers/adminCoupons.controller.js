@@ -46,7 +46,7 @@ const updateCoupon = async (req, res, next) => {
     if (req.body.code) req.body.code = req.body.code.toUpperCase();
     if (req.body.expiryDate) req.body.expiryDate = new Date(req.body.expiryDate);
 
-    const coupon = await Coupon.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+    const coupon = await Coupon.findByIdAndUpdate(id, req.body, { returnDocument: 'after', runValidators: true });
     if (!coupon) return res.status(404).json({ message: 'Coupon not found' });
 
     res.status(200).json(coupon);

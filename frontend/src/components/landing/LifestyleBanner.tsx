@@ -1,9 +1,28 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowRight, Quote } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
+import axios from "@/lib/api/axios";
 
 export function LifestyleBanner() {
+  const [banners, setBanners] = useState<{ image?: string; title?: string; link?: string }[]>([]);
+
+  useEffect(() => {
+    axios.get("/banners?type=promotional")
+      .then((res) => {
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+          setBanners(res.data);
+        }
+      })
+      .catch((err) => console.error("Failed to load promo banner:", err));
+  }, []);
+
+  const hasBanner = banners.length > 0;
+  const image = hasBanner ? banners[0].image : "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=1920&q=80";
+  const title = hasBanner && banners[0].title ? banners[0].title : "Luxury is a habit of the eye, refined over a lifetime.";
+  const link = hasBanner && banners[0].link ? banners[0].link : "/shop";
+
   return (
     <section className="bg-[color:var(--color-app-bg)] py-20 md:py-28">
       <div className="mx-auto max-w-[1440px] px-4 md:px-8">
@@ -15,7 +34,7 @@ export function LifestyleBanner() {
           className="relative overflow-hidden rounded-[40px] shadow-[var(--shadow-strong)]"
         >
           <img
-            src="https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=1920&q=80"
+            src={image}
             alt="Luxury eyewear in an elegant setting"
             className="absolute inset-0 h-full w-full object-cover"
           />
@@ -27,13 +46,13 @@ export function LifestyleBanner() {
               The Art of Seeing
             </p>
             <h2 className="mt-6 font-display text-4xl leading-tight text-white md:text-6xl">
-              Luxury is a habit of the eye, refined over a lifetime.
+              {title}
             </h2>
             <p className="mt-6 max-w-md text-base leading-8 text-white/80">
               Beyond the frame is a philosophy — light, proportion, and the quiet confidence of a perfect fit.
             </p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
-              <Link to="/shop">
+              <Link to={link}>
                 <Button variant="cta-lg" iconRight={<ArrowRight className="h-4 w-4" />}>
                   Discover the Difference
                 </Button>

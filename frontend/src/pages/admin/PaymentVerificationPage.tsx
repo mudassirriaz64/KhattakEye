@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, Search, CheckCircle, XCircle, Eye, ExternalLink, ImageIcon } from "lucide-react";
+import { ShieldCheck, Search, CheckCircle, XCircle, ExternalLink, ImageIcon } from "lucide-react";
 import { paymentVerifications, type PaymentVerification } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
@@ -16,7 +16,7 @@ export function AdminPaymentVerificationPage() {
   const [payments, setPayments] = useState(paymentVerifications);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
-  const [selectedPayment, setSelectedPayment] = useState<PaymentVerification | null>(null);
+  const [, setSelectedPayment] = useState<PaymentVerification | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ id: string; action: "approved" | "rejected" } | null>(null);
 
   const filtered = payments.filter((p) => {

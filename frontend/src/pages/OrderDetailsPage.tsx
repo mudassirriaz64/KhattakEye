@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { ArrowLeft, Package, CreditCard, User, MapPin, FileText, HeadphonesIcon } from "lucide-react";
-import { mockOrder } from "@/lib/order-data";
+import { mockOrder, type Order } from "@/lib/order-data";
 import { OrderTimeline } from "@/components/order/OrderTimeline";
 import { Button } from "@/components/primitives/Button";
 import { getOrderByIdApi } from "@/lib/api/orders";
@@ -9,7 +9,7 @@ import { getOrderByIdApi } from "@/lib/api/orders";
 export function OrderDetailsPage() {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get("id") || mockOrder.orderNumber;
-  const [order, setOrder] = useState<any>(mockOrder);
+  const [order, setOrder] = useState<Order>(mockOrder);
 
   useEffect(() => {
     if (orderId) {
@@ -30,7 +30,7 @@ export function OrderDetailsPage() {
             customerPhone: data.customerPhone || 'Phone',
             shippingAddress: data.shippingAddress ? `${data.shippingAddress.street || ''}, ${data.shippingAddress.area || ''}, ${data.shippingAddress.city || ''}` : 'Shipping Address',
             timeline: data.timeline && data.timeline.length > 0 ? data.timeline : mockOrder.timeline
-          });
+          } as Order);
         }
       }).catch(() => {});
     }

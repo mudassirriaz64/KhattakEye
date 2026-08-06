@@ -14,7 +14,7 @@ export function NewsletterSection() {
     try {
       await axios.post("/newsletter/subscribe", { email });
       setSubscribed(true);
-    } catch (err) {
+    } catch {
       setSubscribed(true);
     }
   };

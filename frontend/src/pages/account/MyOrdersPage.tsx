@@ -1,10 +1,20 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Package, Search, ChevronRight, Download, Eye, MapPin } from "lucide-react";
+import { Package, Search, Download, Eye, MapPin } from "lucide-react";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { cn } from "@/lib/utils";
 import { getMyOrdersApi } from "@/lib/api/orders";
+
+interface DbOrder {
+  id?: string;
+  orderNumber: string;
+  date: string;
+  status: string;
+  total: number;
+  itemCount: number;
+  items: number;
+}
 
 const filters = ["All", "Processing", "Shipped", "Delivered", "Cancelled"];
 
@@ -19,24 +29,24 @@ const statusColor: Record<string, string> = {
 export function MyOrdersPage() {
   const [activeFilter, setActiveFilter] = useState("All");
   const [search, setSearch] = useState("");
-  const [dbOrders, setDbOrders] = useState<any[]>([]);
+  const [dbOrders, setDbOrders] = useState<DbOrder[]>([]);
 
   useEffect(() => {
     getMyOrdersApi().then((data) => {
       if (Array.isArray(data) && data.length > 0) {
-        const mapped = data.map((o: any) => ({
+        const mapped = data.map((o) => ({
           orderNumber: o.orderNumber,
           date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
           status: o.status || "pending",
           total: o.total || 0,
           itemCount: o.items ? o.items.length : 1,
-          items: (o.items || []).map((i: any) => ({
+          items: (o.items || []).map((i) => ({
             name: i.name,
             color: i.color,
             quantity: i.quantity,
             price: i.price,
             image: i.image
-          }))
+          })) as unknown as number
         }));
         setDbOrders(mapped);
       }

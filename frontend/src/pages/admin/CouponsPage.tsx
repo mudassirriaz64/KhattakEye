@@ -10,9 +10,9 @@ import axios from "@/lib/api/axios";
 const formDefault = { code: "", description: "", discount: 10, type: "percentage", minOrder: 0, usageLimit: 100, used: 0, expiresAt: "2026-12-31", active: true };
 
 export function AdminCouponsPage() {
-  const [coupons, setCoupons] = useState<any[]>(cmsCoupons);
+  const [coupons, setCoupons] = useState<CmsCoupon[]>(cmsCoupons);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editing, setEditing] = useState<any | null>(null);
+  const [editing, setEditing] = useState<CmsCoupon | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(formDefault);
   const [copied, setCopied] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export function AdminCouponsPage() {
     try {
       const res = await axios.get("/admin/coupons");
       if (res.data && res.data.items && Array.isArray(res.data.items) && res.data.items.length > 0) {
-        setCoupons(res.data.items.map((c: any) => ({
+        setCoupons(res.data.items.map((c: { _id: string; code: string; discountPercent: number; minOrderValue?: number; usageLimit?: number; usedCount?: number; expiryDate?: string; isActive: boolean }) => ({
           id: c._id,
           code: c.code,
           description: `${c.discountPercent}% Discount`,
@@ -38,12 +38,14 @@ export function AdminCouponsPage() {
           active: c.isActive
         })));
       }
-    } catch (err) {}
+    } catch {
+      /* coupon list is optional; keep existing data */
+    }
   };
 
   const resetForm = () => setForm(formDefault);
 
-  const openEdit = (c: any) => {
+  const openEdit = (c: CmsCoupon) => {
     setForm({ code: c.code, description: c.description || "", discount: c.discount, type: c.type || "percentage", minOrder: c.minOrder, usageLimit: c.usageLimit, used: c.used, expiresAt: c.expiresAt, active: c.active });
     setEditing(c);
     setShowForm(true);
@@ -79,7 +81,9 @@ export function AdminCouponsPage() {
       if (!deleteId.startsWith("cp-")) {
         try {
           await axios.delete(`/admin/coupons/${deleteId}`);
-        } catch (err) {}
+        } catch {
+          /* best-effort delete on the server */
+        }
       }
       setCoupons((prev) => prev.filter((c) => c.id !== deleteId));
       setDeleteId(null);
@@ -87,7 +91,7 @@ export function AdminCouponsPage() {
   };
 
   const copyCode = async (code: string) => {
-    try { await navigator.clipboard.writeText(code); setCopied(code); setTimeout(() => setCopied(null), 2000); } catch {}
+    try { await navigator.clipboard.writeText(code); setCopied(code); setTimeout(() => setCopied(null), 2000); } catch { /* clipboard access may be unavailable */ }
   };
 
   return (

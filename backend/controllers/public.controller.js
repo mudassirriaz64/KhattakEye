@@ -28,19 +28,31 @@ const formatProduct = (product) => {
 
 exports.getCategories = async (req, res, next) => {
   try {
-    const { type, productKind } = req.query;
+    const { type, productKind, featured } = req.query;
     const filter = {};
     if (type) filter.type = type;
     if (productKind) filter.productKind = productKind;
+    if (featured !== undefined) filter.featured = featured === 'true';
 
     const categories = await Category.find(filter).sort({ order: 1 });
     
-    // Format image URLs
-    const formattedCategories = categories.map(c => {
+    // Format image URLs and calculate product counts dynamically
+    const formattedCategories = await Promise.all(categories.map(async (c) => {
       const cat = c.toObject();
       if (cat.image) cat.image = resolveImageUrl(cat.image) || cat.image;
+      
+      // Dynamic count for parent category
+      cat.productCount = await Product.countDocuments({ category: cat.slug });
+      
+      // Dynamic count for each subcategory
+      if (Array.isArray(cat.subcategories)) {
+        cat.subcategories = await Promise.all(cat.subcategories.map(async (sub) => {
+          sub.productCount = await Product.countDocuments({ subcategory: sub.slug });
+          return sub;
+        }));
+      }
       return cat;
-    });
+    }));
 
     res.status(200).json(formattedCategories);
   } catch (error) {
@@ -74,6 +86,10 @@ exports.getProducts = async (req, res, next) => {
       frameShape, 
       colour, 
       sort, 
+      featured,
+      isBestSeller,
+      isNewArrival,
+      gender,
       page = 1, 
       limit = 50 
     } = req.query;
@@ -81,6 +97,10 @@ exports.getProducts = async (req, res, next) => {
     const filter = {};
 
     if (kind) filter.kind = kind;
+    if (featured !== undefined) filter.featured = featured === 'true';
+    if (isBestSeller !== undefined) filter.isBestSeller = isBestSeller === 'true';
+    if (isNewArrival !== undefined) filter.isNewArrival = isNewArrival === 'true';
+    if (gender) filter.gender = gender;
 
     if (q) {
       const regex = new RegExp(q.trim(), 'i');

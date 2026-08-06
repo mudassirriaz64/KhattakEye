@@ -13,14 +13,18 @@ type ImageLoaderProps = {
 
 export function ImageLoader({ src, alt, className, wrapperClassName, fallback }: ImageLoaderProps) {
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const [usingFallback, setUsingFallback] = useState(false);
 
   const retry = useCallback(() => {
+    setUsingFallback(false);
     setStatus("loading");
     const img = new Image();
     img.onload = () => setStatus("loaded");
     img.onerror = () => setStatus("error");
     img.src = src;
   }, [src]);
+
+  const imageSrc = usingFallback && fallback ? fallback : src;
 
   return (
     <div className={cn("relative isolate overflow-hidden", wrapperClassName)}>
@@ -63,7 +67,7 @@ export function ImageLoader({ src, alt, className, wrapperClassName, fallback }:
       </AnimatePresence>
 
       <img
-        src={src}
+        src={imageSrc}
         alt={alt}
         className={cn(
           "transition-opacity duration-500",
@@ -71,7 +75,14 @@ export function ImageLoader({ src, alt, className, wrapperClassName, fallback }:
           className,
         )}
         onLoad={() => setStatus("loaded")}
-        onError={() => setStatus("error")}
+        onError={() => {
+          if (fallback && !usingFallback) {
+            setUsingFallback(true);
+            setStatus("loaded");
+          } else {
+            setStatus("error");
+          }
+        }}
         loading="lazy"
       />
     </div>

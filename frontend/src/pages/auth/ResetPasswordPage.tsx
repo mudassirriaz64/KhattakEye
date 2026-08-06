@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Lock, LoaderCircle, CheckCircle2, AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -7,7 +7,6 @@ import { AuthLayout } from "@/components/account/AuthLayout";
 import { cn } from "@/lib/utils";
 
 export function ResetPasswordPage() {
-  const navigate = useNavigate();
   const { resetPassword, isLoading } = useAuthStore();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

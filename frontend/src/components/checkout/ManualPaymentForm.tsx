@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
-import { Copy, Check, Upload, Shield, FileText, AlertCircle } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Copy, Check, Upload, Shield } from "lucide-react";
 import { useCheckoutStore } from "@/lib/stores/checkout-store";
 
 const bankDetails: Record<string, { holder: string; bank: string; iban: string; number: string }> = {

@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
-import { motion } from "framer-motion";
-import { User, Camera, LoaderCircle } from "lucide-react";
+import { User, Camera } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/primitives/Button";

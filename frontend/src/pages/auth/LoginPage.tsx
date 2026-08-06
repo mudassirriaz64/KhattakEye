@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Mail, Lock, LoaderCircle, AlertCircle, ChromeIcon } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, LoaderCircle, AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { AuthLayout } from "@/components/account/AuthLayout";
 import { cn } from "@/lib/utils";

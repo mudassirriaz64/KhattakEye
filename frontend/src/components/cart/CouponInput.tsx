@@ -2,7 +2,6 @@ import { useState } from "react";
 import { CheckCircle2, XCircle, Tag, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/lib/stores/cart-store";
-import { cn } from "@/lib/utils";
 
 export function CouponInput() {
   const couponCode = useCartStore((s) => s.couponCode);

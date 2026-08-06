@@ -8,6 +8,7 @@ type RevealContextType = {
 
 const RevealContext = createContext<RevealContextType>({ phase: "revealed" });
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useReveal() {
   return useContext(RevealContext);
 }
