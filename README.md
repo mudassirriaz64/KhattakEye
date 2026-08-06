@@ -37,8 +37,7 @@ Runs on `http://localhost:5000` by default (see `backend/.env.example` for requi
 Both apps must be running simultaneously for the storefront to work end-to-end against real data. Frontend `.env` needs `VITE_API_BASE_URL` pointing at the backend.
 
 ## Deployment
-- Frontend → Vercel (static SPA)
-- Backend → separate host (Render/Railway/Fly.io/VPS — see Architecture.md §6 "Open Decisions")
+- Frontend + Backend → **Vercel Services** (one project, one domain, routed via `vercel.json` rewrites — see `vercel.json` at repo root and Architecture.md §1/Phase 7)
 - Database → MongoDB Atlas
 - Media → Cloudinary
 
