@@ -1,7 +1,100 @@
 import axios from './axios';
 
+export interface ApiProductVariant {
+  color?: string;
+  hexCode?: string;
+  colorName?: string;
+  image?: string;
+  stock?: number;
+}
+
+export interface ApiProduct {
+  _id?: string;
+  id?: string;
+  sku?: string;
+  name: string;
+  slug?: string;
+  brand?: string;
+  price?: number;
+  oldPrice?: number;
+  originalPrice?: number;
+  rating?: number;
+  reviewCount?: number;
+  description?: string;
+  shortDescription?: string;
+  images?: (string | { url?: string })[];
+  variants?: ApiProductVariant[];
+  category?: string;
+  subcategory?: string;
+  stock?: number;
+  badges?: string[];
+  isBestSeller?: boolean;
+  isNewArrival?: boolean;
+  gender?: string | string[];
+  frameShape?: string;
+  frameMaterial?: string;
+  lensType?: string;
+  frameSize?: string;
+  discount?: number;
+  weight?: string;
+  uvProtection?: boolean;
+  warranty?: string;
+  availability?: string;
+  eyeWidth?: number;
+  bridgeWidth?: number;
+  templeLength?: number;
+}
+
+export interface ProductCard {
+  id: string;
+  name: string;
+  brand: string;
+  slug: string;
+  category: string;
+  subcategory: string;
+  price: number;
+  oldPrice?: number;
+  currency: string;
+  description: string;
+  shortDescription: string;
+  images: string[];
+  rating: number;
+  reviewCount: number;
+  badges: string[];
+  variants: { color: string; colorName: string; image: string; stock: number }[];
+  colors: { name: string; hex: string }[];
+  stock: number;
+  sku: string;
+  gender: string[];
+  frameShape: string;
+  frameMaterial: string;
+  lensType: string;
+  frameSize: string;
+  size: string;
+  availability: string;
+  discount: number;
+  weight: string;
+  uvProtection: boolean;
+  warranty: string;
+}
+
+export interface PublicCategory {
+  _id?: string;
+  name: string;
+  slug?: string;
+  image?: string;
+  description?: string;
+  productKind?: string;
+  type?: string;
+  featured?: boolean;
+  badges?: string[];
+  discountLabel?: string;
+  productCount?: number;
+  subcategories?: { name?: string; slug?: string; image?: string; productCount?: number }[];
+}
+
 export interface ProductsResponse {
-  items: any[];
+  items: ApiProduct[];
   total: number;
   page: number;
   totalPages: number;
@@ -18,6 +111,10 @@ export interface ProductFilters {
   sort?: string;
   page?: number;
   limit?: number;
+  featured?: boolean | string;
+  isBestSeller?: boolean | string;
+  isNewArrival?: boolean | string;
+  gender?: string;
 }
 
 export const getProducts = async (filters: ProductFilters): Promise<ProductsResponse> => {
@@ -25,13 +122,18 @@ export const getProducts = async (filters: ProductFilters): Promise<ProductsResp
   return response.data;
 };
 
-export const getProductBySlug = async (slug: string): Promise<any> => {
+export const getProductBySlug = async (slug: string): Promise<ApiProduct> => {
   const response = await axios.get(`/products/${slug}`);
   return response.data;
 };
 
-export const getBrands = async (): Promise<any[]> => {
+export const getBrands = async (): Promise<{ name: string; logo?: string }[]> => {
   const response = await axios.get('/brands');
+  return response.data;
+};
+
+export const getCategories = async (params?: { featured?: boolean | string; type?: string; productKind?: string }): Promise<PublicCategory[]> => {
+  const response = await axios.get('/public/categories', { params });
   return response.data;
 };
 
@@ -51,27 +153,27 @@ const getFallbackImage = (idStr: string) => {
   return fallbackOpticsImages[Math.abs(hash) % fallbackOpticsImages.length];
 };
 
-export const mapProductCard = (p: any): any => {
-  if (!p) return p;
-  if (p.id && p.images && p.images.length > 0 && p.price !== undefined && p.slug !== undefined && !p._id) return p;
+export const mapProductCard = (p: ApiProduct): ProductCard => {
+  if (!p) return p as unknown as ProductCard;
+  if (p.id && p.images && p.images.length > 0 && p.price !== undefined && p.slug !== undefined && !p._id) return p as unknown as ProductCard;
 
   const rawImages = p.images && p.images.length > 0 ? p.images : [];
   const validImages = rawImages
-    .map((img: any) => (typeof img === "string" ? img : img?.url))
-    .filter((url: any) => typeof url === "string" && url.trim().length > 0 && !url.includes("trae.ai"));
+    .map((img) => (typeof img === "string" ? img : img?.url))
+    .filter((url) => typeof url === "string" && url.trim().length > 0 && !url.includes("trae.ai"));
 
   const images = validImages.length > 0 ? validImages : [getFallbackImage(p.name || p.slug || "eyewear")];
   const variants = Array.isArray(p.variants) ? p.variants : [];
   const stock = p.stock !== undefined ? p.stock : 0;
 
   return {
-    id: p._id || p.id,
-    name: p.name,
+    id: p._id || p.id || "",
+    name: p.name || "",
     brand: p.brand || "Khattak Atelier",
-    slug: p.slug,
+    slug: p.slug || "",
     category: p.category || "Sunglasses",
     subcategory: p.subcategory || "",
-    price: p.price,
+    price: p.price || 0,
     oldPrice: p.oldPrice || p.originalPrice || undefined,
     currency: "Rs.",
     description: p.description || "",
@@ -82,13 +184,13 @@ export const mapProductCard = (p: any): any => {
     badges: p.badges?.length
       ? p.badges
       : [...(p.isBestSeller ? ["best-seller"] : []), ...(p.isNewArrival ? ["new-arrival"] : [])],
-    variants: variants.map((v: any) => ({
+    variants: variants.map((v) => ({
       color: v.color || v.hexCode || "#000",
       colorName: v.colorName || "Standard",
       image: v.image || images[0] || "",
       stock: v.stock ?? stock,
     })),
-    colors: variants.map((v: any) => ({ name: v.colorName || "Standard", hex: v.color || v.hexCode || "#000" })),
+    colors: variants.map((v) => ({ name: v.colorName || "Standard", hex: v.color || v.hexCode || "#000" })),
     stock,
     sku: p.sku || "",
     gender: Array.isArray(p.gender) ? p.gender : p.gender ? [p.gender] : ["unisex"],

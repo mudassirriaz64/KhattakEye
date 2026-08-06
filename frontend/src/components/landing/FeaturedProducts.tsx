@@ -10,7 +10,7 @@ import { getProducts, mapProductCard } from "@/lib/api/products";
 function ProductGridSkeleton() {
   return (
     <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
+      {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="animate-pulse space-y-4">
           <div className="aspect-[4/5] w-full rounded-3xl bg-[color:var(--color-surface-muted)]" />
           <div className="h-4 w-2/3 rounded bg-[color:var(--color-surface-muted)]" />
@@ -21,29 +21,29 @@ function ProductGridSkeleton() {
   );
 }
 
-export function BestSellers() {
+export function FeaturedProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getProducts({ isBestSeller: true, limit: 4 })
+    getProducts({ featured: true, limit: 8 })
       .then((data) => {
         if (data && Array.isArray(data.items)) {
           setProducts(data.items.map((p) => mapProductCard(p) as unknown as Product));
         }
       })
-      .catch((err) => console.error("Failed to load best sellers:", err))
+      .catch((err) => console.error("Failed to load featured products:", err))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
     return (
-      <section className="bg-[color:var(--color-panel)] py-20 md:py-28">
+      <section className="bg-[color:var(--color-app-bg)] py-20 md:py-28">
         <div className="mx-auto max-w-[1440px] px-4 md:px-8">
           <div className="max-w-xl space-y-4">
-            <p className="editorial-eyebrow">Best Sellers</p>
+            <p className="editorial-eyebrow">Featured Products</p>
             <h2 className="font-display text-4xl leading-tight text-[color:var(--color-text-primary)] md:text-6xl">
-              The most <span className="italic text-gradient-brand">coveted</span> frames
+              Signature <span className="italic text-gradient-brand">Atelier</span> frames
             </h2>
           </div>
           <ProductGridSkeleton />
@@ -55,24 +55,24 @@ export function BestSellers() {
   if (products.length === 0) return null;
 
   return (
-    <section className="bg-[color:var(--color-panel)] py-20 md:py-28">
+    <section className="bg-[color:var(--color-app-bg)] py-20 md:py-28">
       <div className="mx-auto max-w-[1440px] px-4 md:px-8">
         <ScrollReveal>
           <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div className="max-w-xl space-y-4">
-              <p className="editorial-eyebrow">Best Sellers</p>
+              <p className="editorial-eyebrow">Featured Products</p>
               <h2 className="font-display text-4xl leading-tight text-[color:var(--color-text-primary)] md:text-6xl">
-                The most <span className="italic text-gradient-brand">coveted</span> frames
+                Signature <span className="italic text-gradient-brand">Atelier</span> frames
               </h2>
               <p className="text-base leading-7 text-[color:var(--color-text-secondary)]">
-                Proven favorites, reordered season after season for their weight, fit, and finish.
+                Exquisite materials, modern silhouettes, and meticulous craftsmanship designed to stand out.
               </p>
             </div>
             <Link
               to="/shop"
               className="group inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-[color:var(--color-brand-primary)] transition-colors hover:text-[color:var(--color-brand-hover)]"
             >
-              Shop best sellers
+              Explore all frames
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
@@ -83,7 +83,7 @@ export function BestSellers() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
-          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.1 } } }}
+          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.08 } } }}
         >
           {products.map((product) => (
             <motion.div

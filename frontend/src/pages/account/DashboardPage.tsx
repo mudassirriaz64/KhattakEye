@@ -6,6 +6,7 @@ import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/primitives/Button";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { getMyOrdersApi } from "@/lib/api/orders";
+import { type OrderSummary } from "@/lib/account-data";
 
 const cards = [
   { label: "Total Orders", value: "3", icon: ShoppingBag, color: "text-[color:var(--color-accent-blue)]", bg: "bg-[color:var(--color-accent-blue)]/10" },
@@ -24,12 +25,12 @@ const statusColor: Record<string, string> = {
 
 export function DashboardPage() {
   const { user } = useAuthStore();
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<OrderSummary[]>([]);
 
   useEffect(() => {
     getMyOrdersApi().then((data) => {
       if (Array.isArray(data) && data.length > 0) {
-        const mapped = data.map((o: any) => ({
+        const mapped = data.map((o) => ({
           id: o._id,
           orderNumber: o.orderNumber,
           date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),

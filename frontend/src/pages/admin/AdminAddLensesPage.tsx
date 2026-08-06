@@ -4,6 +4,7 @@ import { ArrowLeft, Save, X, ImagePlus, LoaderCircle, Eye } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { createProductApi, adminGetProductByIdApi } from "@/lib/api/admin";
 import { useToastStore } from "@/lib/stores/toast-store";
+import { isAxiosError } from "axios";
 
 export function AdminAddLensesPage() {
   const { id } = useParams<{ id?: string }>();
@@ -147,9 +148,13 @@ export function AdminAddLensesPage() {
       await createProductApi(formData);
       addToast({ title: "Success", description: id ? "Contact Lenses updated successfully" : "Contact Lenses added successfully", type: "success" });
       navigate("/admin/products");
-    } catch (err: any) {
+    } catch (err) {
+      let message = "Failed to save lenses product";
+      if (isAxiosError(err)) {
+        message = err.response?.data?.message || message;
+      }
       console.error(err);
-      addToast({ title: "Error", description: err.response?.data?.message || "Failed to save lenses product", type: "error" });
+      addToast({ title: "Error", description: message, type: "error" });
     } finally {
       setIsSubmitting(false);
     }

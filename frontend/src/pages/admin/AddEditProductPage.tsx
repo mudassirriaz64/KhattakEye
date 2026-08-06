@@ -6,7 +6,9 @@ import { Button } from "@/components/primitives/Button";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
 import { createProductApi, getCategoriesApi, adminGetProductByIdApi } from "@/lib/api/admin";
+import { type ApiCategory } from "@/lib/admin-data";
 import { useToastStore } from "@/lib/stores/toast-store";
+import { isAxiosError } from "axios";
 
 export function AddEditProductPage() {
   const { id } = useParams<{ id?: string }>();
@@ -65,7 +67,7 @@ export function AddEditProductPage() {
     }
   }, [id]);
 
-  const [dbCategories, setDbCategories] = useState<any[]>([]);
+  const [dbCategories, setDbCategories] = useState<ApiCategory[]>([]);
 
   useEffect(() => {
     getCategoriesApi().then((data) => {
@@ -108,7 +110,7 @@ export function AddEditProductPage() {
   const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const set = (key: string, value: any) => setForm((p) => ({ ...p, [key]: value }));
+  const set = (key: keyof typeof form, value: string | boolean) => setForm((p) => ({ ...p, [key]: value }));
 
   const toggleGender = (g: string) => {
     setForm(p => ({
@@ -118,7 +120,7 @@ export function AddEditProductPage() {
   };
 
   const addVariant = () => setVariants((prev) => [...prev, { color: "", colorName: "", stock: 0 }]);
-  const updateVariant = (i: number, key: string, value: any) => setVariants((prev) => prev.map((v, j) => j === i ? { ...v, [key]: value } : v));
+  const updateVariant = (i: number, key: keyof { color: string; colorName: string; stock: number }, value: string | number) => setVariants((prev) => prev.map((v, j) => j === i ? { ...v, [key]: value } : v));
   const removeVariant = (i: number) => setVariants((prev) => prev.filter((_, j) => j !== i));
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -158,8 +160,12 @@ export function AddEditProductPage() {
       await createProductApi(formData);
       addToast({ title: "Product created", description: "Product has been successfully saved.", type: "success" });
       navigate("/admin/products");
-    } catch (error: any) {
-      addToast({ title: "Error", description: error.response?.data?.message || "Failed to create product", type: "error" });
+    } catch (error) {
+      let message = "Failed to create product";
+      if (isAxiosError(error)) {
+        message = error.response?.data?.message || message;
+      }
+      addToast({ title: "Error", description: message, type: "error" });
     } finally {
       setIsSubmitting(false);
     }

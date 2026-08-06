@@ -9,8 +9,9 @@ import { OrderReviewContent } from "@/components/checkout/OrderReview";
 import { OrderSuccess } from "@/components/order/OrderSuccess";
 import { ProductRecommendations } from "@/components/product/ProductRecommendations";
 import { getProducts, mapProductCard } from "@/lib/api/products";
+import { type Product } from "@/lib/shop-data";
 import { motion, AnimatePresence } from "framer-motion";
-import { Navigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -19,11 +20,11 @@ export function CheckoutPage() {
   const orderNumber = useCheckoutStore((s) => s.orderNumber);
   const orderPlaced = useCheckoutStore((s) => s.orderPlaced);
   const items = useCartStore((s) => s.items);
-  const [recommended, setRecommended] = useState<any[]>([]);
+  const [recommended, setRecommended] = useState<Product[]>([]);
 
   useEffect(() => {
     getProducts({ limit: 8 }).then((data) => {
-      if (data && data.items) setRecommended(data.items.map(mapProductCard));
+      if (data && data.items) setRecommended(data.items.map(mapProductCard) as unknown as Product[]);
     }).catch(() => setRecommended([]));
   }, []);
 

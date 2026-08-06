@@ -1,12 +1,67 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
-import { allProducts } from "@/lib/shop-data";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
+import { getProducts, mapProductCard } from "@/lib/api/products";
+import { type Product } from "@/lib/shop-data";
 
-const picks = [allProducts[1], allProducts[2], allProducts[3], allProducts[5]];
+function NewArrivalsListSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-5 py-6 border-b border-[color:var(--color-border-strong)]">
+          <div className="h-28 w-28 rounded-2xl bg-[color:var(--color-surface-muted)]" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-1/4 rounded bg-[color:var(--color-surface-muted)]" />
+            <div className="h-4 w-2/3 rounded bg-[color:var(--color-surface-muted)]" />
+            <div className="h-3 w-1/5 rounded bg-[color:var(--color-surface-muted)]" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function NewArrivals() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getProducts({ isNewArrival: true, limit: 4 })
+      .then((data) => {
+        if (data && Array.isArray(data.items)) {
+          setProducts(data.items.map((p) => mapProductCard(p) as unknown as Product));
+        }
+      })
+      .catch((err) => console.error("Failed to load new arrivals:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="bg-[color:var(--color-app-bg)] py-20 md:py-28">
+        <div className="mx-auto max-w-[1440px] px-4 md:px-8">
+          <div className="grid gap-12 lg:grid-cols-12 lg:gap-16">
+            <div className="lg:col-span-4">
+              <div className="lg:sticky lg:top-28">
+                <p className="editorial-eyebrow">New Arrivals</p>
+                <h2 className="mt-4 font-display text-4xl leading-tight text-[color:var(--color-text-primary)] md:text-6xl">
+                  Just landed
+                </h2>
+              </div>
+            </div>
+            <div className="lg:col-span-8">
+              <NewArrivalsListSkeleton />
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (products.length === 0) return null;
+
   return (
     <section className="bg-[color:var(--color-app-bg)] py-20 md:py-28">
       <div className="mx-auto max-w-[1440px] px-4 md:px-8">
@@ -33,7 +88,7 @@ export function NewArrivals() {
 
           <div className="lg:col-span-8">
             <div className="border-t border-[color:var(--color-border-strong)]">
-              {picks.map((product, index) => (
+              {products.map((product, index) => (
                 <motion.div
                   key={product.id}
                   initial={{ opacity: 0, x: 24 }}

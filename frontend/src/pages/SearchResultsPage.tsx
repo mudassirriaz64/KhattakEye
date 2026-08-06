@@ -1,16 +1,17 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, X } from "lucide-react";
 import { Breadcrumb } from "@/components/shop/Breadcrumb";
 import { ProductGrid } from "@/components/shop/ProductGrid";
 import { QuickViewModal } from "@/components/quickview/QuickViewModal";
 import { getProducts, mapProductCard } from "@/lib/api/products";
+import { type Product } from "@/lib/shop-data";
 
 export function SearchResultsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
   const [localQuery, setLocalQuery] = useState(query);
-  const [liveProducts, setLiveProducts] = useState<any[]>([]);
+  const [liveProducts, setLiveProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -18,7 +19,7 @@ export function SearchResultsPage() {
       setLoading(true);
       getProducts({ q: query.trim(), limit: 50 })
         .then((res) => {
-          const mapped = (res.items || []).map(mapProductCard);
+          const mapped = (res.items || []).map(mapProductCard) as unknown as Product[];
           setLiveProducts(mapped);
         })
         .catch(() => setLiveProducts([]))

@@ -1,4 +1,5 @@
 import api from './axios';
+import type { ApiCategory } from '@/lib/admin-data';
 
 export const adminLoginApi = async (email: string, password: string) => {
   const response = await api.post('/admin/auth/login', { email, password });
@@ -15,9 +16,22 @@ export const adminGetProfileApi = async () => {
   return response.data;
 };
 
-export const adminGetProductsApi = async (page = 1, limit = 50, kind?: string) => {
-  const query = kind ? `&kind=${kind}` : '';
-  const response = await api.get(`/admin/products?page=${page}&limit=${limit}${query}`);
+export interface AdminProductFilters {
+  kind?: string;
+  category?: string;
+  subcategory?: string;
+  brand?: string;
+  stock?: string;
+  featured?: string;
+  search?: string;
+}
+
+export const adminGetProductsApi = async (page = 1, limit = 50, filters: AdminProductFilters = {}) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value);
+  });
+  const response = await api.get(`/admin/products?${params.toString()}`);
   return response.data;
 };
 
@@ -35,7 +49,7 @@ export const createProductApi = async (formData: FormData) => {
   return response.data;
 };
 
-export const getCategoriesApi = async (productKind?: string, type?: string) => {
+export const getCategoriesApi = async (productKind?: string, type?: string): Promise<ApiCategory[]> => {
   const params = new URLSearchParams();
   if (productKind) params.append('productKind', productKind);
   if (type) params.append('type', type);
@@ -49,7 +63,7 @@ export const getPublicProductsApi = async (page = 1, limit = 100, kind?: string)
     const query = kind ? `&kind=${kind}` : '';
     const response = await api.get(`/products?page=${page}&limit=${limit}${query}`);
     return response.data;
-  } catch (err) {
+  } catch {
     const query = kind ? `&kind=${kind}` : '';
     const response = await api.get(`/admin/products?page=${page}&limit=${limit}${query}`);
     return response.data;
@@ -82,6 +96,30 @@ export const adminDeleteCategoryApi = async (id: string) => {
   return response.data;
 };
 
+export interface CategoryUpdateData {
+  name?: string;
+  slug?: string;
+  description?: string;
+  image?: string;
+  productKind?: string;
+  type?: string;
+  featured?: boolean;
+  status?: string;
+  subcategories?: {
+    _id?: string;
+    name: string;
+    slug: string;
+    description?: string;
+    group?: string;
+    productCount?: number;
+  }[];
+}
+
+export const adminUpdateCategoryApi = async (id: string, data: CategoryUpdateData) => {
+  const response = await api.put(`/admin/categories/${id}`, data);
+  return response.data;
+};
+
 export const adminGetBrandsApi = async () => {
   const response = await api.get('/admin/brands');
   return response.data;
@@ -97,7 +135,7 @@ export const adminDeleteBrandApi = async (id: string) => {
   return response.data;
 };
 
-export const adminUpdateProductApi = async (id: string, data: any) => {
+export const adminUpdateProductApi = async (id: string, data: { stock?: number }) => {
   const response = await api.put(`/admin/products/${id}`, data);
   return response.data;
 };

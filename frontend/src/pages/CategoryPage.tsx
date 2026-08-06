@@ -9,11 +9,12 @@ import { QuickViewModal } from "@/components/quickview/QuickViewModal";
 import { categories, sortOptions } from "@/lib/shop-data";
 import { useShopStore } from "@/lib/stores/shop-store";
 import { getProducts, mapProductCard } from "@/lib/api/products";
+import { type Product } from "@/lib/shop-data";
 
 export function CategoryPage() {
-  const { category } = useParams<{ category: string }>();
+  const { category, subcategory } = useParams<{ category: string; subcategory?: string }>();
   const [filterOpen, setFilterOpen] = useState(false);
-  const [dbProducts, setDbProducts] = useState<any[]>([]);
+  const [dbProducts, setDbProducts] = useState<Product[]>([]);
 
   const selectedFilters = useShopStore((s) => s.selectedFilters);
   const priceRange = useShopStore((s) => s.priceRange);
@@ -22,7 +23,7 @@ export function CategoryPage() {
   useEffect(() => {
     getProducts({ category: category || undefined, limit: 100 }).then((data) => {
       if (data && data.items) {
-        setDbProducts(data.items.map(mapProductCard));
+        setDbProducts(data.items.map(mapProductCard) as unknown as Product[]);
       } else {
         setDbProducts([]);
       }
@@ -36,12 +37,23 @@ export function CategoryPage() {
 
     if (category) {
       const target = category.toLowerCase();
+      const targetSub = subcategory?.toLowerCase();
       result = result.filter((p) => {
         const pCat = p.category?.toLowerCase();
         const pSub = p.subcategory?.toLowerCase();
-        return pCat === target || pSub === target || 
-               (target === 'sunglasses' && pCat === 'sunglasses') || 
-               (target === 'eyeglasses' && pCat === 'eyeglasses');
+        
+        // Match parent category
+        const parentMatches = pCat === target || 
+                              (target === 'sunglasses' && pCat === 'sunglasses') || 
+                              (target === 'eyeglasses' && pCat === 'eyeglasses');
+        
+        if (!parentMatches) return false;
+        
+        // Match subcategory if path param is present
+        if (targetSub) {
+          return pSub === targetSub;
+        }
+        return true;
       });
     }
 
@@ -74,22 +86,30 @@ export function CategoryPage() {
     }
 
     return result;
-  }, [category, dbProducts, selectedFilters, priceRange, sortBy]);
+  }, [category, subcategory, dbProducts, selectedFilters, priceRange, sortBy]);
 
   const categoryName = catInfo?.name || category?.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) || "Category";
+  const subcategoryName = subcategory?.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const breadcrumbItems = [
+    { label: "Shop", path: "/shop" },
+    { label: categoryName, path: `/shop/${category}` }
+  ];
+  if (subcategoryName) {
+    breadcrumbItems.push({ label: subcategoryName, path: `/shop/${category}/${subcategory}` });
+  }
 
   return (
     <div className="mx-auto max-w-[1440px] px-4 py-10 md:px-8">
-      <Breadcrumb items={[
-        { label: "Shop", path: "/shop" },
-        { label: categoryName },
-      ]} />
+      <Breadcrumb items={breadcrumbItems} />
 
       <div className="mt-6">
         {catInfo ? (
-          <ShopBanner title={catInfo.name} description={catInfo.description} image={catInfo.image} count={catInfo.productCount} />
+          <ShopBanner title={subcategoryName ? `${catInfo.name} - ${subcategoryName}` : catInfo.name} description={catInfo.description} image={catInfo.image} count={filtered.length} />
         ) : (
-          <h1 className="font-display text-4xl text-[color:var(--color-text-primary)] md:text-5xl">{categoryName}</h1>
+          <h1 className="font-display text-4xl text-[color:var(--color-text-primary)] md:text-5xl">
+            {subcategoryName ? `${categoryName} - ${subcategoryName}` : categoryName}
+          </h1>
         )}
       </div>
 

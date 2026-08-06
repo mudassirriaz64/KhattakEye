@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-import { FileText, ShieldAlert, Scale, CheckCircle2, ShoppingBag } from "lucide-react";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
 
 const terms = [

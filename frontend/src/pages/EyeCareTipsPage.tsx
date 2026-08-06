@@ -1,4 +1,4 @@
-import { Eye, Sun, Sparkles, Shield, CheckCircle2 } from "lucide-react";
+import { Eye } from "lucide-react";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
 
 const tips = [

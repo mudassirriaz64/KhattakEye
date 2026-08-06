@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Truck, ShieldCheck, Clock, MapPin, PackageCheck, HeadphonesIcon, ArrowRight, MessageCircle } from "lucide-react";
+import { Truck, ShieldCheck, Clock, PackageCheck, MessageCircle } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
 import { ProductAccordion } from "@/components/product/ProductAccordion";

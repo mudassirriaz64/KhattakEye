@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import { EditorialHero } from "@/components/landing/EditorialHero";
 import { FeaturedCollections } from "@/components/landing/FeaturedCollections";
+import { FeaturedProducts } from "@/components/landing/FeaturedProducts";
 import { FaceShapeGuide } from "@/components/landing/FaceShapeGuide";
 import { BestSellers } from "@/components/landing/BestSellers";
 import { LifestyleBanner } from "@/components/landing/LifestyleBanner";
 import { NewArrivals } from "@/components/landing/NewArrivals";
+import { GenderCollections } from "@/components/landing/GenderCollections";
 import { TryOnPromo } from "@/components/landing/TryOnPromo";
 import { BrandStory } from "@/components/landing/BrandStory";
 import { PremiumBrands } from "@/components/landing/PremiumBrands";
@@ -21,10 +23,12 @@ export function LandingPage() {
     <main>
       <EditorialHero />
       <FeaturedCollections />
+      <FeaturedProducts />
       <FaceShapeGuide />
       <BestSellers />
       <LifestyleBanner />
       <NewArrivals />
+      <GenderCollections />
       <TryOnPromo />
       <BrandStory />
       <PremiumBrands />

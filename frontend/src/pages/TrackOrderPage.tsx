@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, HeadphonesIcon, MessageCircle, Package } from "lucide-react";
-import { mockOrder } from "@/lib/order-data";
+import { mockOrder, type Order } from "@/lib/order-data";
 import { TrackOrderSearch } from "@/components/order/TrackOrderSearch";
 import { OrderTimeline } from "@/components/order/OrderTimeline";
 import { Button } from "@/components/primitives/Button";
@@ -12,8 +12,8 @@ export function TrackOrderPage() {
   const [searchParams] = useSearchParams();
   const initialId = searchParams.get("id") || "";
   const [tracked, setTracked] = useState(!!initialId);
-  const [orderId, setOrderId] = useState(initialId);
-  const [order, setOrder] = useState<any>(mockOrder);
+  const [, setOrderId] = useState(initialId);
+  const [order, setOrder] = useState<Order>(mockOrder);
 
   const fetchLiveOrder = (idToSearch: string) => {
     if (!idToSearch) return;
@@ -25,7 +25,7 @@ export function TrackOrderPage() {
           status: data.status || "pending",
           timeline: data.timeline && data.timeline.length > 0 ? data.timeline : mockOrder.timeline,
           items: data.items || []
-        });
+        } as Order);
       }
     }).catch(() => {});
   };

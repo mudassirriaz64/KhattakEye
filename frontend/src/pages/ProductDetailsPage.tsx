@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Heart, ShoppingBag, Truck, Shield, RefreshCw, BadgeCheck, Star, Share2, GitCompare, Minus, Plus, Glasses } from "lucide-react";
+import { Heart, Truck, Shield, RefreshCw, BadgeCheck, Star, GitCompare, Minus, Plus, Glasses } from "lucide-react";
 import { motion } from "framer-motion";
 import { Breadcrumb } from "@/components/shop/Breadcrumb";
 import { ProductGallery } from "@/components/product/ProductGallery";
@@ -15,12 +15,51 @@ import { useShopStore } from "@/lib/stores/shop-store";
 import { QuickCheckoutModal } from "@/components/shop/QuickCheckoutModal";
 
 import { cn } from "@/lib/utils";
+import { type Product } from "@/lib/shop-data";
+
+interface ProductDetailsVariant {
+  colorName?: string;
+  hexCode?: string;
+  image?: string;
+}
+
+interface ProductDetailsData {
+  id: string;
+  slug: string;
+  name: string;
+  brand: string;
+  price: number;
+  originalPrice: number;
+  rating: number;
+  reviewCount: number;
+  description: string;
+  shortDescription: string;
+  images: string[];
+  colors: { name: string; hex: string }[];
+  sku: string;
+  inStock: boolean;
+  stock: number;
+  category: string;
+  subcategory: string;
+  frameShape: string;
+  frameMaterial: string;
+  lensType: string;
+  gender: string;
+  badges: string[];
+  variants: ProductDetailsVariant[];
+  dimensions: { eyeWidth: number; bridgeWidth: number; templeLength: number };
+  specs?: { label: string; value: string }[];
+  features?: string[];
+  currency?: string;
+  oldPrice?: number;
+  _id?: string;
+  size?: string;
+}
 
 export function ProductDetailsPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [product, setProduct] = useState<any>(null);
-  const [related, setRelated] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState<ProductDetailsData | null>(null);
+  const [related, setRelated] = useState<Product[]>([]);
 
   const [wishlisted, setWishlisted] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);

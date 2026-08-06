@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, ShoppingBag } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { CartItem } from "@/components/cart/CartItem";
 import { CartSummary } from "@/components/cart/CartSummary";

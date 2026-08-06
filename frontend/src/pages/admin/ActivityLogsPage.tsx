@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Activity, Search, Filter, AlertTriangle, Info, AlertCircle } from "lucide-react";
-import { activityLogs, type ActivityLog } from "@/lib/admin-data";
+import { activityLogs } from "@/lib/admin-data";
 import { cn } from "@/lib/utils";
 
 type SeverityFilter = "all" | "info" | "warning" | "critical";

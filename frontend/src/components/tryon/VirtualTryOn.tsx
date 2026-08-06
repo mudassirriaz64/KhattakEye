@@ -77,9 +77,9 @@ export function VirtualTryOn() {
         const res = await getProducts({ limit: 12 });
         let list: Array<{ name: string; image: string; slug: string }> = [];
         if (res && res.items && res.items.length > 0) {
-          list = res.items.map((p: any) => ({
+          list = res.items.map((p) => ({
             name: p.name,
-            image: p.images && p.images[0] ? p.images[0] : "/hero-sunglasses.png",
+            image: typeof p.images?.[0] === "string" ? p.images[0] : "/hero-sunglasses.png",
             slug: p.slug || p.id || ""
           }));
         }
@@ -103,7 +103,7 @@ export function VirtualTryOn() {
               if (p) {
                 const single = {
                   name: p.name,
-                  image: p.images && p.images[0] ? p.images[0] : "/hero-sunglasses.png",
+                  image: typeof p.images?.[0] === "string" ? p.images[0] : "/hero-sunglasses.png",
                   slug: p.slug || p.id || productParam
                 };
                 list.unshift(single);
@@ -135,14 +135,6 @@ export function VirtualTryOn() {
 
     loadFrames();
   }, [searchParams]);
-
-  useEffect(() => {
-    return () => {
-      stopCamera();
-      stopDetection();
-      cancelAnimationFrame(animRef.current);
-    };
-  }, [stopDetection]);
 
   useEffect(() => {
     if (videoReady && streamRef.current && videoRef.current) {
@@ -247,6 +239,14 @@ export function VirtualTryOn() {
       streamRef.current = null;
     }
   }, []);
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+      stopDetection();
+      cancelAnimationFrame(animRef.current);
+    };
+  }, [stopCamera, stopDetection]);
 
   const captureImage = () => {
     const video = videoRef.current;

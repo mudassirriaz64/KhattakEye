@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Shield, Plus, Edit3, Trash2, Search, UserX, UserCheck } from "lucide-react";
-import { adminUsers, type AdminUserManage } from "@/lib/admin-data";
+import { Plus, Edit3, Trash2, Search, UserX, UserCheck } from "lucide-react";
+import { adminUsers } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
