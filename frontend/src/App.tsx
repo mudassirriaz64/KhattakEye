@@ -257,15 +257,22 @@ function AppRoutes() {
 import { useEffect } from "react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAdminStore } from "@/lib/stores/admin-store";
+import { useWishlistStore } from "@/lib/stores/wishlist-store";
 
 export default function App() {
   const checkCustomerAuth = useAuthStore((s) => s.checkAuth);
   const checkAdminAuth = useAdminStore((s) => s.checkAuth);
+  const fetchWishlist = useWishlistStore((s) => s.fetchWishlist);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
     checkCustomerAuth();
     checkAdminAuth();
   }, [checkCustomerAuth, checkAdminAuth]);
+
+  useEffect(() => {
+    fetchWishlist();
+  }, [isAuthenticated, fetchWishlist]);
 
   return (
     <BrowserRouter>

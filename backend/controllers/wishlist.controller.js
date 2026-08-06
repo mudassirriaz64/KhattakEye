@@ -35,7 +35,7 @@ const addToWishlist = async (req, res, next) => {
     }
 
     const user = await User.findById(req.user._id);
-    if (!user.wishlist.includes(productId)) {
+    if (!user.wishlist.some(id => id.toString() === productId)) {
       user.wishlist.push(productId);
       await user.save();
     }

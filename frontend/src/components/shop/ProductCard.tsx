@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Heart, ShoppingBag, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -13,7 +13,8 @@ type ProductCardProps = {
   viewMode?: "grid" | "list";
 };
 
-export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
+export const ProductCard = React.forwardRef(
+  ({ product, viewMode = "grid" }: ProductCardProps, ref: React.Ref<HTMLDivElement>) => {
   const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
   const isInWishlist = useWishlistStore((s) => s.isInWishlist);
   const isWishlisted = isInWishlist(product.id);
@@ -72,6 +73,7 @@ export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
 
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -206,4 +208,4 @@ export function ProductCard({ product, viewMode = "grid" }: ProductCardProps) {
       </div>
     </motion.div>
   );
-}
+});
