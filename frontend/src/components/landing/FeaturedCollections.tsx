@@ -4,7 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
 import { cn } from "@/lib/utils";
 import { getCategories } from "@/lib/api/products";
-import { categories as fallbackCategories } from "@/lib/landing-data";
+import { categories as fallbackCategories, type Category } from "@/lib/landing-data";
 
 const tiles = [
   { colClass: "lg:col-span-7 lg:row-span-2", itemClass: "aspect-[16/10] lg:aspect-auto lg:h-full", wrapClass: "lg:h-full" },
@@ -23,7 +23,7 @@ function CategoryGridSkeleton() {
 }
 
 export function FeaturedCollections() {
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

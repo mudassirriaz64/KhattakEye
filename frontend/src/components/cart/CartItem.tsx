@@ -2,7 +2,6 @@ import { Minus, Plus, Trash2, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { type CartItem as CartItemType, useCartStore } from "@/lib/stores/cart-store";
-import { cn } from "@/lib/utils";
 
 type CartItemProps = {
   item: CartItemType;

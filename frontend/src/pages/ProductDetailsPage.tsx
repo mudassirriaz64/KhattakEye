@@ -74,7 +74,6 @@ export function ProductDetailsPage() {
     window.scrollTo(0, 0);
     if (!slug) return;
 
-    setLoading(true);
     getApiProductBySlug(slug)
       .then((data) => {
         if (data) {
@@ -89,8 +88,8 @@ export function ProductDetailsPage() {
             reviewCount: data.reviewCount || 14,
             description: data.description || "",
             shortDescription: data.shortDescription || data.description || "",
-            images: data.images && data.images.length > 0 ? data.images : ["/hero-sunglasses.png"],
-            colors: data.variants ? data.variants.map((v: any) => ({ name: v.colorName || "Default", hex: v.hexCode || "#000", image: data.images[0] || "" })) : [{ name: "Black", hex: "#000" }],
+            images: (data.images && data.images.length > 0 ? data.images : ["/hero-sunglasses.png"]) as string[],
+            colors: data.variants ? data.variants.map((v: { colorName?: string; hexCode?: string }) => ({ name: v.colorName || "Default", hex: v.hexCode || "#000", image: data.images[0] || "" })) : [{ name: "Black", hex: "#000" }],
             sku: data.sku || `KT-${data._id?.substring(0, 6) || "SPEC"}`,
             inStock: data.stock > 0,
             stock: data.stock !== undefined ? data.stock : 10,
@@ -113,16 +112,15 @@ export function ProductDetailsPage() {
           getProducts({ category: mapped.category, limit: 5 })
             .then((res) => {
               const list = (res.items || []).map(mapProductCard).filter((p) => p.id !== mapped.id);
-              setRelated(list.slice(0, 4));
+              setRelated(list.slice(0, 4) as unknown as Product[]);
             })
             .catch(() => setRelated([]));
         }
       })
       .catch(() => {
         setProduct(null);
-      })
-      .finally(() => setLoading(false));
-  }, [slug]);
+      });
+  }, [slug, addToRecentlyViewed]);
 
   if (!product) {
     return (
@@ -150,7 +148,7 @@ export function ProductDetailsPage() {
                 { label: "Lens Type", value: product.lensType || "Polarized" },
                 { label: "Gender", value: product.gender || "Unisex" },
               ]
-          ).map((spec: any) => (
+          ).map((spec: { label: string; value: string }) => (
             <div key={spec.label} className="flex justify-between border-b border-[color:var(--color-border)] pb-2">
               <span className="text-[color:var(--color-text-tertiary)]">{spec.label}</span>
               <span className="font-medium">{spec.value}</span>
@@ -355,16 +353,16 @@ export function ProductDetailsPage() {
                 className="w-full py-4 bg-[#b91c1c] hover:bg-[#991b1b] text-white flex flex-col items-center justify-center gap-0.5 h-auto rounded-xl"
                 onClick={() => {
                   addItem({
-                    productId: product.id || (product as any)._id,
+                    productId: product.id || product._id,
                     name: product.name,
                     brand: product.brand,
                     image: product.images?.[0] || "",
                     price: product.price,
                     quantity,
-                    color: (product as any).colors?.[0]?.hex || "#000",
-                    colorName: (product as any).colors?.[0]?.name || "Standard",
-                    size: (product as any).size || "Medium",
-                    lensType: (product as any).lensType || "Standard",
+                    color: product.colors?.[0]?.hex || "#000",
+                    colorName: product.colors?.[0]?.name || "Standard",
+                    size: product.size || "Medium",
+                    lensType: product.lensType || "Standard",
                     sku: product.sku || product.id,
                     stock: product.stock || 10
                   });
@@ -409,7 +407,7 @@ export function ProductDetailsPage() {
         )}
       </div>
 
-      <StickyAddToCart product={product} />
+      <StickyAddToCart product={product as unknown as Product} />
     </>
   );
 }

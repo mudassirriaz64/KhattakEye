@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Settings, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { cmsWebsiteSettings } from "@/lib/admin-data";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
@@ -45,19 +45,25 @@ export function AdminWebsiteSettingsPage() {
     setSettings((prev) => {
       const copy = { ...prev };
       const keys = path.split(".");
-      let obj: Record<string, any> = copy;
+      let obj: Record<string, unknown> = copy;
       for (let i = 0; i < keys.length - 1; i++) {
-        obj = obj[keys[i]];
+        obj = obj[keys[i]] as Record<string, unknown>;
       }
       obj[keys[keys.length - 1]] = value;
       return copy;
     });
   };
 
+  const readPath = (path: string): string =>
+    path.split(".").reduce<unknown>(
+      (o, k) => (o as Record<string, unknown> | undefined)?.[k] ?? "",
+      settings as Record<string, unknown>
+    ) as string;
+
   const field = (label: string, path: string, placeholder = "", type = "text") => (
     <div>
       <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">{label}</label>
-      <input type={type} value={path.split(".").reduce((o, k) => (o as any)?.[k] ?? "", settings as any)} onChange={(e) => update(path, e.target.value)} placeholder={placeholder} className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)]" />
+      <input type={type} value={readPath(path)} onChange={(e) => update(path, e.target.value)} placeholder={placeholder} className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)]" />
     </div>
   );
 

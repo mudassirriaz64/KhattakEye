@@ -6,8 +6,7 @@ import { Button } from "@/components/primitives/Button";
 import axios from "@/lib/api/axios";
 
 export function LifestyleBanner() {
-  const [banners, setBanners] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [banners, setBanners] = useState<{ image?: string; title?: string; link?: string }[]>([]);
 
   useEffect(() => {
     axios.get("/banners?type=promotional")
@@ -16,8 +15,7 @@ export function LifestyleBanner() {
           setBanners(res.data);
         }
       })
-      .catch((err) => console.error("Failed to load promo banner:", err))
-      .finally(() => setLoading(false));
+      .catch((err) => console.error("Failed to load promo banner:", err));
   }, []);
 
   const hasBanner = banners.length > 0;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, Smartphone, Monitor, Globe, LogIn, Key, Lock, Check, X, AlertTriangle } from "lucide-react";
+import { Shield, Monitor, Globe, LogIn, Lock, Check, X } from "lucide-react";
 import { adminSessions, loginHistory, passwordPolicies } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Button } from "@/components/primitives/Button";
@@ -77,7 +77,7 @@ export function AdminSecurityPage() {
       {activeTab === "history" && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)]">
           <div className="divide-y divide-[color:var(--color-border)]">
-            {loginHistory.map((entry, i) => (
+            {loginHistory.map((entry) => (
               <div key={entry.id} className="flex items-center gap-4 px-5 py-4">
                 <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", entry.success ? "bg-emerald-500/10" : "bg-red-500/10")}>
                   {entry.success ? <LogIn className="h-4 w-4 text-emerald-500" /> : <X className="h-4 w-4 text-red-500" />}

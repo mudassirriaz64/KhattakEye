@@ -19,8 +19,7 @@ import { useState, useEffect } from "react";
 import axios from "@/lib/api/axios";
 
 export function EditorialHero() {
-  const [banners, setBanners] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [banners, setBanners] = useState<{ image?: string; title?: string }[]>([]);
 
   useEffect(() => {
     axios.get("/banners?type=homepage-slider")
@@ -29,8 +28,7 @@ export function EditorialHero() {
           setBanners(res.data);
         }
       })
-      .catch((err) => console.error("Failed to load hero banners:", err))
-      .finally(() => setLoading(false));
+      .catch((err) => console.error("Failed to load hero banners:", err));
   }, []);
 
   const slide = banners.length > 0 ? {

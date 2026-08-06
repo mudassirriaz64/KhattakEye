@@ -28,7 +28,7 @@ function BrandSkeleton() {
 }
 
 export function PremiumBrands() {
-  const [brands, setBrands] = useState<any[]>([]);
+  const [brands, setBrands] = useState<{ name: string; logo?: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

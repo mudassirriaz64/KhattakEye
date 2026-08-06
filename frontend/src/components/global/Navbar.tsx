@@ -23,6 +23,16 @@ type NavLink = {
   megaImageLink?: string;
 };
 
+type NavCategory = Category & {
+  subcategories?: {
+    name?: string;
+    slug?: string;
+    image?: string;
+    productCount?: number;
+    group?: string;
+  }[];
+};
+
 const navLinks: NavLink[] = [
   { label: "Home", path: "/" },
   {
@@ -337,7 +347,7 @@ function BrandsMegaPanel({ onEnter, onLeave }: { onEnter: () => void; onLeave: (
   );
 }
 
-import { getCategories } from "@/lib/api/categories";
+import { getCategories, type Category } from "@/lib/api/categories";
 import { getBrands } from "@/lib/api/products";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
@@ -362,7 +372,7 @@ export function Navbar() {
   const navRef = useRef<HTMLElement>(null);
   
   const [navData, setNavData] = useState<NavLink[]>(navLinks);
-  const [dynamicBrands, setDynamicBrands] = useState(brandLogos);
+  const [, setDynamicBrands] = useState(brandLogos);
 
   useEffect(() => {
     async function fetchNavData() {
@@ -373,13 +383,13 @@ export function Navbar() {
         ]);
 
         if (Array.isArray(allCategories) && allCategories.length > 0) {
-          const findCat = (slug: string) => allCategories.find((c: any) => c.slug === slug);
+          const findCat = (slug: string) => allCategories.find((c) => c.slug === slug);
           const eyeglassesCat = findCat('eyeglasses');
           const sunglassesCat = findCat('sunglasses');
           const contactLensesCat = findCat('contact-lenses');
           const lensesCat = findCat('lenses');
 
-          const buildMegaFromSubcategories = (parentCat: any, basePath: string) => {
+          const buildMegaFromSubcategories = (parentCat: NavCategory | undefined, basePath: string) => {
             if (!parentCat || !Array.isArray(parentCat.subcategories) || parentCat.subcategories.length === 0) {
               return null;
             }
@@ -418,7 +428,7 @@ export function Navbar() {
         }
 
         if (brands && brands.length > 0) {
-          setDynamicBrands(brands.map((b: any) => ({
+          setDynamicBrands(brands.map((b) => ({
             name: b.name,
             initials: b.name.substring(0, 2).toUpperCase(),
             color: "#19130D"
@@ -433,7 +443,6 @@ export function Navbar() {
 
   const currentLink = navData.find((l) => l.label === megaLabel);
   const hasMega = !!(currentLink?.mega);
-  const isBrands = megaLabel === "Brands";
 
   const isActive = (link: NavLink) =>
     link.path === "/" ? location.pathname === "/" : location.pathname.startsWith(link.path);

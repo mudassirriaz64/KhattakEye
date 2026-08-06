@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Star, Quote } from "lucide-react";
-import { testimonials as fallbackTestimonials } from "@/lib/landing-data";
+import { testimonials as fallbackTestimonials, type Testimonial } from "@/lib/landing-data";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
 import axios from "@/lib/api/axios";
 
@@ -19,7 +19,7 @@ function Stars({ rating }: { rating: number }) {
 }
 
 export function TestimonialWall() {
-  const [list, setList] = useState<any[]>(fallbackTestimonials);
+  const [list, setList] = useState<Testimonial[]>(fallbackTestimonials);
 
   useEffect(() => {
     axios.get("/testimonials")

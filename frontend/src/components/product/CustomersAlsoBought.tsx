@@ -1,7 +1,6 @@
 import { useRef } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 type Product = {
   id: string;

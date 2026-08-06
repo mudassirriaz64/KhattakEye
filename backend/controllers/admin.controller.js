@@ -271,7 +271,7 @@ const updateProduct = async (req, res, next) => {
       updateData.images = req.files.map(file => file.path || file.filename);
     }
 
-    const updated = await Product.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    const updated = await Product.findByIdAndUpdate(id, updateData, { returnDocument: 'after', runValidators: true });
     if (!updated) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -417,7 +417,7 @@ const updateCategory = async (req, res, next) => {
     if (type !== undefined) updateData.type = type;
     if (subcategories !== undefined) updateData.subcategories = subcategories;
 
-    const category = await Category.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+    const category = await Category.findByIdAndUpdate(id, updateData, { returnDocument: 'after', runValidators: true });
     if (!category) return res.status(404).json({ message: 'Category not found' });
     res.status(200).json(category);
   } catch (error) {

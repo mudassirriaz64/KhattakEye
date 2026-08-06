@@ -1,7 +1,6 @@
 import { X, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUiStore } from "@/lib/stores/ui-store";
-import { cn } from "@/lib/utils";
 
 export function WishlistDrawer() {
   const wishlistOpen = useUiStore((state) => state.wishlistOpen);

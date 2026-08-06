@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FileText, Plus, Edit3, Trash2, MessageSquare, X, HelpCircle } from "lucide-react";
+import { FileText, Plus, Edit3, Trash2, X, HelpCircle } from "lucide-react";
 import { cmsPages, cmsFaqs, type CmsPageContent, type CmsFaq } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
@@ -15,10 +15,10 @@ const faqFormDefault = { question: "", answer: "", category: "General", order: 1
 
 export function AdminPagesCMSPage() {
   const [tab, setTab] = useState<Tab>("pages");
-  const [pages, setPages] = useState<any[]>(cmsPages);
+  const [pages, setPages] = useState<CmsPageContent[]>(cmsPages);
   const [faqs, setFaqs] = useState(cmsFaqs);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [editingPage, setEditingPage] = useState<any | null>(null);
+  const [editingPage, setEditingPage] = useState<CmsPageContent | null>(null);
   const [editingFaq, setEditingFaq] = useState<CmsFaq | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [pageForm, setPageForm] = useState(pageFormDefault);
@@ -41,7 +41,9 @@ export function AdminPagesCMSPage() {
           updatedAt: p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : "Recently"
         })));
       }
-    } catch (err) {}
+    } catch {
+      /* cms page list is optional; keep existing data */
+    }
   };
 
   const resetPageForm = () => setPageForm(pageFormDefault);

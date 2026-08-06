@@ -6,6 +6,7 @@ import { StatusBadge, StockBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { cn } from "@/lib/utils";
 import { adminGetProductsApi, getCategoriesApi, adminGetBrandsApi, type AdminProductFilters } from "@/lib/api/admin";
+import type { ApiCategory } from "@/lib/admin-data";
 import { useToastStore } from "@/lib/stores/toast-store";
 
 const statusFilters = ["All", "Active", "Draft", "Archived"];
@@ -17,6 +18,19 @@ const stockLabels: Record<string, string> = {
 };
 
 type FilterOption = { value: string; label: string };
+
+type ProductRow = {
+  id: string;
+  name: string;
+  kind: string;
+  sku: string;
+  category: string;
+  stock: number;
+  price: number;
+  status: string;
+  featured: boolean;
+  image: string;
+};
 
 const FilterSelect = ({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: FilterOption[] }) => (
   <div className="relative min-w-[130px]">
@@ -41,7 +55,7 @@ const FilterSelect = ({ label, value, onChange, options }: { label: string; valu
 
 export function AdminProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -51,7 +65,7 @@ export function AdminProductsPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [brands, setBrands] = useState<string[]>([]);
   const addToast = useToastStore((s) => s.addToast);
 
@@ -69,7 +83,7 @@ export function AdminProductsPage() {
       if (Array.isArray(data)) setCategories(data);
     }).catch(() => {});
     adminGetBrandsApi().then((data) => {
-      if (Array.isArray(data)) setBrands(data.map((b: any) => b.name));
+      if (Array.isArray(data)) setBrands(data.map((b: { name: string }) => b.name));
     }).catch(() => {});
   }, []);
 
@@ -93,7 +107,18 @@ export function AdminProductsPage() {
       const res = await adminGetProductsApi(pageToLoad, 50, filters);
       if (res && res.items) {
         // Map backend schema to frontend table structure
-        const formatted = res.items.map((p: any) => ({
+        const formatted = res.items.map((p: {
+          _id: string;
+          name: string;
+          kind?: string;
+          sku?: string;
+          category: string;
+          stock?: number;
+          price: number;
+          status?: string;
+          featured?: boolean;
+          images?: string[];
+        }) => ({
           id: p._id,
           name: p.name,
           kind: p.kind || 'glasses',
@@ -144,13 +169,13 @@ export function AdminProductsPage() {
 
   const categoryOptions = categories.filter((c) => (!c.type || c.type === "category") && (!kindFilter || c.productKind === kindFilter));
   const selectedCategory = categories.find((c) => c.slug === categoryFilter);
-  const subcategoryOptions: FilterOption[] = (selectedCategory?.subcategories || []).map((s: any) => ({ value: s.slug, label: s.name }));
+  const subcategoryOptions: FilterOption[] = (selectedCategory?.subcategories || []).map((s) => ({ value: s.slug, label: s.name }));
 
   const chips: { key: keyof AdminProductFilters; label: string; value: string }[] = [];
   if (kindFilter) chips.push({ key: "kind", label: "Kind", value: kindFilter === "lenses" ? "Lenses" : "Glasses" });
   if (categoryFilter) chips.push({ key: "category", label: "Category", value: selectedCategory?.name || categoryFilter });
   if (subcategoryFilter) {
-    const sub = (selectedCategory?.subcategories || []).find((s: any) => s.slug === subcategoryFilter);
+    const sub = (selectedCategory?.subcategories || []).find((s) => s.slug === subcategoryFilter);
     chips.push({ key: "subcategory", label: "Subcategory", value: sub?.name || subcategoryFilter });
   }
   if (brandFilter) chips.push({ key: "brand", label: "Brand", value: brandFilter });
@@ -240,7 +265,7 @@ export function AdminProductsPage() {
 
         <div className="flex flex-wrap items-center gap-2 border-b border-[color:var(--color-border)] p-4">
           <FilterSelect label="Kind" value={kindFilter} onChange={(v) => updateFilter("kind", v)} options={[{ value: "glasses", label: "Glasses" }, { value: "lenses", label: "Lenses" }]} />
-          <FilterSelect label="Category" value={categoryFilter} onChange={(v) => updateFilter("category", v)} options={categoryOptions.map((c: any) => ({ value: c.slug, label: c.name }))} />
+          <FilterSelect label="Category" value={categoryFilter} onChange={(v) => updateFilter("category", v)}           options={categoryOptions.map((c) => ({ value: c.slug, label: c.name }))} />
           <FilterSelect label="Subcategory" value={subcategoryFilter} onChange={(v) => updateFilter("subcategory", v)} options={subcategoryOptions} />
           <FilterSelect label="Brand" value={brandFilter} onChange={(v) => updateFilter("brand", v)} options={brands.map((b) => ({ value: b, label: b }))} />
           <FilterSelect label="Stock" value={stockFilter} onChange={(v) => updateFilter("stock", v)} options={[{ value: "in-stock", label: "In Stock" }, { value: "out-of-stock", label: "Out of Stock" }, { value: "preorder", label: "Preorder" }]} />

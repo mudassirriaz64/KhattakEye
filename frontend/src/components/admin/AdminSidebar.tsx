@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
-  LayoutDashboard, Package, Grid3X3, Eye, Bookmark, ShoppingCart, Users, FileText, BarChart3, Settings, LogOut, ChevronLeft, X,
+  LayoutDashboard, Package, Grid3X3, Eye, Bookmark, ShoppingCart, Users, FileText, BarChart3, Settings, LogOut, ChevronLeft,
   ShieldCheck, Star, MessageSquare, ClipboardList, Image, Tag, Mail, Globe, Layout,
-  TrendingUp, Lock, Bell, Activity, UserCog, ScrollText, Shield, Plus, type LucideIcon,
+  TrendingUp, Lock, Bell, Activity, UserCog, ScrollText, Shield, type LucideIcon,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/stores/admin-store";
 import { cn } from "@/lib/utils";
