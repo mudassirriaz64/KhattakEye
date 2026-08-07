@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { useCartStore } from "./cart-store";
+import { useCartStore, prescriptionFilesCache } from "./cart-store";
 import { createOrderApi } from "@/lib/api/orders";
 
 export type CustomerInfo = {
@@ -72,6 +72,25 @@ export const useCheckoutStore = create<CheckoutState>((set, get) => ({
       const state = get();
       const cartStore = useCartStore.getState();
       const items = cartStore.items;
+
+      // Reload guard: a "file" prescription keeps its File in an in-memory cache
+      // (not persisted to LocalStorage). If the page was reloaded after adding the
+      // item, the file is gone — the order would silently submit without it. Block.
+      const missingFileItem = items.find((i) => {
+        const cust = i.customization;
+        return (
+          cust?.prescriptionType === "file" &&
+          !!cust.prescriptionFileCacheKey &&
+          !prescriptionFilesCache.get(cust.prescriptionFileCacheKey)
+        );
+      });
+      if (missingFileItem) {
+        const message =
+          `The prescription photo for "${missingFileItem.name}" is no longer available. ` +
+          `Please remove the item from your cart and re-select your prescription photo.`;
+        set({ orderError: message });
+        return;
+      }
 
       const orderData = await createOrderApi({
         customerName: state.customer.fullName || "Valued Customer",

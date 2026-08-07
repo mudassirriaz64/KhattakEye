@@ -10,6 +10,8 @@ interface ConfiguratorReviewStepProps {
   lensOption: LensTypeOption;
   selectedColorName: string;
   selectedStrength: string;
+  usageType?: string;
+  lensCoating?: string;
 }
 
 export function ConfiguratorReviewStep({
@@ -20,7 +22,9 @@ export function ConfiguratorReviewStep({
   prescriptionText,
   lensOption,
   selectedColorName,
-  selectedStrength
+  selectedStrength,
+  usageType,
+  lensCoating
 }: ConfiguratorReviewStepProps) {
   const itemSubtotal = product.price + lensOption.price;
 
@@ -58,18 +62,34 @@ export function ConfiguratorReviewStep({
 
       {/* Lens Configuration Summary */}
       <div className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-3 space-y-2">
+        {usageType && (
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Usage</span>
+            <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{usageType}</span>
+          </div>
+        )}
         <div className="flex justify-between items-center">
           <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Selected Lens</span>
           <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{lensOption.name}</span>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Lens Color / Option</span>
-          <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{selectedColorName}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Tint Density</span>
-          <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{selectedStrength}</span>
-        </div>
+        {lensCoating && lensCoating !== lensOption.name && (
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Coating</span>
+            <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{lensCoating}</span>
+          </div>
+        )}
+        {selectedColorName && (
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Lens Color / Option</span>
+            <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{selectedColorName}</span>
+          </div>
+        )}
+        {selectedStrength && (
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Tint Density</span>
+            <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{selectedStrength}</span>
+          </div>
+        )}
         <div className="flex justify-between items-center border-t border-[color:var(--color-border)] pt-2 mt-1">
           <span className="text-xs font-bold text-[color:var(--color-text-primary)]">Lens Customization Price</span>
           <span className="text-xs font-bold text-[color:var(--color-brand-primary)]">+Rs. {lensOption.price.toLocaleString()}</span>

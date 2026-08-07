@@ -13,61 +13,8 @@ export interface LensTypeOption {
   colors?: { name: string; hex: string }[];
 }
 
-const LENS_OPTIONS: LensTypeOption[] = [
-  {
-    id: "basic",
-    name: "Basic Tint",
-    price: 1000,
-    description: "Standard UV protection with classic solid tinting.",
-    info: "Best for casual daily wear. Provides 100% UV protection with clear view contrast.",
-    strengths: ["Light (35%)", "Medium (50%)", "Dark (85%)"],
-    colors: [
-      { name: "Solid Black", hex: "#1f2937" },
-      { name: "Solid Brown", hex: "#78350f" },
-      { name: "Solid Green", hex: "#064e3b" }
-    ]
-  },
-  {
-    id: "medium",
-    name: "Medium Premium Tint",
-    price: 1800,
-    description: "Extra optical contrast and anti-glare back coating.",
-    info: "Reduces eye strain under bright conditions. Anti-reflective back coatings prevent reflection shadows.",
-    strengths: ["Medium (50%)", "Dark (85%)"],
-    colors: [
-      { name: "Solid Black", hex: "#1f2937" },
-      { name: "Solid Brown", hex: "#78350f" },
-      { name: "Solid Green", hex: "#064e3b" }
-    ]
-  },
-  {
-    id: "gradient",
-    name: "Gradient Fashion Tint",
-    price: 2500,
-    description: "Dark top fading to clear bottom. Preferred by drivers.",
-    info: "Fades down elegantly. The darker top blocks overhead sun rays, while the lighter bottom helps you view dashboards clearly.",
-    strengths: ["Standard Gradient"],
-    colors: [
-      { name: "Smoke Gradient", hex: "linear-gradient(180deg, #1f2937 0%, rgba(31,41,55,0.1) 100%)" },
-      { name: "Amber Gradient", hex: "linear-gradient(180deg, #78350f 0%, rgba(120,53,15,0.1) 100%)" },
-      { name: "Forest Gradient", hex: "linear-gradient(180deg, #064e3b 0%, rgba(6,78,59,0.1) 100%)" }
-    ]
-  },
-  {
-    id: "polarized",
-    name: "Polarized HD Anti-Glare",
-    price: 3500,
-    description: "Ultimate glare reduction. Blocks reflections from water/road.",
-    info: "Contains vertical polarization filters. Ideal for driving, sports, marine outings. Eliminates blinding reflections.",
-    strengths: ["Dark Polarized (85%)"],
-    colors: [
-      { name: "HD Polarized Grey", hex: "#0f172a" },
-      { name: "HD Polarized Brown", hex: "#451a03" }
-    ]
-  }
-];
-
 interface LensTypeStepProps {
+  options: LensTypeOption[];
   selectedLensId: string;
   selectedStrength: string;
   selectedColorName: string;
@@ -77,6 +24,7 @@ interface LensTypeStepProps {
 }
 
 export function LensTypeStep({
+  options,
   selectedLensId,
   selectedStrength,
   selectedColorName,
@@ -98,7 +46,7 @@ export function LensTypeStep({
 
   return (
     <div className="flex flex-col gap-3">
-      {LENS_OPTIONS.map((opt) => {
+      {options.map((opt) => {
         const isSelected = selectedLensId === opt.id;
 
         return (

@@ -25,7 +25,11 @@ export type CartItem = {
     };
     prescriptionFileCacheKey?: string;
     prescriptionText?: string;
+    lensOptionSlug?: string;
     lensType: string;
+    usageType?: string;
+    multifocalSubtype?: string;
+    lensCoating?: string;
     tintColor?: string;
     tintStrength?: string;
     priceAdded: number;

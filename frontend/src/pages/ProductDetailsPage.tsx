@@ -9,11 +9,11 @@ import { ProductReviews } from "@/components/product/ProductReviews";
 import { ProductRecommendations } from "@/components/product/ProductRecommendations";
 import { StickyAddToCart } from "@/components/product/StickyAddToCart";
 import { Button } from "@/components/primitives/Button";
-import { getProductBySlug as getApiProductBySlug, getProducts, mapProductCard } from "@/lib/api/products";
+import { getProductBySlug as getApiProductBySlug, getProducts, mapProductCard, sanitizeProductImages, productImageFallback } from "@/lib/api/products";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useShopStore } from "@/lib/stores/shop-store";
 
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { type Product } from "@/lib/shop-data";
 
 interface ProductDetailsVariant {
@@ -130,6 +130,13 @@ export function ProductDetailsPage() {
     );
   }
 
+  const variantImage = product.variants[selectedVariant]?.image;
+  const rawGalleryImages = variantImage
+    ? [variantImage, ...product.images.filter((img) => img !== variantImage)]
+    : product.images;
+  const galleryImages = sanitizeProductImages(rawGalleryImages);
+  const displayImages = galleryImages.length > 0 ? galleryImages : [productImageFallback(product.slug || product.name || "eyewear")];
+
   const accordionItems = [
     {
       title: "Description",
@@ -202,19 +209,24 @@ export function ProductDetailsPage() {
           { label: product.name },
         ]} />
 
-        <div className="mt-6 grid gap-8 lg:grid-cols-2">
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
+        <div className="mt-6 grid gap-8 lg:grid-cols-[1.6fr_1fr]">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }} className="sticky top-[104px] self-start">
             <ProductGallery 
-              images={
-                product.variants[selectedVariant]?.image 
-                  ? [product.variants[selectedVariant].image, ...product.images.filter(img => img !== product.variants[selectedVariant].image)]
-                  : product.images
-              } 
-              name={product.name} 
+              images={displayImages} 
+              name={product.name}
+              action={
+                <Link
+                  to={`/virtual-try-on?product=${product.slug}`}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-4 py-3 text-sm font-semibold text-[color:var(--color-text-primary)] transition-all hover:border-[color:var(--color-brand-primary)] hover:text-[color:var(--color-brand-primary)]"
+                >
+                  <Glasses className="h-4 w-4" />
+                  Try On
+                </Link>
+              }
             />
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="space-y-6">
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="card-luxury space-y-6 p-6 sm:p-8">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 {product.category === "sunglasses" && (
@@ -255,11 +267,11 @@ export function ProductDetailsPage() {
               </div>
               <div className="text-right">
                 <span className="text-2xl font-bold text-[color:var(--color-text-primary)]">
-                  {product.currency} {product.price.toLocaleString()}
+                  {formatCurrency(product.price)}
                 </span>
-                {product.oldPrice && (
+                {(product.oldPrice || product.originalPrice) && (
                   <p className="text-xs text-[color:var(--color-text-tertiary)] line-through">
-                    {product.currency} {product.oldPrice.toLocaleString()}
+                    {formatCurrency(product.oldPrice || product.originalPrice)}
                   </p>
                 )}
               </div>
@@ -336,12 +348,6 @@ export function ProductDetailsPage() {
                 <button type="button" onClick={() => toggleCompare(product.id)} className={cn("flex h-12 w-12 items-center justify-center rounded-2xl border transition-colors", compareList.includes(product.id) ? "border-[color:var(--color-accent-teal)] text-[color:var(--color-accent-teal)]" : "border-[color:var(--color-border)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]")}>
                   <GitCompare className="h-5 w-5" />
                 </button>
-                <Link
-                  to={`/virtual-try-on?product=${product.slug}`}
-                  className="flex items-center justify-center h-12 w-12 rounded-2xl border border-[color:var(--color-accent-teal)] text-[color:var(--color-accent-teal)] transition-all hover:bg-[color:var(--color-accent-teal)] hover:text-white"
-                >
-                  <Glasses className="h-5 w-5" />
-                </Link>
               </div>
             </div>
 
@@ -369,7 +375,7 @@ export function ProductDetailsPage() {
                 }}
               >
                 <span className="font-bold text-sm sm:text-base tracking-wider text-white">BUY NOW</span>
-                <span className="text-xs font-normal text-white/80">sunglasses with box</span>
+                <span className="text-xs font-normal text-white/80">{product.category === "eyeglasses" ? "frame with box & cloth" : "sunglasses with box"}</span>
               </Button>
 
               <Button 
@@ -378,13 +384,21 @@ export function ProductDetailsPage() {
                 onClick={() => navigate(`/product/${product.slug}/select-lenses`, { state: { selectedVariant } })}
               >
                 <span className="font-bold text-sm sm:text-base tracking-wider text-[#B81D1D]">SELECT LENSES</span>
-                <span className="text-xs font-normal text-[#B81D1D]/80">eyesight or customise glasses color</span>
+                <span className="text-xs font-normal text-[#B81D1D]/80">{product.category === "eyeglasses" ? "with or without eyesight glasses" : "eyesight or customise glasses color"}</span>
+                {product.category === "eyeglasses" && (
+                  <span className="text-xs font-normal text-[#2563EB]">choose blue light glasses</span>
+                )}
               </Button>
             </div>
 
             {/* Ainak.pk Callout Banner */}
             <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-900 leading-relaxed font-medium">
-              To order sunglasses with your eyesight number or customize sunglasses lens color, Choose <strong>SELECT LENSES</strong>.
+              {product.category === "eyeglasses" ? (
+                "To order eyeglasses with your eyesight number or customize the lens coating, Choose "
+              ) : (
+                "To order sunglasses with your eyesight number or customize sunglasses lens color, Choose "
+              )}
+              <strong>SELECT LENSES</strong>.
             </div>
 
 

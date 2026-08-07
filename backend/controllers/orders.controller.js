@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const LensOption = require('../models/LensOption');
 const { sendOrderConfirmationEmail } = require('../utils/email');
 const Coupon = require('../models/Coupon');
 const { resolveImageUrl } = require('../utils/cloudinary');
@@ -139,6 +140,21 @@ exports.createOrder = async (req, res, next) => {
     let subtotal = 0;
     const formattedItems = [];
 
+    // Resolve lens options server-side (authoritative pricing) for any customized items.
+    // §6: sunglasses reference lensOptionSlug; eyeglasses reference lensCoating (both are LensOption slugs).
+    const lensSlugs = [...new Set(
+      items.flatMap((i) => {
+        const c = i.customization;
+        if (!c) return [];
+        return [c.lensOptionSlug, c.lensCoating].filter(Boolean);
+      })
+    )];
+    const lensOptionMap = new Map();
+    if (lensSlugs.length > 0) {
+      const lensOptions = await LensOption.find({ slug: { $in: lensSlugs }, isActive: true });
+      lensOptions.forEach((lo) => lensOptionMap.set(lo.slug, lo));
+    }
+
     for (const raw of items) {
       const qty = Math.floor(Number(raw.quantity));
       if (!Number.isFinite(qty) || qty < 1 || qty > 50) {
@@ -160,7 +176,23 @@ exports.createOrder = async (req, res, next) => {
       if (raw.customization) {
         hasLensCustomization = true;
         const cust = raw.customization;
-        priceAdded = Number(cust.priceAdded) || 0;
+
+        // Server-authoritative lens price: resolve from the LensOption collection.
+        // A client-sent priceAdded is only trusted when no lens option slug is provided
+        // (legacy carts created before the slug fields existed).
+        let priceAdded = 0;
+        const lensOption = cust.lensOptionSlug
+          ? lensOptionMap.get(cust.lensOptionSlug)
+          : cust.lensCoating
+            ? lensOptionMap.get(cust.lensCoating)
+            : undefined;
+        if (lensOption) {
+          priceAdded = lensOption.price;
+        } else if (cust.lensOptionSlug || cust.lensCoating) {
+          return res.status(400).json({ message: `Invalid or unavailable lens option "${cust.lensOptionSlug || cust.lensCoating}"` });
+        } else {
+          priceAdded = Number(cust.priceAdded) || 0;
+        }
 
         // Resolve prescription file ID: use server-uploaded file ID if type is file
         let fileId = cust.prescriptionFilePublicId || null;
@@ -173,7 +205,11 @@ exports.createOrder = async (req, res, next) => {
           prescriptionData: cust.prescriptionData || undefined,
           prescriptionFilePublicId: fileId || undefined,
           prescriptionText: cust.prescriptionText || undefined,
+          lensOptionSlug: cust.lensOptionSlug || undefined,
           lensType: cust.lensType || undefined,
+          usageType: cust.usageType || undefined,
+          multifocalSubtype: cust.multifocalSubtype || undefined,
+          lensCoating: cust.lensCoating || undefined,
           tintColor: cust.tintColor || undefined,
           tintStrength: cust.tintStrength || undefined,
           priceAdded

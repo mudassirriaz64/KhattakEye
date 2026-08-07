@@ -13,7 +13,7 @@ const ShippingAddressSchema = new Schema({
 }, { _id: false });
 
 const CustomizationSchema = new Schema({
-  prescriptionType: { type: String, enum: ["manual", "file", "written"] },
+  prescriptionType: { type: String, enum: ["none", "manual", "file", "written"] },
   prescriptionData: {
     od: {
       sph: { type: Number },
@@ -35,7 +35,11 @@ const CustomizationSchema = new Schema({
   },
   prescriptionFilePublicId: { type: String },
   prescriptionText: { type: String },
+  lensOptionSlug: { type: String },
   lensType: { type: String },
+  usageType: { type: String },
+  multifocalSubtype: { type: String },
+  lensCoating: { type: String },
   tintColor: { type: String },
   tintStrength: { type: String },
   priceAdded: { type: Number, default: 0 }
