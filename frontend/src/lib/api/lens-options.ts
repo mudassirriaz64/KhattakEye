@@ -16,6 +16,9 @@ export interface ApiLensOption {
   strengths?: { label: string; value: string }[];
   hasColorOptions: boolean;
   colors?: { label: string; value: string; hex?: string }[];
+  hasTiers?: boolean;
+  tiers?: { slug: string; name: string; price: number; description?: string; info?: string }[];
+  delegatesToAppliesTo?: LensOptionAppliesTo;
   isActive: boolean;
   order: number;
 }
@@ -26,6 +29,9 @@ const toLensTypeOption = (opt: ApiLensOption): LensTypeOption => ({
   price: opt.price,
   description: opt.description || "",
   info: opt.info || "",
+  delegatesToAppliesTo: opt.delegatesToAppliesTo,
+  hasTiers: opt.hasTiers,
+  tiers: opt.tiers,
   strengths: opt.hasStrengthOptions && opt.strengths
     ? opt.strengths.map((s) => s.label)
     : undefined,

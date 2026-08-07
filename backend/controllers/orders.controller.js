@@ -181,13 +181,25 @@ exports.createOrder = async (req, res, next) => {
         // A client-sent priceAdded is only trusted when no lens option slug is provided
         // (legacy carts created before the slug fields existed).
         let priceAdded = 0;
-        const lensOption = cust.lensOptionSlug
-          ? lensOptionMap.get(cust.lensOptionSlug)
-          : cust.lensCoating
-            ? lensOptionMap.get(cust.lensCoating)
-            : undefined;
-        if (lensOption) {
-          priceAdded = lensOption.price;
+        const primarySlug = cust.lensCoating || cust.lensOptionSlug;
+        const mainOption = primarySlug ? lensOptionMap.get(primarySlug) : undefined;
+
+        if (mainOption) {
+          if (mainOption.delegatesToAppliesTo) {
+            const delegatedOption = cust.lensOptionSlug ? lensOptionMap.get(cust.lensOptionSlug) : undefined;
+            if (!delegatedOption || delegatedOption.appliesTo !== mainOption.delegatesToAppliesTo) {
+              return res.status(400).json({ message: `Invalid delegated lens option "${cust.lensOptionSlug}" for coating "${primarySlug}"` });
+            }
+            priceAdded = delegatedOption.price;
+          } else if (mainOption.hasTiers) {
+            const tier = mainOption.tiers && mainOption.tiers.find((t) => t.slug === cust.lensOptionTierSlug);
+            if (!tier) {
+              return res.status(400).json({ message: `A valid tier is required for lens option "${primarySlug}"` });
+            }
+            priceAdded = tier.price;
+          } else {
+            priceAdded = mainOption.price;
+          }
         } else if (cust.lensOptionSlug || cust.lensCoating) {
           return res.status(400).json({ message: `Invalid or unavailable lens option "${cust.lensOptionSlug || cust.lensCoating}"` });
         } else {
@@ -206,6 +218,7 @@ exports.createOrder = async (req, res, next) => {
           prescriptionFilePublicId: fileId || undefined,
           prescriptionText: cust.prescriptionText || undefined,
           lensOptionSlug: cust.lensOptionSlug || undefined,
+          lensOptionTierSlug: cust.lensOptionTierSlug || undefined,
           lensType: cust.lensType || undefined,
           usageType: cust.usageType || undefined,
           multifocalSubtype: cust.multifocalSubtype || undefined,

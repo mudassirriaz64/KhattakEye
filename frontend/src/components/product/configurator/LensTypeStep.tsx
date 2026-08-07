@@ -11,6 +11,9 @@ export interface LensTypeOption {
   info: string;
   strengths?: string[];
   colors?: { name: string; hex: string }[];
+  delegatesToAppliesTo?: "sunglasses" | "eyeglasses";
+  hasTiers?: boolean;
+  tiers?: { slug: string; name: string; price: number; description?: string; info?: string }[];
 }
 
 interface LensTypeStepProps {
@@ -21,6 +24,15 @@ interface LensTypeStepProps {
   onSelectLens: (id: string, price: number) => void;
   onSelectStrength: (strength: string) => void;
   onSelectColor: (colorName: string) => void;
+  delegatedOptions?: LensTypeOption[];
+  delegatedLensId?: string;
+  delegatedStrength?: string;
+  delegatedColorName?: string;
+  onSelectDelegatedLens?: (id: string, price: number) => void;
+  onSelectDelegatedStrength?: (strength: string) => void;
+  onSelectDelegatedColor?: (colorName: string) => void;
+  selectedTierSlug?: string;
+  onSelectTier?: (slug: string, price: number) => void;
 }
 
 export function LensTypeStep({
@@ -30,7 +42,16 @@ export function LensTypeStep({
   selectedColorName,
   onSelectLens,
   onSelectStrength,
-  onSelectColor
+  onSelectColor,
+  delegatedOptions,
+  delegatedLensId,
+  delegatedStrength,
+  delegatedColorName,
+  onSelectDelegatedLens,
+  onSelectDelegatedStrength,
+  onSelectDelegatedColor,
+  selectedTierSlug,
+  onSelectTier
 }: LensTypeStepProps) {
   const [activeTooltip, setActiveTooltip] = React.useState<string | null>(null);
 
@@ -41,6 +62,9 @@ export function LensTypeStep({
     }
     if (opt.colors && opt.colors.length > 0) {
       onSelectColor(opt.colors[0].name);
+    }
+    if (opt.hasTiers && opt.tiers && opt.tiers.length > 0 && onSelectTier) {
+      onSelectTier(opt.tiers[0].slug, opt.tiers[0].price);
     }
   };
 
@@ -84,9 +108,19 @@ export function LensTypeStep({
               </div>
 
               <div className="text-right">
-                <span className="text-sm font-bold text-[color:var(--color-brand-primary)]">
-                  +Rs. {opt.price.toLocaleString()}
-                </span>
+                {opt.delegatesToAppliesTo ? (
+                  <span className="text-xs font-semibold text-[color:var(--color-text-secondary)] bg-[color:var(--color-border)]/50 px-2.5 py-1 rounded-lg">
+                    Choose tint below
+                  </span>
+                ) : opt.hasTiers ? (
+                  <span className="text-xs font-semibold text-[color:var(--color-text-secondary)] bg-[color:var(--color-border)]/50 px-2.5 py-1 rounded-lg">
+                    Choose option below
+                  </span>
+                ) : (
+                  <span className="text-sm font-bold text-[color:var(--color-brand-primary)]">
+                    +Rs. {opt.price.toLocaleString()}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -117,6 +151,77 @@ export function LensTypeStep({
                   className="overflow-hidden mt-4 border-t border-[color:var(--color-border)] pt-4 space-y-4"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {/* Tiers List (radio style) */}
+                  {opt.hasTiers && opt.tiers && opt.tiers.length > 0 && (
+                    <div className="space-y-2">
+                      <span className="block text-[10px] font-semibold text-[color:var(--color-text-tertiary)] uppercase tracking-wider mb-2">
+                        Select Lens Option
+                      </span>
+                      <div className="flex flex-col gap-2">
+                        {opt.tiers.map((tier) => {
+                          const isTierSelected = selectedTierSlug === tier.slug;
+                          return (
+                            <button
+                              key={tier.slug}
+                              type="button"
+                              onClick={() => onSelectTier?.(tier.slug, tier.price)}
+                              className={cn(
+                                "w-full rounded-xl border p-3.5 transition-all text-left flex items-start justify-between",
+                                isTierSelected
+                                  ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-brand-primary)]/5"
+                                  : "border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] hover:border-[color:var(--color-text-secondary)]"
+                              )}
+                            >
+                              <div className="flex-1 min-w-0 pr-4">
+                                <span className="text-xs font-bold text-[color:var(--color-text-primary)]">
+                                  {tier.name}
+                                </span>
+                                {tier.description && (
+                                  <p className="text-[10px] text-[color:var(--color-text-secondary)] mt-0.5">
+                                    {tier.description}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right flex items-center gap-3">
+                                <span className="text-xs font-bold text-[color:var(--color-brand-primary)]">
+                                  +Rs. {tier.price.toLocaleString()}
+                                </span>
+                                <span
+                                  className={cn(
+                                    "h-4 w-4 rounded-full border flex items-center justify-center shrink-0",
+                                    isTierSelected
+                                      ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-brand-primary)]"
+                                      : "border-[color:var(--color-border)]"
+                                  )}
+                                >
+                                  {isTierSelected && <Check className="h-2.5 w-2.5 text-white" />}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Delegated Sunglasses Tint Options */}
+                  {opt.delegatesToAppliesTo && delegatedOptions && (
+                    <div className="space-y-3">
+                      <span className="block text-[10px] font-semibold text-[color:var(--color-text-tertiary)] uppercase tracking-wider mb-1">
+                        Select Tint Type & Color
+                      </span>
+                      <LensTypeStep
+                        options={delegatedOptions}
+                        selectedLensId={delegatedLensId || ""}
+                        selectedStrength={delegatedStrength || ""}
+                        selectedColorName={delegatedColorName || ""}
+                        onSelectLens={onSelectDelegatedLens || (() => {})}
+                        onSelectStrength={onSelectDelegatedStrength || (() => {})}
+                        onSelectColor={onSelectDelegatedColor || (() => {})}
+                      />
+                    </div>
+                  )}
+
                   {/* Strength Toggles */}
                   {opt.strengths && opt.strengths.length > 0 && (
                     <div>
