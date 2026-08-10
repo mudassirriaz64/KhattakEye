@@ -75,6 +75,14 @@ router.patch(
   adminController.updateOrderStatus
 );
 
+// PATCH /api/admin/orders/:id/verify-payment
+router.patch(
+  '/orders/:id/verify-payment',
+  auth.protectAdmin,
+  requireRole(['admin', 'manager', 'super-admin']),
+  adminController.verifyPayment
+);
+
 // GET /api/admin/dashboard-stats
 router.get(
   '/dashboard-stats',
@@ -200,5 +208,31 @@ router.get('/coupons', auth.protectAdmin, requireRole(['admin', 'manager', 'supe
 router.post('/coupons', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), createCoupon);
 router.put('/coupons/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateCoupon);
 router.delete('/coupons/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteCoupon);
+
+const {
+  getAllLensOptionsAdmin,
+  createLensOption,
+  updateLensOption,
+  deleteLensOption
+} = require('../controllers/lensOptionsAdmin.controller');
+
+// Buy Lenses Configuration (LensOption) admin routes
+router.get('/lens-options', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getAllLensOptionsAdmin);
+router.post('/lens-options', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), createLensOption);
+router.put('/lens-options/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateLensOption);
+router.delete('/lens-options/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteLensOption);
+
+const {
+  getAllFAQsAdmin,
+  createFAQ,
+  updateFAQ,
+  deleteFAQ
+} = require('../controllers/cms.controller');
+
+// FAQ admin routes
+router.get('/faqs', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getAllFAQsAdmin);
+router.post('/faqs', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), createFAQ);
+router.put('/faqs/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateFAQ);
+router.delete('/faqs/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteFAQ);
 
 module.exports = router;

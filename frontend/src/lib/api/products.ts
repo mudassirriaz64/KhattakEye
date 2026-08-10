@@ -153,14 +153,20 @@ const getFallbackImage = (idStr: string) => {
   return fallbackOpticsImages[Math.abs(hash) % fallbackOpticsImages.length];
 };
 
+export const sanitizeProductImages = (images: (string | { url?: string })[] | undefined): string[] => {
+  const raw = images && images.length > 0 ? images : [];
+  return raw
+    .map((img) => (typeof img === "string" ? img : img?.url))
+    .filter((url): url is string => typeof url === "string" && url.trim().length > 0 && !url.includes("trae.ai"));
+};
+
+export const productImageFallback = (idStr: string) => getFallbackImage(idStr);
+
 export const mapProductCard = (p: ApiProduct): ProductCard => {
   if (!p) return p as unknown as ProductCard;
   if (p.id && p.images && p.images.length > 0 && p.price !== undefined && p.slug !== undefined && !p._id) return p as unknown as ProductCard;
 
-  const rawImages = p.images && p.images.length > 0 ? p.images : [];
-  const validImages = rawImages
-    .map((img) => (typeof img === "string" ? img : img?.url))
-    .filter((url) => typeof url === "string" && url.trim().length > 0 && !url.includes("trae.ai"));
+  const validImages = sanitizeProductImages(p.images);
 
   const images = validImages.length > 0 ? validImages : [getFallbackImage(p.name || p.slug || "eyewear")];
   const variants = Array.isArray(p.variants) ? p.variants : [];

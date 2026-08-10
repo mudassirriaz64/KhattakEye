@@ -11,6 +11,7 @@ export function CartItem({ item }: CartItemProps) {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
   const productSlug = item.productId;
+  const isPriceOnRequest = item.customization?.priceOnRequest === true;
 
   return (
     <motion.div
@@ -33,9 +34,15 @@ export function CartItem({ item }: CartItemProps) {
                 <h3 className="mt-0.5 font-display text-lg text-[color:var(--color-text-primary)] transition-colors hover:text-[color:var(--color-accent-teal)]">{item.name}</h3>
               </Link>
             </div>
-            <p className="shrink-0 text-base font-semibold text-[color:var(--color-text-primary)]">
-              Rs. {(item.price * item.quantity).toLocaleString()}
-            </p>
+            {isPriceOnRequest ? (
+              <span className="shrink-0 rounded-lg bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-700">
+                Price on request
+              </span>
+            ) : (
+              <p className="shrink-0 text-base font-semibold text-[color:var(--color-text-primary)]">
+                Rs. {(item.price * item.quantity).toLocaleString()}
+              </p>
+            )}
           </div>
 
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[color:var(--color-text-tertiary)]">
@@ -44,6 +51,11 @@ export function CartItem({ item }: CartItemProps) {
             <span>Size: {item.size}</span>
             <span>Lens: {item.lensType}</span>
           </div>
+          {isPriceOnRequest && (
+            <p className="mt-1.5 text-[11px] font-medium text-amber-700">
+              Lens price to be confirmed by our team before payment.
+            </p>
+          )}
         </div>
 
         <div className="mt-3 flex items-center justify-between">

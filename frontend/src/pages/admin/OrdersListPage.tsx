@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ShoppingCart, Search, Eye, Download } from "lucide-react";
+import { ShoppingCart, Search, Eye, Download, LoaderCircle } from "lucide-react";
 import { adminOrders } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
@@ -33,30 +33,35 @@ export function AdminOrdersListPage() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [paymentFilter, setPaymentFilter] = useState("All Methods");
   const [dbOrders, setDbOrders] = useState<OrderRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    adminGetOrdersApi(1, 100).then((data) => {
-      if (data && data.items) {
-        const mapped = data.items.map((o: { _id?: string; id?: string; orderNumber?: string; customerName?: string; customerEmail?: string; customerPhone?: string; items?: unknown[]; total?: number; paymentMethod?: string; status?: string; createdAt?: string }) => ({
-          id: o._id || o.id || "",
-          orderNumber: o.orderNumber || "",
-          customer: {
-            name: o.customerName || "Customer",
-            email: o.customerEmail || "customer@example.com",
-            phone: o.customerPhone || ""
-          },
-          items: o.items || [],
-          total: o.total || 0,
-          paymentMethod: o.paymentMethod || "COD",
-          status: o.status || "pending",
-          date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : new Date().toLocaleDateString()
-        }));
-        setDbOrders(mapped);
-      }
-    }).catch(() => {});
+    setLoading(true);
+    adminGetOrdersApi(1, 100)
+      .then((data) => {
+        if (data && Array.isArray(data.items)) {
+          const mapped = data.items.map((o: { _id?: string; id?: string; orderNumber?: string; customerName?: string; customerEmail?: string; customerPhone?: string; items?: unknown[]; total?: number; paymentMethod?: string; status?: string; createdAt?: string }) => ({
+            id: o._id || o.id || "",
+            orderNumber: o.orderNumber || "",
+            customer: {
+              name: o.customerName || "Customer",
+              email: o.customerEmail || "customer@example.com",
+              phone: o.customerPhone || ""
+            },
+            items: o.items || [],
+            total: o.total || 0,
+            paymentMethod: o.paymentMethod || "COD",
+            status: o.status || "pending",
+            date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : new Date().toLocaleDateString()
+          }));
+          setDbOrders(mapped);
+        }
+      })
+      .catch((err) => console.error("Failed to load admin orders:", err))
+      .finally(() => setLoading(false));
   }, []);
 
-  const activeOrdersList = dbOrders.length > 0 ? dbOrders : adminOrders;
+  const activeOrdersList = dbOrders;
 
   const filtered = activeOrdersList.filter((o) => {
     const matchStatus = statusFilter === "All" || o.status.toLowerCase() === statusFilter.toLowerCase();
@@ -102,41 +107,50 @@ export function AdminOrdersListPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((order, i) => (
-                <motion.tr key={order.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }} className="border-b border-[color:var(--color-border)] transition-colors last:border-0 hover:bg-[color:var(--color-surface-muted)]">
-                  <td className="px-4 py-3">
-                    <span className="text-sm font-medium text-[color:var(--color-text-primary)]">{order.orderNumber}</span>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="py-16 text-center">
+                    <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-[color:var(--color-brand-primary)]" />
+                    <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">Loading orders...</p>
                   </td>
-                  <td className="px-4 py-3">
-                    <p className="text-sm text-[color:var(--color-text-primary)]">{order.customer.name}</p>
-                    <p className="text-[10px] text-[color:var(--color-text-tertiary)]">{order.customer.email}</p>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-[color:var(--color-text-tertiary)]">{order.items.length}</td>
-                  <td className="px-4 py-3 text-sm font-semibold">Rs. {order.total.toLocaleString()}</td>
-                  <td className="px-4 py-3">
-                    <span className={cn("rounded-lg px-2.5 py-1 text-[10px] font-semibold", paymentColors[order.paymentMethod.toLowerCase().replace(/\s+/g, "-")] || "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]")}>
-                      {order.paymentMethod}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3"><StatusBadge status={order.status} /></td>
-                  <td className="px-4 py-3 text-xs text-[color:var(--color-text-tertiary)]">{order.date}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-1">
-                      <Link to={`/admin/orders/${order.id}`} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-blue)]">
-                        <Eye className="h-3.5 w-3.5" />
-                      </Link>
-                      <button type="button" className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]">
-                        <Download className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
+                </tr>
+              ) : (
+                filtered.map((order, i) => (
+                  <motion.tr key={order.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }} className="border-b border-[color:var(--color-border)] transition-colors last:border-0 hover:bg-[color:var(--color-surface-muted)]">
+                    <td className="px-4 py-3">
+                      <span className="text-sm font-medium text-[color:var(--color-text-primary)]">{order.orderNumber}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-sm text-[color:var(--color-text-primary)]">{order.customer.name}</p>
+                      <p className="text-[10px] text-[color:var(--color-text-tertiary)]">{order.customer.email}</p>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[color:var(--color-text-tertiary)]">{order.items.length}</td>
+                    <td className="px-4 py-3 text-sm font-semibold">Rs. {order.total.toLocaleString()}</td>
+                    <td className="px-4 py-3">
+                      <span className={cn("rounded-lg px-2.5 py-1 text-[10px] font-semibold", paymentColors[order.paymentMethod.toLowerCase().replace(/\s+/g, "-")] || "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]")}>
+                        {order.paymentMethod}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3"><StatusBadge status={order.status} /></td>
+                    <td className="px-4 py-3 text-xs text-[color:var(--color-text-tertiary)]">{order.date}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <Link to={`/admin/orders/${order.id}`} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-blue)]">
+                          <Eye className="h-3.5 w-3.5" />
+                        </Link>
+                        <button type="button" className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]">
+                          <Download className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
-        {filtered.length === 0 && (
+        {!loading && filtered.length === 0 && (
           <div className="py-16 text-center">
             <ShoppingCart className="mx-auto h-8 w-8 text-[color:var(--color-text-tertiary)]" />
             <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">No orders found</p>

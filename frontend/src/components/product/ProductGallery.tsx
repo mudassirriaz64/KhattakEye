@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Expand, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -6,9 +6,11 @@ import { cn } from "@/lib/utils";
 type ProductGalleryProps = {
   images: string[];
   name: string;
+  /** Optional element rendered between the main image and the thumbnail strip (e.g. Try On button). */
+  action?: ReactNode;
 };
 
-export function ProductGallery({ images, name }: ProductGalleryProps) {
+export function ProductGallery({ images, name, action }: ProductGalleryProps) {
   const [selected, setSelected] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
   const [zoom, setZoom] = useState(false);
@@ -20,87 +22,87 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
   return (
     <>
       <div className="relative">
-        <div className="flex gap-4">
-          <div className="hidden flex-col gap-2 md:flex">
-            {images.map((img, i) => (
+        <div
+          className="relative aspect-[4/3] w-full cursor-crosshair overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)]"
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            setMousePos({
+              x: ((e.clientX - rect.left) / rect.width) * 100,
+              y: ((e.clientY - rect.top) / rect.height) * 100,
+            });
+          }}
+          onMouseEnter={() => setZoom(true)}
+          onMouseLeave={() => setZoom(false)}
+        >
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={selected}
+              src={images[selected]}
+              alt={`${name} ${selected + 1}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="h-full w-full object-contain"
+            />
+          </AnimatePresence>
+          {zoom && (
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                backgroundImage: `url(${images[selected]})`,
+                backgroundPosition: `${mousePos.x}% ${mousePos.y}%`,
+                backgroundSize: "200%",
+              }}
+            />
+          )}
+
+          <button
+            type="button"
+            onClick={() => setFullscreen(true)}
+            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-[color:var(--color-text-primary)] shadow-sm backdrop-blur-sm transition-all hover:bg-white"
+            aria-label="Fullscreen"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </button>
+
+          <button type="button" onClick={prev} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-[color:var(--color-text-primary)] shadow-sm backdrop-blur-sm transition-all hover:bg-white opacity-0 group-hover:opacity-100">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <button type="button" onClick={next} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-[color:var(--color-text-primary)] shadow-sm backdrop-blur-sm transition-all hover:bg-white opacity-0 group-hover:opacity-100">
+            <ChevronRight className="h-5 w-5" />
+          </button>
+
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+            {images.map((_, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setSelected(i)}
-                className={cn(
-                  "h-20 w-20 overflow-hidden rounded-xl border-2 transition-all",
-                  selected === i
-                    ? "border-[color:var(--color-brand-primary)]"
-                    : "border-transparent hover:border-[color:var(--color-border)]",
-                )}
-              >
-                <img src={img} alt={`${name} thumbnail ${i + 1}`} className="h-full w-full object-cover" />
-              </button>
+                className={cn("h-1.5 rounded-full transition-all", selected === i ? "w-6 bg-white" : "w-1.5 bg-white/50")}
+              />
             ))}
           </div>
+        </div>
 
-          <div
-            className="relative flex-1 cursor-crosshair overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)]"
-            onMouseMove={(e) => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              setMousePos({
-                x: ((e.clientX - rect.left) / rect.width) * 100,
-                y: ((e.clientY - rect.top) / rect.height) * 100,
-              });
-            }}
-            onMouseEnter={() => setZoom(true)}
-            onMouseLeave={() => setZoom(false)}
-          >
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={selected}
-                src={images[selected]}
-                alt={`${name} ${selected + 1}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="h-full w-full object-cover"
-              />
-            </AnimatePresence>
-            {zoom && (
-              <div
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  backgroundImage: `url(${images[selected]})`,
-                  backgroundPosition: `${mousePos.x}% ${mousePos.y}%`,
-                  backgroundSize: "200%",
-                }}
-              />
-            )}
+        {action && <div className="mt-3">{action}</div>}
 
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          {images.map((img, i) => (
             <button
+              key={i}
               type="button"
-              onClick={() => setFullscreen(true)}
-              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-[color:var(--color-text-primary)] shadow-sm backdrop-blur-sm transition-all hover:bg-white"
-              aria-label="Fullscreen"
+              onClick={() => setSelected(i)}
+              className={cn(
+                "h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 transition-all",
+                selected === i
+                  ? "border-[color:var(--color-brand-primary)]"
+                  : "border-transparent hover:border-[color:var(--color-border)]",
+              )}
             >
-              <Maximize2 className="h-4 w-4" />
+              <img src={img} alt={`${name} thumbnail ${i + 1}`} className="h-full w-full object-cover" />
             </button>
-
-            <button type="button" onClick={prev} className="absolute left-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-[color:var(--color-text-primary)] shadow-sm backdrop-blur-sm transition-all hover:bg-white opacity-0 group-hover:opacity-100">
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <button type="button" onClick={next} className="absolute right-3 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-[color:var(--color-text-primary)] shadow-sm backdrop-blur-sm transition-all hover:bg-white opacity-0 group-hover:opacity-100">
-              <ChevronRight className="h-5 w-5" />
-            </button>
-
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-              {images.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setSelected(i)}
-                  className={cn("h-1.5 rounded-full transition-all", selected === i ? "w-6 bg-white" : "w-1.5 bg-white/50")}
-                />
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 

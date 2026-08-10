@@ -230,27 +230,6 @@ export const filterGroups: FilterGroup[] = [
     type: "price",
     options: [],
   },
-  {
-    id: "availability",
-    label: "Availability",
-    type: "checkbox",
-    options: [
-      { label: "In Stock", value: "in-stock", count: 60 },
-      { label: "Limited Stock", value: "limited", count: 15 },
-      { label: "New Arrival", value: "new-arrival", count: 20 },
-    ],
-  },
-  {
-    id: "discount",
-    label: "Discount",
-    type: "checkbox",
-    options: [
-      { label: "10% or more", value: "10", count: 25 },
-      { label: "20% or more", value: "20", count: 15 },
-      { label: "30% or more", value: "30", count: 8 },
-      { label: "50% or more", value: "50", count: 3 },
-    ],
-  },
 ];
 
 export const allProducts: Product[] = [

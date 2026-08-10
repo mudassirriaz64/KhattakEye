@@ -25,17 +25,23 @@ export type CreateOrderPayload = {
     customization?: any;
   }>;
   paymentMethod: 'cod' | 'bank-transfer' | 'jazzcash' | 'easypaisa';
+  transactionId?: string;
+  paymentScreenshot?: string;
+  paymentNotes?: string;
   couponCode?: string;
   notes?: string;
 };
 
 export const createOrderApi = async (payload: CreateOrderPayload) => {
   let fileToUpload: File | null = null;
-  
+  let hasFilePrescription = false;
+
   if (payload.items && Array.isArray(payload.items)) {
     for (const item of payload.items) {
-      if (item.customization?.prescriptionFileCacheKey) {
-        const file = prescriptionFilesCache.get(item.customization.prescriptionFileCacheKey);
+      if (item.customization?.prescriptionType === "file") {
+        hasFilePrescription = true;
+        const key = item.customization.prescriptionFileCacheKey;
+        const file = key ? prescriptionFilesCache.get(key) : undefined;
         if (file) {
           fileToUpload = file;
           break;
@@ -83,7 +89,37 @@ export const createOrderApi = async (payload: CreateOrderPayload) => {
     prescriptionFilesCache.clear();
     return response.data;
   } else {
+    // Reload-safety guard (Rules.md §6b): a "file" prescription whose photo is
+    // missing from the in-memory cache must not be submitted silently — the
+    // customer needs to reselect the prescription photo.
+    if (hasFilePrescription) {
+      const error: Error & { code?: string } = new Error(
+        "Your prescription photo could not be found after reload. Please remove the item from your cart and re-select your prescription photo."
+      );
+      error.code = "PRESCRIPTION_FILE_MISSING";
+      throw error;
+    }
     const response = await api.post('/orders', payload);
+    return response.data;
+  }
+};
+
+export const resubmitPaymentProofApi = async (orderId: string, fileOrBase64: File | string, transactionId?: string, paymentNotes?: string) => {
+  if (typeof fileOrBase64 === "string") {
+    const response = await api.post(`/orders/${orderId}/resubmit-payment-proof`, {
+      paymentScreenshot: fileOrBase64,
+      transactionId,
+      paymentNotes
+    });
+    return response.data;
+  } else {
+    const formData = new FormData();
+    formData.append("paymentScreenshot", fileOrBase64);
+    if (transactionId) formData.append("transactionId", transactionId);
+    if (paymentNotes) formData.append("paymentNotes", paymentNotes);
+    const response = await api.post(`/orders/${orderId}/resubmit-payment-proof`, formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
     return response.data;
   }
 };

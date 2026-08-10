@@ -1,4 +1,4 @@
-import { Search, SlidersHorizontal, Grid3X3, List } from "lucide-react";
+import { ChevronDown, SlidersHorizontal, Grid3X3, List } from "lucide-react";
 import { sortOptions } from "@/lib/shop-data";
 import { useShopStore } from "@/lib/stores/shop-store";
 import { cn } from "@/lib/utils";
@@ -63,7 +63,7 @@ export function ProductToolbar({ totalProducts, onFilterToggle }: ProductToolbar
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-          <Search className="pointer-events-none absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 text-[color:var(--color-text-tertiary)]" />
+          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[color:var(--color-text-tertiary)]" />
         </div>
       </div>
     </div>

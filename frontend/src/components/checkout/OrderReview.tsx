@@ -68,7 +68,10 @@ export function OrderReviewContent() {
                 <p className="text-xs text-[color:var(--color-text-tertiary)]">Qty: {item.quantity} × Rs. {item.price.toLocaleString()}</p>
                 {item.customization && (
                   <p className="text-[10px] text-[color:var(--color-brand-primary)] font-bold mt-0.5">
-                    Customized Lens: {item.customization.lensType} ({item.customization.tintColor || "Standard"})
+                    Customized Lens: {item.customization.lensType}
+                    {item.customization.lensCoating ? ` • ${item.customization.lensCoating}` : ""}
+                    {item.customization.usageType ? ` • ${item.customization.usageType}` : ""}
+                    {item.customization.tintColor ? ` (${item.customization.tintColor})` : ""}
                   </p>
                 )}
               </div>

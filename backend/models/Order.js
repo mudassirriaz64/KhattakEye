@@ -13,7 +13,7 @@ const ShippingAddressSchema = new Schema({
 }, { _id: false });
 
 const CustomizationSchema = new Schema({
-  prescriptionType: { type: String, enum: ["manual", "file", "written"] },
+  prescriptionType: { type: String, enum: ["none", "manual", "file", "written"] },
   prescriptionData: {
     od: {
       sph: { type: Number },
@@ -35,10 +35,18 @@ const CustomizationSchema = new Schema({
   },
   prescriptionFilePublicId: { type: String },
   prescriptionText: { type: String },
+  lensOptionSlug: { type: String },
   lensType: { type: String },
+  usageType: { type: String },
+  multifocalSubtype: { type: String },
+  lensCoating: { type: String },
+  lensOptionCollectionSlug: { type: String },
+  lensOptionBrandSlug: { type: String },
+  lensOptionTypeSlug: { type: String },
+  priceOnRequest: { type: Boolean },
   tintColor: { type: String },
   tintStrength: { type: String },
-  priceAdded: { type: Number, default: 0 }
+  priceAdded: { type: Number, default: null }
 }, { _id: false });
 
 const OrderItemSchema = new Schema({
@@ -55,8 +63,11 @@ const OrderItemSchema = new Schema({
 const PaymentProofSchema = new Schema({
   transactionId: { type: String, trim: true },
   screenshotUrl: { type: String },
+  fileHash: { type: String, index: true },
   notes: { type: String, trim: true },
   amountPaid: { type: Number },
+  status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+  rejectionReason: { type: String, trim: true },
   verifiedBy: { type: Schema.Types.ObjectId, ref: 'AdminUser', default: null },
   verifiedAt: { type: Date }
 }, { _id: false });

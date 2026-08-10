@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Copy, Check, Upload, Shield } from "lucide-react";
 import { useCheckoutStore } from "@/lib/stores/checkout-store";
+import axios from "@/lib/api/axios";
 
-const bankDetails: Record<string, { holder: string; bank: string; iban: string; number: string }> = {
+const defaultBankDetails: Record<string, { holder: string; bank: string; iban: string; number: string }> = {
   "bank-transfer": { holder: "Khattak Eyewear Pvt. Ltd.", bank: "Habib Bank Limited (HBL)", iban: "PK36 HABB 0024 5678 9012 3456", number: "0245-6789012-34" },
   jazzcash: { holder: "Khattak Eyewear", bank: "JazzCash", iban: "", number: "0300 1234567" },
   easypaisa: { holder: "Khattak Eyewear", bank: "EasyPaisa", iban: "", number: "0300 1234567" },
@@ -14,9 +15,39 @@ export function ManualPaymentForm() {
   const setPaymentScreenshot = useCheckoutStore((s) => s.setPaymentScreenshot);
   const setPaymentNotes = useCheckoutStore((s) => s.setPaymentNotes);
   const [copied, setCopied] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [dynamicBankDetails, setDynamicBankDetails] = useState(defaultBankDetails);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const details = payment.method ? bankDetails[payment.method] : null;
+  useEffect(() => {
+    axios.get("/settings").then((res) => {
+      if (res.data) {
+        const s = res.data;
+        setDynamicBankDetails({
+          "bank-transfer": {
+            holder: s.bankDetails?.accountTitle || defaultBankDetails["bank-transfer"].holder,
+            bank: s.bankDetails?.bankName || defaultBankDetails["bank-transfer"].bank,
+            iban: s.bankDetails?.iban || defaultBankDetails["bank-transfer"].iban,
+            number: s.bankDetails?.accountNumber || defaultBankDetails["bank-transfer"].number
+          },
+          jazzcash: {
+            holder: s.jazzcash?.accountTitle || defaultBankDetails.jazzcash.holder,
+            bank: "JazzCash",
+            iban: "",
+            number: s.jazzcash?.number || defaultBankDetails.jazzcash.number
+          },
+          easypaisa: {
+            holder: s.easypaisa?.accountTitle || defaultBankDetails.easypaisa.holder,
+            bank: "EasyPaisa",
+            iban: "",
+            number: s.easypaisa?.number || defaultBankDetails.easypaisa.number
+          }
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  const details = payment.method ? dynamicBankDetails[payment.method] : null;
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -26,7 +57,12 @@ export function ManualPaymentForm() {
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    setUploadError(null);
     if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        setUploadError("Image exceeds maximum 10MB limit. Please choose a smaller file.");
+        return;
+      }
       const reader = new FileReader();
       reader.onload = (ev) => setPaymentScreenshot(ev.target?.result as string);
       reader.readAsDataURL(file);
@@ -89,6 +125,9 @@ export function ManualPaymentForm() {
               )}
               <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
             </div>
+            {uploadError && (
+              <p className="mt-2 text-xs font-medium text-red-500">{uploadError}</p>
+            )}
 
             <div className="mt-4">
               <label className="block space-y-2">

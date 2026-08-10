@@ -34,6 +34,16 @@ const SiteSettingsSchema = new Schema({
     returnWindowDays: { type: Number, default: 0 },
     warrantyYears: { type: Number, default: 0 }
   },
+  homepageSections: [
+    {
+      id: { type: String },
+      section: { type: String },
+      title: { type: String },
+      subtitle: { type: String },
+      visible: { type: Boolean, default: true },
+      order: { type: Number, default: 1 }
+    }
+  ],
   logo: { type: String }
 }, {
   timestamps: true,

@@ -10,6 +10,12 @@ interface ConfiguratorReviewStepProps {
   lensOption: LensTypeOption;
   selectedColorName: string;
   selectedStrength: string;
+  usageType?: string;
+  lensCoating?: string;
+  collectionName?: string;
+  brandName?: string;
+  lensTypeName?: string;
+  priceOnRequest?: boolean;
 }
 
 export function ConfiguratorReviewStep({
@@ -20,9 +26,16 @@ export function ConfiguratorReviewStep({
   prescriptionText,
   lensOption,
   selectedColorName,
-  selectedStrength
+  selectedStrength,
+  usageType,
+  lensCoating,
+  collectionName,
+  brandName,
+  lensTypeName,
+  priceOnRequest
 }: ConfiguratorReviewStepProps) {
-  const itemSubtotal = product.price + lensOption.price;
+  const lensPrice = priceOnRequest ? 0 : (lensOption.price ?? 0);
+  const itemSubtotal = product.price + lensPrice;
 
   return (
     <div className="flex flex-col gap-4 text-xs font-semibold text-[color:var(--color-text-secondary)]">
@@ -58,38 +71,88 @@ export function ConfiguratorReviewStep({
 
       {/* Lens Configuration Summary */}
       <div className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface)] p-3 space-y-2">
+        {usageType && (
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Usage</span>
+            <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{usageType}</span>
+          </div>
+        )}
         <div className="flex justify-between items-center">
           <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Selected Lens</span>
           <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{lensOption.name}</span>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Lens Color / Option</span>
-          <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{selectedColorName}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Tint Density</span>
-          <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{selectedStrength}</span>
-        </div>
+        {lensCoating && lensCoating !== lensOption.name && (
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Coating</span>
+            <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{lensCoating}</span>
+          </div>
+        )}
+        {collectionName && (
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Collection</span>
+            <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{collectionName}</span>
+          </div>
+        )}
+        {brandName && (
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Brand</span>
+            <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{brandName}</span>
+          </div>
+        )}
+        {lensTypeName && lensTypeName !== lensOption.name && (
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Lens Type</span>
+            <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{lensTypeName}</span>
+          </div>
+        )}
+        {selectedColorName && (
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Lens Color / Option</span>
+            <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{selectedColorName}</span>
+          </div>
+        )}
+        {selectedStrength && (
+          <div className="flex justify-between items-center">
+            <span className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase tracking-wider">Tint Density</span>
+            <span className="text-xs font-bold text-[color:var(--color-text-primary)]">{selectedStrength}</span>
+          </div>
+        )}
         <div className="flex justify-between items-center border-t border-[color:var(--color-border)] pt-2 mt-1">
           <span className="text-xs font-bold text-[color:var(--color-text-primary)]">Lens Customization Price</span>
-          <span className="text-xs font-bold text-[color:var(--color-brand-primary)]">+Rs. {lensOption.price.toLocaleString()}</span>
+          {priceOnRequest ? (
+            <span className="text-xs font-bold text-amber-700">Price on request</span>
+          ) : (
+            <span className="text-xs font-bold text-[color:var(--color-brand-primary)]">+Rs. {(lensOption.price ?? 0).toLocaleString()}</span>
+          )}
         </div>
       </div>
 
       {/* Price breakdown and Advance Policy Callout */}
-      <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 space-y-2">
-        <div className="flex justify-between items-center text-amber-900 font-bold">
-          <span>Customized Subtotal</span>
-          <span>Rs. {itemSubtotal.toLocaleString()}</span>
+      {priceOnRequest ? (
+        <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 space-y-2">
+          <div className="flex justify-between items-center text-amber-900 font-bold">
+            <span>Customized Subtotal</span>
+            <span>Rs. {itemSubtotal.toLocaleString()}</span>
+          </div>
+          <p className="text-[10px] text-amber-800/90 leading-relaxed font-medium pt-1 border-t border-amber-500/20">
+            * Lens price to be confirmed by our team before payment.
+          </p>
         </div>
-        <div className="flex justify-between items-center text-amber-900 text-[11px]">
-          <span>Required 50% Advance Payment</span>
-          <span className="font-bold">Rs. {(itemSubtotal * 0.5).toLocaleString()}</span>
+      ) : (
+        <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 space-y-2">
+          <div className="flex justify-between items-center text-amber-900 font-bold">
+            <span>Customized Subtotal</span>
+            <span>Rs. {itemSubtotal.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center text-amber-900 text-[11px]">
+            <span>Required 50% Advance Payment</span>
+            <span className="font-bold">Rs. {(itemSubtotal * 0.5).toLocaleString()}</span>
+          </div>
+          <p className="text-[10px] text-amber-800/90 leading-relaxed font-medium pt-1 border-t border-amber-500/20">
+            * Note: Custom cut lenses require a 50% advance payment via Bank Transfer, Easypaisa, or JazzCash before processing.
+          </p>
         </div>
-        <p className="text-[10px] text-amber-800/90 leading-relaxed font-medium pt-1 border-t border-amber-500/20">
-          * Note: Custom cut lenses require a 50% advance payment via Bank Transfer, Easypaisa, or JazzCash before processing.
-        </p>
-      </div>
+      )}
     </div>
   );
 }

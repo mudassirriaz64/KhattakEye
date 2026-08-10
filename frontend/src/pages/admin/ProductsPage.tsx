@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Package, Search, Plus, Download, Upload, Eye, Edit3, Copy, Trash2, LoaderCircle, ChevronLeft, ChevronRight, ChevronDown, X } from "lucide-react";
+import { Package, Search, Plus, Download, Upload, Eye, Edit3, Copy, Trash2, LoaderCircle, ChevronLeft, ChevronRight, ChevronDown, X, ClipboardList } from "lucide-react";
 import { StatusBadge, StockBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { cn } from "@/lib/utils";
@@ -355,6 +355,9 @@ export function AdminProductsPage() {
                       <td className="px-4 py-3"><StatusBadge status={product.featured ? "yes" : "no"} /></td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Link to={`/admin/inventory?search=${encodeURIComponent(product.sku)}`} title="Manage Inventory" className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]">
+                            <ClipboardList className="h-3.5 w-3.5" />
+                          </Link>
                           <Link to={`/admin/products/${product.id}`} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-blue)]">
                             <Eye className="h-3.5 w-3.5" />
                           </Link>

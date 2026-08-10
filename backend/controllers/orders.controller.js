@@ -4,7 +4,9 @@ const os = require('os');
 const path = require('path');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const LensOption = require('../models/LensOption');
 const { sendOrderConfirmationEmail } = require('../utils/email');
+const { sendWhatsAppPriceOnRequestNotification } = require('../utils/whatsapp');
 const Coupon = require('../models/Coupon');
 const { resolveImageUrl } = require('../utils/cloudinary');
 
@@ -112,9 +114,66 @@ exports.createOrder = async (req, res, next) => {
       }
     }
 
+    // Handle payment proof upload / base64 if provided
+    let paymentProofData = null;
+    let screenshotFile = req.file || (req.files && req.files.paymentScreenshot ? req.files.paymentScreenshot[0] : null);
+    
+    // Check if base64 screenshot or file buffer was sent
+    let screenshotBuffer = null;
+    if (screenshotFile && screenshotFile.buffer) {
+      screenshotBuffer = screenshotFile.buffer;
+    } else if (req.body.paymentScreenshot && typeof req.body.paymentScreenshot === 'string' && req.body.paymentScreenshot.startsWith('data:image')) {
+      const base64Data = req.body.paymentScreenshot.replace(/^data:image\/\w+;base64,/, '');
+      screenshotBuffer = Buffer.from(base64Data, 'base64');
+    }
+
+    if (screenshotBuffer) {
+      if (screenshotBuffer.length > 10 * 1024 * 1024) {
+        return res.status(400).json({ message: 'Payment screenshot exceeds maximum size limit of 10MB' });
+      }
+
+      const crypto = require('crypto');
+      const fileHash = crypto.createHash('sha256').update(screenshotBuffer).digest('hex');
+
+      // Check duplicate payment screenshot in existing orders
+      const existingDuplicate = await Order.findOne({ 'paymentProof.fileHash': fileHash });
+      if (existingDuplicate) {
+        return res.status(400).json({ message: 'Duplicate payment screenshot detected. Please upload a valid, unique transaction receipt.' });
+      }
+
+      let tempPath = null;
+      let compressedPath = null;
+      let screenshotUrl = null;
+      try {
+        const { compressMedia } = require('../utils/mediaCompression');
+        const { uploadMedia, getCloudinaryFolder } = require('../utils/cloudinary');
+        
+        tempPath = await writeTempFile(screenshotBuffer, 'payment_screenshot.jpg');
+        compressedPath = await compressMedia(tempPath, 'image');
+        
+        const folder = getCloudinaryFolder('payments');
+        const cloudinaryResult = await uploadMedia(compressedPath, folder);
+        screenshotUrl = cloudinaryResult.secure_url || cloudinaryResult.url;
+      } catch (err) {
+        console.error("Payment screenshot compression/upload error:", err);
+        return res.status(500).json({ message: 'Failed to process and compress payment screenshot' });
+      } finally {
+        if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+        if (compressedPath && fs.existsSync(compressedPath)) fs.unlinkSync(compressedPath);
+      }
+
+      paymentProofData = {
+        transactionId: req.body.transactionId || undefined,
+        screenshotUrl,
+        fileHash,
+        notes: req.body.paymentNotes || undefined,
+        status: 'pending'
+      };
+    }
+
     // Upload prescription file if present
     let prescriptionFilePublicId = null;
-    if (req.file) {
+    if (req.file && !paymentProofData) { // Logic adjusted if req.file is used for either
       let tempPath = null;
       let compressedPath = null;
       try {
@@ -136,8 +195,24 @@ exports.createOrder = async (req, res, next) => {
     }
 
     let hasLensCustomization = false;
+    let hasPriceOnRequest = false;
     let subtotal = 0;
     const formattedItems = [];
+
+    // Resolve lens options server-side (authoritative pricing) for any customized items.
+    // §6: sunglasses reference lensOptionSlug; eyeglasses reference lensCoating (both are LensOption slugs).
+    const lensSlugs = [...new Set(
+      items.flatMap((i) => {
+        const c = i.customization;
+        if (!c) return [];
+        return [c.lensOptionSlug, c.lensCoating].filter(Boolean);
+      })
+    )];
+    const lensOptionMap = new Map();
+    if (lensSlugs.length > 0) {
+      const lensOptions = await LensOption.find({ slug: { $in: lensSlugs }, isActive: true });
+      lensOptions.forEach((lo) => lensOptionMap.set(lo.slug, lo));
+    }
 
     for (const raw of items) {
       const qty = Math.floor(Number(raw.quantity));
@@ -145,22 +220,65 @@ exports.createOrder = async (req, res, next) => {
         return res.status(400).json({ message: `Invalid quantity for "${raw.name || 'item'}"` });
       }
 
-      const isObjectId = raw.product && String(raw.product).match(/^[0-9a-fA-F]{24}$/);
-      const product = isObjectId
-        ? await Product.findById(raw.product).select('name brand price images stock')
-        : null;
+      const product = await Product.findById(raw.product || raw.id);
+      if (!product || product.status !== 'active') {
+        return res.status(404).json({ message: `Product "${raw.name || 'item'}" is unavailable` });
+      }
 
-      if (!product) {
-        return res.status(400).json({ message: `Product "${raw.name || raw.product || 'unknown'}" not found` });
+      if (product.stock < qty) {
+        return res.status(409).json({ message: `Insufficient stock for "${product.name}". Available: ${product.stock}` });
       }
 
       let customization = null;
       let priceAdded = 0;
+      let priceOnRequest = false;
 
       if (raw.customization) {
         hasLensCustomization = true;
         const cust = raw.customization;
-        priceAdded = Number(cust.priceAdded) || 0;
+
+        // Server-authoritative lens price: resolve from the LensOption collection.
+        // A client-sent priceAdded is only trusted when no lens option slug is provided
+        // (legacy carts created before the slug fields existed).
+        const primarySlug = cust.lensCoating || cust.lensOptionSlug;
+        const mainOption = primarySlug ? lensOptionMap.get(primarySlug) : undefined;
+
+        if (mainOption) {
+          if (mainOption.delegatesToAppliesTo) {
+            const delegatedOption = cust.lensOptionSlug ? lensOptionMap.get(cust.lensOptionSlug) : undefined;
+            if (!delegatedOption || delegatedOption.appliesTo !== mainOption.delegatesToAppliesTo) {
+              return res.status(400).json({ message: `Invalid delegated lens option "${cust.lensOptionSlug}" for coating "${primarySlug}"` });
+            }
+            priceAdded = delegatedOption.price;
+          } else if (mainOption.collections && mainOption.collections.length > 0) {
+            // collections → (brands) → lensTypes hierarchy (ERP.md §14)
+            const collection = mainOption.collections.find((c) => c.slug === cust.lensOptionCollectionSlug);
+            if (!collection) {
+              return res.status(400).json({ message: `A valid collection is required for lens option "${primarySlug}"` });
+            }
+            const type = collection.brands && collection.brands.length > 0
+              ? (() => {
+                  const brand = collection.brands.find((b) => b.slug === cust.lensOptionBrandSlug);
+                  return brand && brand.lensTypes.find((lt) => lt.slug === cust.lensOptionTypeSlug);
+                })()
+              : collection.lensTypes.find((lt) => lt.slug === cust.lensOptionTypeSlug);
+            if (!type) {
+              return res.status(400).json({ message: `A valid lens type is required for collection "${collection.slug}"` });
+            }
+            if (type.priceOnRequest || type.price === undefined || type.price === null) {
+              priceOnRequest = true;
+              priceAdded = null;
+            } else {
+              priceAdded = type.price;
+            }
+          } else {
+            priceAdded = mainOption.price;
+          }
+        } else if (cust.lensOptionSlug || cust.lensCoating) {
+          return res.status(400).json({ message: `Invalid or unavailable lens option "${cust.lensOptionSlug || cust.lensCoating}"` });
+        } else {
+          priceAdded = Number(cust.priceAdded) || 0;
+        }
 
         // Resolve prescription file ID: use server-uploaded file ID if type is file
         let fileId = cust.prescriptionFilePublicId || null;
@@ -173,14 +291,25 @@ exports.createOrder = async (req, res, next) => {
           prescriptionData: cust.prescriptionData || undefined,
           prescriptionFilePublicId: fileId || undefined,
           prescriptionText: cust.prescriptionText || undefined,
+          lensOptionSlug: cust.lensOptionSlug || undefined,
+          lensOptionCollectionSlug: cust.lensOptionCollectionSlug || undefined,
+          lensOptionBrandSlug: cust.lensOptionBrandSlug || undefined,
+          lensOptionTypeSlug: cust.lensOptionTypeSlug || undefined,
           lensType: cust.lensType || undefined,
+          usageType: cust.usageType || undefined,
+          lensCoating: cust.lensCoating || undefined,
           tintColor: cust.tintColor || undefined,
           tintStrength: cust.tintStrength || undefined,
+          priceOnRequest,
           priceAdded
         };
       }
 
-      const itemPrice = product.price + priceAdded;
+      if (priceOnRequest) {
+        hasPriceOnRequest = true;
+      }
+
+      const itemPrice = product.price + (priceAdded || 0);
       subtotal += itemPrice * qty;
 
       formattedItems.push({
@@ -236,8 +365,22 @@ exports.createOrder = async (req, res, next) => {
     const shipping = subtotal >= 3000 ? 0 : 350;
     const total = Math.max(0, subtotal + shipping - discount);
 
+    const isPendingQuote = hasPriceOnRequest;
+    const isPaymentVerificationNeeded = paymentMethod !== 'cod' && paymentProofData;
+    const initialStatus = isPendingQuote ? 'pending-quote' : isPaymentVerificationNeeded ? 'payment-verification' : 'pending';
+
     const defaultTimeline = [
-      { status: 'pending', label: 'Order Placed', date: new Date(), description: 'Your order has been received and confirmed.', completed: true },
+      {
+        status: initialStatus,
+        label: isPendingQuote ? 'Awaiting Price Quote' : isPaymentVerificationNeeded ? 'Payment Verification Pending' : 'Order Placed',
+        date: new Date(),
+        description: isPendingQuote
+          ? 'Your order has been received. Lens price is pending admin confirmation.'
+          : isPaymentVerificationNeeded
+          ? 'Payment screenshot submitted. Awaiting admin verification.'
+          : 'Your order has been received and confirmed.',
+        completed: true
+      },
       { status: 'processing', label: 'Lab Processing', date: new Date(), description: 'Lenses are being cut and fitted into frames.', completed: false },
       { status: 'processing', label: 'Quality Control', date: new Date(), description: 'Frame inspection and prescription alignment check.', completed: false },
       { status: 'shipped', label: 'Out for Delivery', date: new Date(), description: 'Dispatched with courier tracking.', completed: false },
@@ -267,8 +410,9 @@ exports.createOrder = async (req, res, next) => {
       discount,
       total,
       paymentMethod,
+      paymentProof: paymentProofData || undefined,
       paymentType,
-      status: 'pending',
+      status: initialStatus,
       timeline: defaultTimeline,
       couponCode: appliedCoupon ? appliedCoupon.code : undefined,
       estimatedDelivery: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000)
@@ -276,11 +420,19 @@ exports.createOrder = async (req, res, next) => {
 
     await order.save();
 
-    // Trigger order confirmation email notification
-    try {
-      await sendOrderConfirmationEmail(order);
-    } catch (err) {
-      console.error("Order confirmation email failed:", err);
+    // Trigger order confirmation email notification.
+    if (!isPendingQuote) {
+      try {
+        await sendOrderConfirmationEmail(order);
+      } catch (err) {
+        console.error("Order confirmation email failed:", err);
+      }
+    } else {
+      try {
+        await sendWhatsAppPriceOnRequestNotification(order);
+      } catch (err) {
+        console.error("WhatsApp notification dispatch failed:", err);
+      }
     }
 
     // Only after a successful order do we consume the coupon usage.
@@ -318,6 +470,89 @@ exports.getOrderById = async (req, res, next) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
+    res.status(200).json(formatOrder(order));
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/orders/:id/resubmit-payment-proof
+exports.resubmitPaymentProof = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    let order = await Order.findById(id);
+    if (!order) {
+      order = await Order.findOne({ orderNumber: id.toUpperCase() });
+    }
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    let screenshotBuffer = null;
+    if (req.file && req.file.buffer) {
+      screenshotBuffer = req.file.buffer;
+    } else if (req.body.paymentScreenshot && typeof req.body.paymentScreenshot === 'string' && req.body.paymentScreenshot.startsWith('data:image')) {
+      const base64Data = req.body.paymentScreenshot.replace(/^data:image\/\w+;base64,/, '');
+      screenshotBuffer = Buffer.from(base64Data, 'base64');
+    }
+
+    if (!screenshotBuffer) {
+      return res.status(400).json({ message: 'Please provide a valid payment screenshot file or image' });
+    }
+
+    if (screenshotBuffer.length > 10 * 1024 * 1024) {
+      return res.status(400).json({ message: 'Payment screenshot exceeds maximum size limit of 10MB' });
+    }
+
+    const crypto = require('crypto');
+    const fileHash = crypto.createHash('sha256').update(screenshotBuffer).digest('hex');
+
+    const existingDuplicate = await Order.findOne({ 'paymentProof.fileHash': fileHash, _id: { $ne: order._id } });
+    if (existingDuplicate) {
+      return res.status(400).json({ message: 'Duplicate payment screenshot detected. Please upload a unique, valid receipt.' });
+    }
+
+    let tempPath = null;
+    let compressedPath = null;
+    let screenshotUrl = null;
+    try {
+      const { compressMedia } = require('../utils/mediaCompression');
+      const { uploadMedia, getCloudinaryFolder } = require('../utils/cloudinary');
+      
+      tempPath = await writeTempFile(screenshotBuffer, 'resubmitted_payment.jpg');
+      compressedPath = await compressMedia(tempPath, 'image');
+      
+      const folder = getCloudinaryFolder('payments');
+      const cloudinaryResult = await uploadMedia(compressedPath, folder);
+      screenshotUrl = cloudinaryResult.secure_url || cloudinaryResult.url;
+    } catch (err) {
+      console.error("Resubmit payment upload error:", err);
+      return res.status(500).json({ message: 'Failed to compress and upload payment proof' });
+    } finally {
+      if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+      if (compressedPath && fs.existsSync(compressedPath)) fs.unlinkSync(compressedPath);
+    }
+
+    order.paymentProof = {
+      transactionId: req.body.transactionId || order.paymentProof?.transactionId || undefined,
+      screenshotUrl,
+      fileHash,
+      notes: req.body.paymentNotes || order.paymentProof?.notes || undefined,
+      status: 'pending',
+      rejectionReason: undefined
+    };
+    order.status = 'payment-verification';
+
+    order.timeline.push({
+      status: 'payment-verification',
+      label: 'Payment Resubmitted',
+      date: new Date(),
+      description: 'Customer resubmitted payment proof for verification.',
+      completed: true
+    });
+
+    await order.save();
     res.status(200).json(formatOrder(order));
   } catch (error) {
     next(error);

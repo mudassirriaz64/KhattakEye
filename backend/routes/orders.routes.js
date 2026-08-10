@@ -6,6 +6,7 @@ const ordersController = require('../controllers/orders.controller');
 
 // Public order creation and tracking routes
 router.post('/', upload.single('prescriptionFile'), ordersController.createOrder);
+router.post('/:id/resubmit-payment-proof', upload.single('paymentScreenshot'), ordersController.resubmitPaymentProof);
 router.get('/:id', ordersController.getOrderById);
 
 // Authenticated customer order history

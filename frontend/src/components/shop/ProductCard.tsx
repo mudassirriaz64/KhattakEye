@@ -16,8 +16,9 @@ type ProductCardProps = {
 export const ProductCard = React.forwardRef(
   ({ product, viewMode = "grid" }: ProductCardProps, ref: React.Ref<HTMLDivElement>) => {
   const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
-  const isInWishlist = useWishlistStore((s) => s.isInWishlist);
-  const isWishlisted = isInWishlist(product.id);
+  const wishlistItems = useWishlistStore((s) => s.items);
+  const targetId = String((product as any)._id || product.id || "");
+  const isWishlisted = wishlistItems.some((i) => String(i._id || i.id || "") === targetId);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const addToRecentlyViewed = useShopStore((s) => s.addToRecentlyViewed);
@@ -188,7 +189,7 @@ export const ProductCard = React.forwardRef(
             Rs. {product.price.toLocaleString()}
           </span>
           {product.oldPrice && (
-            <span className="text-xs font-medium text-gray-400 dark:text-neutral-400 line-through">
+            <span className="text-xs font-medium text-[color:var(--color-text-tertiary)] line-through">
               Rs. {product.oldPrice.toLocaleString()}
             </span>
           )}

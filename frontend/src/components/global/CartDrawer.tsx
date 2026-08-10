@@ -88,6 +88,11 @@ export function CartDrawer() {
                       Rs. {getSubtotal().toLocaleString()}
                     </span>
                   </div>
+                  {items.some((i) => i.customization?.priceOnRequest === true) && (
+                    <p className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-[11px] font-medium text-amber-700">
+                      One or more lenses are on request — price confirmed by our team before payment.
+                    </p>
+                  )}
                   <div className="grid gap-2">
                     <Link to="/cart" onClick={() => setCartOpen(false)} className="block">
                       <Button variant="primary" className="w-full">

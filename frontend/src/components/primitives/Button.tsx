@@ -62,7 +62,7 @@ export function Button({
       {...props}
     >
       {loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : iconLeft}
-      <span>{children}</span>
+      <span className="contents">{children}</span>
       {!loading ? iconRight : null}
     </button>
   );

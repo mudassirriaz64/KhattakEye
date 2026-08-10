@@ -13,14 +13,11 @@ export default defineConfig({
     globals: true,
     setupFiles: "./src/tests/setup.ts",
   },
+  esbuild: {
+    logOverride: { 'duplicate-case': 'silent' },
+  },
   plugins: [
-    react({
-      babel: {
-        plugins: [
-          'react-dev-locator',
-        ],
-      },
-    }),
+    react(),
     tsconfigPaths()
   ],
 })
