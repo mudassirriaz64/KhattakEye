@@ -918,6 +918,28 @@ export default function LensConfigurationPage() {
     });
   }, [options, search, tab]);
 
+  // Options in the current tab (ignores the search box) — used to nest a
+  // delegating option's re-used children (e.g. Sun → its tints) beneath it.
+  const tabbed = useMemo(
+    () => options.filter((o) => tab === "all" || o.appliesTo === tab),
+    [options, tab]
+  );
+
+  // Children nested under a rendered parent are shown inside the parent card,
+  // not as standalone top-level cards (like Distance Vision and its collections).
+  const topLevel = useMemo(() => {
+    const renderedParents = new Set(
+      filtered.filter((o) => o.delegatesToAppliesTo).map((o) => o._id)
+    );
+    return filtered.filter((o) => {
+      if (o.delegatesToAppliesTo) return true;
+      const parent = tabbed.find(
+        (p) => p._id !== o._id && p.delegatesToAppliesTo === o.appliesTo
+      );
+      return !(parent && renderedParents.has(parent._id));
+    });
+  }, [filtered, tabbed]);
+
   const openCreate = () => {
     setEditing(blankDraft());
     setEditorOpen(true);
@@ -1020,73 +1042,135 @@ export default function LensConfigurationPage() {
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((o) => (
-            <div
-              key={o._id}
-              className="group flex flex-col rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-4 transition-shadow hover:shadow-md"
-            >
-              <div className="mb-2 flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--color-surface-muted)]">
-                    <Layers className="h-4 w-4 text-[color:var(--color-brand-primary)]" />
-                  </span>
-                  <div>
-                    <h3 className="text-sm font-bold text-[color:var(--color-text-primary)]">{o.name}</h3>
-                    <p className="text-[10px] text-[color:var(--color-text-tertiary)]">
-                      /{o.slug} · order {o.order ?? 0}
-                    </p>
+          {topLevel.map((o) => {
+            const children = o.delegatesToAppliesTo
+              ? tabbed.filter((c) => c._id !== o._id && c.appliesTo === o.delegatesToAppliesTo)
+              : [];
+            return (
+              <div key={o._id} className={cn(children.length > 0 && "sm:col-span-2 lg:col-span-3")}>
+                <div
+                  className="group flex flex-col rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-4 transition-shadow hover:shadow-md"
+                >
+                  <div className="mb-2 flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[color:var(--color-surface-muted)]">
+                        <Layers className="h-4 w-4 text-[color:var(--color-brand-primary)]" />
+                      </span>
+                      <div>
+                        <h3 className="text-sm font-bold text-[color:var(--color-text-primary)]">{o.name}</h3>
+                        <p className="text-[10px] text-[color:var(--color-text-tertiary)]">
+                          /{o.slug} · order {o.order ?? 0}
+                        </p>
+                      </div>
+                    </div>
+                    <StatusBadge status={o.isActive ? "active" : "inactive"} />
+                  </div>
+
+                  <p className="mb-3 line-clamp-2 text-xs leading-relaxed text-[color:var(--color-text-tertiary)]">
+                    {o.description || "No description"}
+                  </p>
+
+                  <div className="mt-auto space-y-1.5 border-t border-[color:var(--color-border)] pt-3 text-[11px] text-[color:var(--color-text-secondary)]">
+                    <div className="flex items-center gap-1.5">
+                      <Columns className="h-3 w-3 text-[color:var(--color-text-tertiary)]" />
+                      {o.collections?.length ?? 0} collections · {countTypes(o)} lens types
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Palette className="h-3 w-3 text-[color:var(--color-text-tertiary)]" />
+                      {o.hasStrengthOptions ? `${o.strengths?.length ?? 0} strengths` : "No strengths"} ·{" "}
+                      {o.hasColorOptions ? `${o.colors?.length ?? 0} colors` : "No colors"}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Info className="h-3 w-3 text-[color:var(--color-text-tertiary)]" />
+                      {o.info ? "Has hover info" : "No hover info"}
+                    </div>
+                    {o.delegatesToAppliesTo && (
+                      <div className="flex items-center gap-1.5">
+                        <Layers className="h-3 w-3 text-[color:var(--color-text-tertiary)]" />
+                        {children.length} options inside
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-2">
+                    <Button variant="ghost" className="flex-1 text-xs" onClick={() => openEdit(o)} iconLeft={<Edit3 className="h-3.5 w-3.5" />}>
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="text-xs text-[color:var(--color-danger)]"
+                      onClick={() => setDeleting(o)}
+                      iconLeft={<Trash2 className="h-3.5 w-3.5" />}
+                    >
+                      Delete
+                    </Button>
                   </div>
                 </div>
-                <StatusBadge status={o.isActive ? "active" : "inactive"} />
-              </div>
 
-              <p className="mb-3 line-clamp-2 text-xs leading-relaxed text-[color:var(--color-text-tertiary)]">
-                {o.description || "No description"}
-              </p>
+                {children.length > 0 && (
+                  <div className="mt-3">
+                    <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-[color:var(--color-text-tertiary)]">
+                      Inside {o.name}
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      {children.map((c) => (
+                        <div
+                          key={c._id}
+                          className="group flex flex-col rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-3 transition-shadow hover:shadow-md"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-[color:var(--color-surface)]">
+                                <Palette className="h-3.5 w-3.5 text-[color:var(--color-brand-primary)]" />
+                              </span>
+                              <div className="min-w-0">
+                                <h4 className="truncate text-xs font-bold text-[color:var(--color-text-primary)]">{c.name}</h4>
+                                <p className="truncate text-[10px] text-[color:var(--color-text-tertiary)]">
+                                  /{c.slug} · order {c.order ?? 0}
+                                </p>
+                              </div>
+                            </div>
+                            <StatusBadge status={c.isActive ? "active" : "inactive"} />
+                          </div>
 
-              <div className="mt-auto space-y-1.5 border-t border-[color:var(--color-border)] pt-3 text-[11px] text-[color:var(--color-text-secondary)]">
-                <div className="flex items-center gap-1.5">
-                  <Columns className="h-3 w-3 text-[color:var(--color-text-tertiary)]" />
-                  {o.collections?.length ?? 0} collections · {countTypes(o)} lens types
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Palette className="h-3 w-3 text-[color:var(--color-text-tertiary)]" />
-                  {o.hasStrengthOptions ? `${o.strengths?.length ?? 0} strengths` : "No strengths"} ·{" "}
-                  {o.hasColorOptions ? `${o.colors?.length ?? 0} colors` : "No colors"}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Info className="h-3 w-3 text-[color:var(--color-text-tertiary)]" />
-                  {o.info ? "Has hover info" : "No hover info"}
-                </div>
-                {o.delegatesToAppliesTo && (
-                  <div className="flex items-start gap-1.5">
-                    <Layers className="h-3 w-3 mt-0.5 text-[color:var(--color-text-tertiary)] flex-shrink-0" />
-                    <span>
-                      Reuses:{" "}
-                      {options
-                        .filter((d) => d.appliesTo === o.delegatesToAppliesTo && d._id !== o._id)
-                        .map((d) => d.name)
-                        .join(", ") || "—"}
-                    </span>
+                          <p className="mt-2 line-clamp-1 text-[11px] text-[color:var(--color-text-tertiary)]">
+                            {c.description || "No description"}
+                          </p>
+
+                          <div className="mt-auto flex items-center justify-between gap-2 border-t border-[color:var(--color-border)] pt-2 text-[10px] text-[color:var(--color-text-secondary)]">
+                            <span className="truncate">
+                              {c.price ? `Rs. ${c.price.toLocaleString()}` : "No price"}
+                            </span>
+                            <span className="shrink-0">
+                              {c.hasStrengthOptions ? `${c.strengths?.length ?? 0} strengths` : "No strengths"} ·{" "}
+                              {c.hasColorOptions ? `${c.colors?.length ?? 0} colors` : "No colors"}
+                            </span>
+                          </div>
+
+                          <div className="mt-2 flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openEdit(c)}
+                              className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-bold text-[color:var(--color-brand-primary)] hover:bg-[color:var(--color-border)]/40"
+                            >
+                              <Edit3 className="h-3 w-3" /> Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleting(c)}
+                              className="inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-[10px] font-bold text-[color:var(--color-danger)] hover:bg-[color:var(--color-danger)]/10"
+                            >
+                              <Trash2 className="h-3 w-3" /> Delete
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-
-              <div className="mt-3 flex items-center gap-2">
-                <Button variant="ghost" className="flex-1 text-xs" onClick={() => openEdit(o)} iconLeft={<Edit3 className="h-3.5 w-3.5" />}>
-                  Edit
-                </Button>
-                <Button
-                  variant="ghost"
-                  className="text-xs text-[color:var(--color-danger)]"
-                  onClick={() => setDeleting(o)}
-                  iconLeft={<Trash2 className="h-3.5 w-3.5" />}
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

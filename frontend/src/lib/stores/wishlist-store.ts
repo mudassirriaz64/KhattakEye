@@ -112,6 +112,11 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
   },
 
   isInWishlist: (productId: string) => {
-    return get().items.some((i) => (i._id || i.id) === productId);
+    if (!productId) return false;
+    const cleanId = String(productId);
+    return get().items.some((i) => {
+      const itemId = String(i._id || i.id || "");
+      return itemId === cleanId;
+    });
   },
 }));

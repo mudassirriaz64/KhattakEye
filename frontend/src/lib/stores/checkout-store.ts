@@ -116,6 +116,9 @@ export const useCheckoutStore = create<CheckoutState>((set, get) => ({
           customization: i.customization
         })),
         paymentMethod: state.payment.method || "cod",
+        transactionId: state.payment.transactionId || undefined,
+        paymentScreenshot: state.payment.paymentScreenshot || undefined,
+        paymentNotes: state.payment.paymentNotes || undefined,
         couponCode: cartStore.couponCode || undefined
       });
 

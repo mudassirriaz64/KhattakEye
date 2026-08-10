@@ -20,6 +20,10 @@ import { CategoryPage } from "@/pages/CategoryPage";
 import { SearchResultsPage } from "@/pages/SearchResultsPage";
 import { ProductDetailsPage } from "@/pages/ProductDetailsPage";
 import { SelectLensesPage } from "@/pages/SelectLensesPage";
+import { BlueLightLensesPage } from "@/pages/BlueLightLensesPage";
+import { ComputerGlassesPage } from "@/pages/ComputerGlassesPage";
+import { AntiGlarePage } from "@/pages/AntiGlarePage";
+import { PhotochromicPage } from "@/pages/PhotochromicPage";
 import { VirtualTryOnPage } from "@/pages/VirtualTryOnPage";
 import { WishlistPage } from "@/pages/WishlistPage";
 import { ComparePage } from "@/pages/ComparePage";
@@ -151,13 +155,11 @@ function AppRoutes() {
           <Route path="customers/:id" element={<AdminCustomerDetailPage />} />
           <Route path="reviews" element={<AdminReviewsManagePage />} />
           <Route path="testimonials" element={<AdminTestimonialsPage />} />
-          <Route path="cms" element={<AdminHomepageCMSPage />} />
-          <Route path="cms/hero-slides" element={<HeroSlidesPage />} />
+          <Route path="cms" element={<AdminPagesCMSPage />} />
+          <Route path="cms/faqs" element={<AdminPagesCMSPage />} />
           <Route path="cms/banners" element={<AdminBannerManagementPage />} />
-          <Route path="cms/pages" element={<AdminPagesCMSPage />} />
           <Route path="cms/coupons" element={<AdminCouponsPage />} />
           <Route path="cms/newsletter" element={<AdminNewsletterPage />} />
-          <Route path="cms/media" element={<AdminMediaLibraryPage />} />
           <Route path="cms/settings" element={<AdminWebsiteSettingsPage />} />
           <Route path="reports" element={<AdminReportsPage />} />
           <Route path="analytics" element={<AdminAnalyticsPage />} />
@@ -178,6 +180,18 @@ function AppRoutes() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<PageTransition><GlobalLayout><LandingPage /></GlobalLayout></PageTransition>} />
         <Route path="/shop" element={<PageTransition><GlobalLayout><ShopPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/lenses/photochromic" element={<PageTransition><GlobalLayout><PhotochromicPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/lenses/transition" element={<PageTransition><GlobalLayout><PhotochromicPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/photochromic" element={<PageTransition><GlobalLayout><PhotochromicPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/lenses/anti-reflective" element={<PageTransition><GlobalLayout><AntiGlarePage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/lenses/anti-glare" element={<PageTransition><GlobalLayout><AntiGlarePage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/anti-glare" element={<PageTransition><GlobalLayout><AntiGlarePage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/lenses/computer" element={<PageTransition><GlobalLayout><ComputerGlassesPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/lenses/computer-lenses" element={<PageTransition><GlobalLayout><ComputerGlassesPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/computer-glasses" element={<PageTransition><GlobalLayout><ComputerGlassesPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/lenses/blue-light" element={<PageTransition><GlobalLayout><BlueLightLensesPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/lenses/blue-cut" element={<PageTransition><GlobalLayout><BlueLightLensesPage /></GlobalLayout></PageTransition>} />
+        <Route path="/shop/blue-light" element={<PageTransition><GlobalLayout><BlueLightLensesPage /></GlobalLayout></PageTransition>} />
         <Route path="/shop/:category" element={<PageTransition><GlobalLayout><CategoryPage /></GlobalLayout></PageTransition>} />
         <Route path="/shop/:category/:subcategory" element={<PageTransition><GlobalLayout><CategoryPage /></GlobalLayout></PageTransition>} />
         <Route path="/search" element={<PageTransition><GlobalLayout><SearchResultsPage /></GlobalLayout></PageTransition>} />

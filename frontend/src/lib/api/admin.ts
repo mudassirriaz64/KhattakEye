@@ -81,6 +81,11 @@ export const adminUpdateOrderStatusApi = async (id: string, status: string) => {
   return response.data;
 };
 
+export const adminVerifyPaymentApi = async (id: string, action: 'approve' | 'reject', rejectionReason?: string) => {
+  const response = await api.patch(`/admin/orders/${id}/verify-payment`, { action, rejectionReason });
+  return response.data;
+};
+
 export const adminGetDashboardStatsApi = async () => {
   const response = await api.get('/admin/dashboard-stats');
   return response.data;

@@ -114,9 +114,66 @@ exports.createOrder = async (req, res, next) => {
       }
     }
 
+    // Handle payment proof upload / base64 if provided
+    let paymentProofData = null;
+    let screenshotFile = req.file || (req.files && req.files.paymentScreenshot ? req.files.paymentScreenshot[0] : null);
+    
+    // Check if base64 screenshot or file buffer was sent
+    let screenshotBuffer = null;
+    if (screenshotFile && screenshotFile.buffer) {
+      screenshotBuffer = screenshotFile.buffer;
+    } else if (req.body.paymentScreenshot && typeof req.body.paymentScreenshot === 'string' && req.body.paymentScreenshot.startsWith('data:image')) {
+      const base64Data = req.body.paymentScreenshot.replace(/^data:image\/\w+;base64,/, '');
+      screenshotBuffer = Buffer.from(base64Data, 'base64');
+    }
+
+    if (screenshotBuffer) {
+      if (screenshotBuffer.length > 10 * 1024 * 1024) {
+        return res.status(400).json({ message: 'Payment screenshot exceeds maximum size limit of 10MB' });
+      }
+
+      const crypto = require('crypto');
+      const fileHash = crypto.createHash('sha256').update(screenshotBuffer).digest('hex');
+
+      // Check duplicate payment screenshot in existing orders
+      const existingDuplicate = await Order.findOne({ 'paymentProof.fileHash': fileHash });
+      if (existingDuplicate) {
+        return res.status(400).json({ message: 'Duplicate payment screenshot detected. Please upload a valid, unique transaction receipt.' });
+      }
+
+      let tempPath = null;
+      let compressedPath = null;
+      let screenshotUrl = null;
+      try {
+        const { compressMedia } = require('../utils/mediaCompression');
+        const { uploadMedia, getCloudinaryFolder } = require('../utils/cloudinary');
+        
+        tempPath = await writeTempFile(screenshotBuffer, 'payment_screenshot.jpg');
+        compressedPath = await compressMedia(tempPath, 'image');
+        
+        const folder = getCloudinaryFolder('payments');
+        const cloudinaryResult = await uploadMedia(compressedPath, folder);
+        screenshotUrl = cloudinaryResult.secure_url || cloudinaryResult.url;
+      } catch (err) {
+        console.error("Payment screenshot compression/upload error:", err);
+        return res.status(500).json({ message: 'Failed to process and compress payment screenshot' });
+      } finally {
+        if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+        if (compressedPath && fs.existsSync(compressedPath)) fs.unlinkSync(compressedPath);
+      }
+
+      paymentProofData = {
+        transactionId: req.body.transactionId || undefined,
+        screenshotUrl,
+        fileHash,
+        notes: req.body.paymentNotes || undefined,
+        status: 'pending'
+      };
+    }
+
     // Upload prescription file if present
     let prescriptionFilePublicId = null;
-    if (req.file) {
+    if (req.file && !paymentProofData) { // Logic adjusted if req.file is used for either
       let tempPath = null;
       let compressedPath = null;
       try {
@@ -163,17 +220,17 @@ exports.createOrder = async (req, res, next) => {
         return res.status(400).json({ message: `Invalid quantity for "${raw.name || 'item'}"` });
       }
 
-      const isObjectId = raw.product && String(raw.product).match(/^[0-9a-fA-F]{24}$/);
-      const product = isObjectId
-        ? await Product.findById(raw.product).select('name brand price images stock')
-        : null;
+      const product = await Product.findById(raw.product || raw.id);
+      if (!product || product.status !== 'active') {
+        return res.status(404).json({ message: `Product "${raw.name || 'item'}" is unavailable` });
+      }
 
-      if (!product) {
-        return res.status(400).json({ message: `Product "${raw.name || raw.product || 'unknown'}" not found` });
+      if (product.stock < qty) {
+        return res.status(409).json({ message: `Insufficient stock for "${product.name}". Available: ${product.stock}` });
       }
 
       let customization = null;
-      let priceAdded = null;
+      let priceAdded = 0;
       let priceOnRequest = false;
 
       if (raw.customization) {
@@ -309,14 +366,18 @@ exports.createOrder = async (req, res, next) => {
     const total = Math.max(0, subtotal + shipping - discount);
 
     const isPendingQuote = hasPriceOnRequest;
+    const isPaymentVerificationNeeded = paymentMethod !== 'cod' && paymentProofData;
+    const initialStatus = isPendingQuote ? 'pending-quote' : isPaymentVerificationNeeded ? 'payment-verification' : 'pending';
 
     const defaultTimeline = [
       {
-        status: isPendingQuote ? 'pending-quote' : 'pending',
-        label: isPendingQuote ? 'Awaiting Price Quote' : 'Order Placed',
+        status: initialStatus,
+        label: isPendingQuote ? 'Awaiting Price Quote' : isPaymentVerificationNeeded ? 'Payment Verification Pending' : 'Order Placed',
         date: new Date(),
         description: isPendingQuote
           ? 'Your order has been received. Lens price is pending admin confirmation.'
+          : isPaymentVerificationNeeded
+          ? 'Payment screenshot submitted. Awaiting admin verification.'
           : 'Your order has been received and confirmed.',
         completed: true
       },
@@ -349,8 +410,9 @@ exports.createOrder = async (req, res, next) => {
       discount,
       total,
       paymentMethod,
+      paymentProof: paymentProofData || undefined,
       paymentType,
-      status: isPendingQuote ? 'pending-quote' : 'pending',
+      status: initialStatus,
       timeline: defaultTimeline,
       couponCode: appliedCoupon ? appliedCoupon.code : undefined,
       estimatedDelivery: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000)
@@ -359,9 +421,6 @@ exports.createOrder = async (req, res, next) => {
     await order.save();
 
     // Trigger order confirmation email notification.
-    // Pending-quote orders do not get a confirmation email yet — the lens price is
-    // set by the admin first (ERP.md §14 / Rules.md §6a); the email fires once the
-    // order moves out of "pending-quote" into payment verification.
     if (!isPendingQuote) {
       try {
         await sendOrderConfirmationEmail(order);
@@ -369,7 +428,6 @@ exports.createOrder = async (req, res, next) => {
         console.error("Order confirmation email failed:", err);
       }
     } else {
-      // High Index / Price-On-Request order trigger: Notify WhatsApp admin immediately
       try {
         await sendWhatsAppPriceOnRequestNotification(order);
       } catch (err) {
@@ -412,6 +470,89 @@ exports.getOrderById = async (req, res, next) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
+    res.status(200).json(formatOrder(order));
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/orders/:id/resubmit-payment-proof
+exports.resubmitPaymentProof = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    let order = await Order.findById(id);
+    if (!order) {
+      order = await Order.findOne({ orderNumber: id.toUpperCase() });
+    }
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    let screenshotBuffer = null;
+    if (req.file && req.file.buffer) {
+      screenshotBuffer = req.file.buffer;
+    } else if (req.body.paymentScreenshot && typeof req.body.paymentScreenshot === 'string' && req.body.paymentScreenshot.startsWith('data:image')) {
+      const base64Data = req.body.paymentScreenshot.replace(/^data:image\/\w+;base64,/, '');
+      screenshotBuffer = Buffer.from(base64Data, 'base64');
+    }
+
+    if (!screenshotBuffer) {
+      return res.status(400).json({ message: 'Please provide a valid payment screenshot file or image' });
+    }
+
+    if (screenshotBuffer.length > 10 * 1024 * 1024) {
+      return res.status(400).json({ message: 'Payment screenshot exceeds maximum size limit of 10MB' });
+    }
+
+    const crypto = require('crypto');
+    const fileHash = crypto.createHash('sha256').update(screenshotBuffer).digest('hex');
+
+    const existingDuplicate = await Order.findOne({ 'paymentProof.fileHash': fileHash, _id: { $ne: order._id } });
+    if (existingDuplicate) {
+      return res.status(400).json({ message: 'Duplicate payment screenshot detected. Please upload a unique, valid receipt.' });
+    }
+
+    let tempPath = null;
+    let compressedPath = null;
+    let screenshotUrl = null;
+    try {
+      const { compressMedia } = require('../utils/mediaCompression');
+      const { uploadMedia, getCloudinaryFolder } = require('../utils/cloudinary');
+      
+      tempPath = await writeTempFile(screenshotBuffer, 'resubmitted_payment.jpg');
+      compressedPath = await compressMedia(tempPath, 'image');
+      
+      const folder = getCloudinaryFolder('payments');
+      const cloudinaryResult = await uploadMedia(compressedPath, folder);
+      screenshotUrl = cloudinaryResult.secure_url || cloudinaryResult.url;
+    } catch (err) {
+      console.error("Resubmit payment upload error:", err);
+      return res.status(500).json({ message: 'Failed to compress and upload payment proof' });
+    } finally {
+      if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+      if (compressedPath && fs.existsSync(compressedPath)) fs.unlinkSync(compressedPath);
+    }
+
+    order.paymentProof = {
+      transactionId: req.body.transactionId || order.paymentProof?.transactionId || undefined,
+      screenshotUrl,
+      fileHash,
+      notes: req.body.paymentNotes || order.paymentProof?.notes || undefined,
+      status: 'pending',
+      rejectionReason: undefined
+    };
+    order.status = 'payment-verification';
+
+    order.timeline.push({
+      status: 'payment-verification',
+      label: 'Payment Resubmitted',
+      date: new Date(),
+      description: 'Customer resubmitted payment proof for verification.',
+      completed: true
+    });
+
+    await order.save();
     res.status(200).json(formatOrder(order));
   } catch (error) {
     next(error);

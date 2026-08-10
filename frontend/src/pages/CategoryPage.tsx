@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Breadcrumb } from "@/components/shop/Breadcrumb";
 import { FilterSidebar } from "@/components/shop/FilterSidebar";
 import { ProductToolbar } from "@/components/shop/ProductToolbar";
@@ -20,7 +20,24 @@ export function CategoryPage() {
   const priceRange = useShopStore((s) => s.priceRange);
   const sortBy = useShopStore((s) => s.sortBy);
 
+  const navigate = useNavigate();
+
   useEffect(() => {
+    const cat = category?.toLowerCase();
+    const sub = subcategory?.toLowerCase();
+    if (cat === "lenses" && (sub === "computer" || sub === "computer-lenses")) {
+      navigate("/shop/lenses/computer", { replace: true });
+      return;
+    }
+    if (cat === "lenses" && (sub === "anti-reflective" || sub === "anti-glare" || sub === "antiglare")) {
+      navigate("/shop/lenses/anti-reflective", { replace: true });
+      return;
+    }
+    if (cat === "lenses" && (sub === "photochromic" || sub === "transition" || sub === "photochromic-lenses")) {
+      navigate("/shop/lenses/photochromic", { replace: true });
+      return;
+    }
+
     getProducts({ category: category || undefined, limit: 100 }).then((data) => {
       if (data && data.items) {
         setDbProducts(data.items.map(mapProductCard) as unknown as Product[]);
@@ -28,7 +45,7 @@ export function CategoryPage() {
         setDbProducts([]);
       }
     }).catch(() => setDbProducts([]));
-  }, [category]);
+  }, [category, subcategory, navigate]);
 
   const catInfo = categories.find((c) => c.id === category);
 
@@ -113,9 +130,9 @@ export function CategoryPage() {
         )}
       </div>
 
-      <div className="mt-8 flex gap-6">
+      <div className="mt-6 space-y-6">
         <FilterSidebar open={filterOpen} onClose={() => setFilterOpen(false)} />
-        <div className="min-w-0 flex-1">
+        <div>
           <ProductToolbar totalProducts={filtered.length} onFilterToggle={() => setFilterOpen(true)} />
           <div className="mt-5">
             <ProductGrid products={filtered} />

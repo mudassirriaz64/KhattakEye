@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useAdminStore } from "@/lib/stores/admin-store";
 import { cn } from "@/lib/utils";
+import { adminGetOrdersApi } from "@/lib/api/admin";
 
 type NavItem = {
   to: string;
@@ -35,12 +36,10 @@ const navItems: NavItem[] = [
 ];
 
 const cmsSubItems = [
-  { to: "/admin/cms", icon: Layout, label: "Homepage" },
+  { to: "/admin/cms/faqs", icon: FileText, label: "FAQs" },
   { to: "/admin/cms/banners", icon: Image, label: "Banners" },
-  { to: "/admin/cms/pages", icon: FileText, label: "Pages & FAQs" },
   { to: "/admin/cms/coupons", icon: Tag, label: "Coupons" },
   { to: "/admin/cms/newsletter", icon: Mail, label: "Newsletter" },
-  { to: "/admin/cms/media", icon: Globe, label: "Media" },
   { to: "/admin/cms/settings", icon: Settings, label: "Site Settings" },
 ];
 
@@ -61,6 +60,34 @@ export function AdminSidebar({ onClose }: Props) {
   const { sidebarCollapsed, toggleSidebar, user, logout } = useAdminStore();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [pendingOrdersCount, setPendingOrdersCount] = useState<number | null>(null);
+  const [pendingPaymentsCount, setPendingPaymentsCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const syncCounts = () => {
+      Promise.all([
+        adminGetOrdersApi(1, 100, "pending"),
+        adminGetOrdersApi(1, 100, "payment-verification")
+      ]).then(([pendingData, paymentsData]) => {
+        if (!isMounted) return;
+        if (pendingData && typeof pendingData.total === "number") {
+          setPendingOrdersCount(pendingData.total);
+        }
+        if (paymentsData && typeof paymentsData.total === "number") {
+          setPendingPaymentsCount(paymentsData.total);
+        }
+      }).catch(() => {});
+    };
+
+    syncCounts();
+    const interval = setInterval(syncCounts, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const isNavItemActive = (item: NavItem): boolean => {
     const path = location.pathname;
@@ -125,7 +152,13 @@ export function AdminSidebar({ onClose }: Props) {
             >
               <item.icon className="h-4.5 w-4.5 shrink-0" />
               {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
-              {!sidebarCollapsed && item.badge && (
+              {!sidebarCollapsed && item.to === "/admin/orders" && pendingOrdersCount !== null && (
+                <span className="ml-auto rounded-lg bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-600">{pendingOrdersCount}</span>
+              )}
+              {!sidebarCollapsed && item.to === "/admin/payments" && pendingPaymentsCount !== null && (
+                <span className="ml-auto rounded-lg bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-600">{pendingPaymentsCount}</span>
+              )}
+              {!sidebarCollapsed && item.badge && item.to !== "/admin/orders" && item.to !== "/admin/payments" && (
                 <span className="ml-auto rounded-lg bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-600">{item.badge}</span>
               )}
             </Link>

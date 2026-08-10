@@ -37,10 +37,10 @@ export function ShopPage() {
         </p>
       </div>
 
-      <div className="mt-8 flex gap-6">
+      <div className="mt-6 space-y-6">
         <FilterSidebar open={filterOpen} onClose={() => setFilterOpen(false)} />
 
-        <div className="min-w-0 flex-1">
+        <div>
           <ProductToolbar totalProducts={totalProducts} onFilterToggle={() => setFilterOpen(true)} />
           <div className="mt-5 relative">
             {isLoading && (

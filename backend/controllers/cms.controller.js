@@ -1,6 +1,7 @@
 const CMSPage = require('../models/CMSPage');
 const Banner = require('../models/Banner');
 const SiteSettings = require('../models/SiteSettings');
+const FAQ = require('../models/FAQ');
 const { resolveImageUrl } = require('../utils/cloudinary');
 
 // Default initial CMS page content fallbacks
@@ -65,6 +66,17 @@ const defaultSettings = {
     returnWindowDays: 14,
     warrantyYears: 2
   },
+  homepageSections: [
+    { id: "sec-1", section: "hero-slider", title: "Hero Carousel", subtitle: "Main promo slider with CTA buttons", visible: true, order: 1 },
+    { id: "sec-2", section: "featured-categories", title: "Featured Categories", subtitle: "Eyeglasses, Sunglasses, Contact Lenses", visible: true, order: 2 },
+    { id: "sec-3", section: "tabbed-catalog", title: "Tabbed Product Catalog", subtitle: "Featured, Best Sellers, and New Arrivals", visible: true, order: 3 },
+    { id: "sec-4", section: "face-shape-guide", title: "Face Shape Guide", subtitle: "Interactive fit and geometry guide", visible: true, order: 4 },
+    { id: "sec-5", section: "gender-collections", title: "Gender Collections", subtitle: "Men's and Women's collections", visible: true, order: 5 },
+    { id: "sec-6", section: "tryon-promo", title: "Virtual Try-On Promo", subtitle: "Interactive AR try-on spotlight", visible: true, order: 6 },
+    { id: "sec-7", section: "premium-brands", title: "Brand Logotypes", subtitle: "Luxury brand partner showcase", visible: true, order: 7 },
+    { id: "sec-8", section: "testimonials", title: "Customer Reviews Wall", subtitle: "Star ratings and verified testimonials", visible: true, order: 8 },
+    { id: "sec-9", section: "newsletter", title: "Newsletter Signup Box", subtitle: "Email subscription section", visible: true, order: 9 }
+  ],
   logo: '/khattak.png'
 };
 
@@ -235,6 +247,73 @@ const getSiteSettings = async (req, res, next) => {
   }
 };
 
+// GET /api/faqs
+const getFAQs = async (req, res, next) => {
+  try {
+    const { page } = req.query;
+    const filter = { isActive: true };
+    if (page) {
+      filter.targetPages = page.toLowerCase();
+    }
+    const faqs = await FAQ.find(filter).sort({ order: 1 });
+    res.status(200).json(faqs);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/admin/faqs
+const getAllFAQsAdmin = async (req, res, next) => {
+  try {
+    const faqs = await FAQ.find().sort({ order: 1 });
+    res.status(200).json(faqs);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/admin/faqs
+const createFAQ = async (req, res, next) => {
+  try {
+    const { question, answer, targetPages, category, order, isActive } = req.body;
+    const faq = new FAQ({
+      question,
+      answer,
+      targetPages: Array.isArray(targetPages) ? targetPages : (targetPages ? [targetPages] : ["general"]),
+      category: category || "General",
+      order: Number(order) || 1,
+      isActive: isActive !== undefined ? isActive : true
+    });
+    await faq.save();
+    res.status(201).json(faq);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// PUT /api/admin/faqs/:id
+const updateFAQ = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updated = await FAQ.findByIdAndUpdate(id, req.body, { returnDocument: 'after', runValidators: true });
+    if (!updated) return res.status(404).json({ message: 'FAQ not found' });
+    res.status(200).json(updated);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// DELETE /api/admin/faqs/:id
+const deleteFAQ = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await FAQ.findByIdAndDelete(id);
+    res.status(200).json({ message: 'FAQ deleted' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getCMSPage,
   getAllCMSPages,
@@ -246,5 +325,10 @@ module.exports = {
   deleteBanner,
   getSettings,
   updateSettings,
-  getSiteSettings
+  getSiteSettings,
+  getFAQs,
+  getAllFAQsAdmin,
+  createFAQ,
+  updateFAQ,
+  deleteFAQ
 };

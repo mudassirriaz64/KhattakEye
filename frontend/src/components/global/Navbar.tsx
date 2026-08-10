@@ -143,7 +143,7 @@ const navLinks: NavLink[] = [
         { label: "Computer Lenses", path: "/shop/lenses/computer" },
       ]},
       { title: "Treatments", links: [
-        { label: "Blue Cut", path: "/shop/lenses/blue-cut" },
+        { label: "Blue Cut", path: "/shop/lenses/blue-light" },
         { label: "Anti Reflective", path: "/shop/lenses/anti-reflective" },
         { label: "Photochromic", path: "/shop/lenses/photochromic" },
         { label: "Scratch Resistant", path: "/shop/lenses/scratch-resistant" },

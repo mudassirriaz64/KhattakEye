@@ -348,6 +348,67 @@ const updateOrderStatus = async (req, res, next) => {
   }
 };
 
+const verifyPayment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { action, rejectionReason } = req.body; // action: 'approve' | 'reject'
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({ message: 'Action must be "approve" or "reject"' });
+    }
+
+    if (action === 'reject' && (!rejectionReason || !rejectionReason.trim())) {
+      return res.status(400).json({ message: 'A reason is required when rejecting a payment proof' });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    const adminId = req.user ? req.user._id : null;
+
+    if (!order.paymentProof) {
+      order.paymentProof = { status: 'pending' };
+    }
+
+    if (action === 'approve') {
+      order.paymentProof.status = 'approved';
+      order.paymentProof.rejectionReason = undefined;
+      order.paymentProof.verifiedBy = adminId;
+      order.paymentProof.verifiedAt = new Date();
+      order.status = 'confirmed';
+      
+      order.timeline.push({
+        status: 'confirmed',
+        label: 'Payment Verified & Confirmed',
+        date: new Date(),
+        description: 'Payment receipt verified and approved by admin.',
+        completed: true
+      });
+    } else {
+      order.paymentProof.status = 'rejected';
+      order.paymentProof.rejectionReason = rejectionReason.trim();
+      order.paymentProof.verifiedBy = adminId;
+      order.paymentProof.verifiedAt = new Date();
+      order.status = 'pending'; // Reset status so customer can resubmit
+
+      order.timeline.push({
+        status: 'pending',
+        label: 'Payment Rejected',
+        date: new Date(),
+        description: `Payment rejected by admin: "${rejectionReason.trim()}". Please resubmit a valid proof of payment.`,
+        completed: true
+      });
+    }
+
+    await order.save();
+    res.status(200).json(order);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getDashboardStats = async (req, res, next) => {
   try {
     const [productsCount, ordersCount, pendingOrdersCount, orders] = await Promise.all([
@@ -465,6 +526,7 @@ module.exports = {
   deleteProduct,
   getAdminOrders,
   updateOrderStatus,
+  verifyPayment,
   getDashboardStats,
   createCategory,
   updateCategory,

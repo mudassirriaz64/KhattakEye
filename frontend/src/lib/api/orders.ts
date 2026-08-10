@@ -25,6 +25,9 @@ export type CreateOrderPayload = {
     customization?: any;
   }>;
   paymentMethod: 'cod' | 'bank-transfer' | 'jazzcash' | 'easypaisa';
+  transactionId?: string;
+  paymentScreenshot?: string;
+  paymentNotes?: string;
   couponCode?: string;
   notes?: string;
 };
@@ -97,6 +100,26 @@ export const createOrderApi = async (payload: CreateOrderPayload) => {
       throw error;
     }
     const response = await api.post('/orders', payload);
+    return response.data;
+  }
+};
+
+export const resubmitPaymentProofApi = async (orderId: string, fileOrBase64: File | string, transactionId?: string, paymentNotes?: string) => {
+  if (typeof fileOrBase64 === "string") {
+    const response = await api.post(`/orders/${orderId}/resubmit-payment-proof`, {
+      paymentScreenshot: fileOrBase64,
+      transactionId,
+      paymentNotes
+    });
+    return response.data;
+  } else {
+    const formData = new FormData();
+    formData.append("paymentScreenshot", fileOrBase64);
+    if (transactionId) formData.append("transactionId", transactionId);
+    if (paymentNotes) formData.append("paymentNotes", paymentNotes);
+    const response = await api.post(`/orders/${orderId}/resubmit-payment-proof`, formData, {
+      headers: { "Content-Type": "multipart/form-data" }
+    });
     return response.data;
   }
 };

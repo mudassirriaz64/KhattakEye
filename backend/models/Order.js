@@ -63,8 +63,11 @@ const OrderItemSchema = new Schema({
 const PaymentProofSchema = new Schema({
   transactionId: { type: String, trim: true },
   screenshotUrl: { type: String },
+  fileHash: { type: String, index: true },
   notes: { type: String, trim: true },
   amountPaid: { type: Number },
+  status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+  rejectionReason: { type: String, trim: true },
   verifiedBy: { type: Schema.Types.ObjectId, ref: 'AdminUser', default: null },
   verifiedAt: { type: Date }
 }, { _id: false });
