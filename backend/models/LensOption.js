@@ -49,7 +49,7 @@ const LensOptionSchema = new Schema({
   hasColorOptions: { type: Boolean, default: false },
   colors: { type: [ColorSchema], default: [] },
   collections: { type: [CollectionSchema], default: [] },
-  delegatesToAppliesTo: { type: String, enum: ["sunglasses", "eyeglasses"] },
+  delegatesToAppliesTo: { type: String, enum: ["sunglasses", "eyeglasses", "common"] },
   isActive: { type: Boolean, default: true },
   order: { type: Number, default: 0 }
 }, {

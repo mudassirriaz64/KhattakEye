@@ -6,6 +6,7 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const LensOption = require('../models/LensOption');
 const { sendOrderConfirmationEmail } = require('../utils/email');
+const { sendWhatsAppPriceOnRequestNotification } = require('../utils/whatsapp');
 const Coupon = require('../models/Coupon');
 const { resolveImageUrl } = require('../utils/cloudinary');
 
@@ -366,6 +367,13 @@ exports.createOrder = async (req, res, next) => {
         await sendOrderConfirmationEmail(order);
       } catch (err) {
         console.error("Order confirmation email failed:", err);
+      }
+    } else {
+      // High Index / Price-On-Request order trigger: Notify WhatsApp admin immediately
+      try {
+        await sendWhatsAppPriceOnRequestNotification(order);
+      } catch (err) {
+        console.error("WhatsApp notification dispatch failed:", err);
       }
     }
 

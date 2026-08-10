@@ -5,10 +5,12 @@ const LensOption = require('../models/LensOption');
 // Drops and reseeds the LensOption collection with the confirmed data from ERP.md §14
 // (sunglasses tints unchanged; eyeglasses moved to collections[]/brands[]/lensTypes[]).
 
-const SUNGLASSES_OPTIONS = [
+// The 4 tints belong to Sun, so they live in the "Common (both)" column like Sun
+// itself. Sun delegates to common; the tints are its re-used leaf options.
+const COMMON_TINT_OPTIONS = [
   {
     slug: 'basic-tint',
-    appliesTo: 'sunglasses',
+    appliesTo: 'common',
     name: 'Basic Tint',
     price: 1000,
     description: 'Standard UV protection with classic solid tinting.',
@@ -29,7 +31,7 @@ const SUNGLASSES_OPTIONS = [
   },
   {
     slug: 'medium-premium-tint',
-    appliesTo: 'sunglasses',
+    appliesTo: 'common',
     name: 'Medium Premium Tint',
     price: 1800,
     description: 'Extra optical contrast and anti-glare back coating.',
@@ -49,7 +51,7 @@ const SUNGLASSES_OPTIONS = [
   },
   {
     slug: 'gradient-fashion-tint',
-    appliesTo: 'sunglasses',
+    appliesTo: 'common',
     name: 'Gradient Fashion Tint',
     price: 2500,
     description: 'Dark top fading to clear bottom. Preferred by drivers.',
@@ -68,7 +70,7 @@ const SUNGLASSES_OPTIONS = [
   },
   {
     slug: 'polarized-hd',
-    appliesTo: 'sunglasses',
+    appliesTo: 'common',
     name: 'Polarized HD Anti-Glare',
     price: 3500,
     description: 'Ultimate glare reduction. Blocks reflections from water/road.',
@@ -263,7 +265,7 @@ const EYEGLASSES_OPTIONS = [
     name: 'Sun',
     description: 'Darkened tint lenses for bright outdoor conditions.',
     info: 'Full UV protection with a comfortable dark tint for outdoor wear.',
-    delegatesToAppliesTo: 'sunglasses',
+    delegatesToAppliesTo: 'common',
     order: 8
   }
 ];
@@ -284,8 +286,8 @@ const seedLensOptions = async () => {
     await LensOption.deleteMany({});
     console.log('🗑️ Cleared existing LensOption documents.');
 
-    await LensOption.insertMany([...SUNGLASSES_OPTIONS, ...EYEGLASSES_OPTIONS]);
-    console.log(`✅ Inserted ${SUNGLASSES_OPTIONS.length} sunglasses + ${EYEGLASSES_OPTIONS.length} eyeglasses lens options.`);
+    await LensOption.insertMany([...COMMON_TINT_OPTIONS, ...EYEGLASSES_OPTIONS]);
+    console.log(`✅ Inserted ${COMMON_TINT_OPTIONS.length} common (Sun + tints) + ${EYEGLASSES_OPTIONS.length} eyeglasses lens options.`);
 
     const total = await LensOption.countDocuments();
     console.log(`📊 LensOption collection now has ${total} documents.`);

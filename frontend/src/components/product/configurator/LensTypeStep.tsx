@@ -17,7 +17,7 @@ export interface LensTypeOption {
   info: string;
   strengths?: string[];
   colors?: { name: string; hex: string }[];
-  delegatesToAppliesTo?: "sunglasses" | "eyeglasses";
+  delegatesToAppliesTo?: "sunglasses" | "eyeglasses" | "common";
   collections?: LensTypeOption[];
 }
 

@@ -1,45 +1,66 @@
 import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, AlertTriangle, Plus, Minus, History } from "lucide-react";
+import { Search, AlertTriangle, Plus, Minus, History, Edit3 } from "lucide-react";
 import type { InventoryItem, InventoryHistory } from "@/lib/admin-data";
 import { StockBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
-import { getPublicProductsApi, adminUpdateProductApi } from "@/lib/api/admin";
+import { getPublicProductsApi, adminUpdateProductApi, getCategoriesApi } from "@/lib/api/admin";
 
 const stockFilters = ["All", "In Stock", "Low Stock", "Out of Stock"];
+const kindFilters = ["All", "Glasses", "Lenses"];
 
 type ApiProduct = {
   _id?: string;
   id?: string;
   sku?: string;
   name: string;
+  kind?: string;
   images?: string[];
   category?: string;
   stock?: number;
   updatedAt?: string;
 };
 
+type ExtendedInventoryItem = InventoryItem & {
+  kind?: string;
+};
+
 export function AdminInventoryPage() {
-  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSearch = searchParams.get("search") || "";
+  
+  const [items, setItems] = useState<ExtendedInventoryItem[]>([]);
+  const [categories, setCategories] = useState<{ slug: string; name: string }[]>([]);
   const [total, setTotal] = useState(0);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [stockFilter, setStockFilter] = useState("All");
+  const [kindFilter, setKindFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState("All");
   const [showHistory, setShowHistory] = useState(false);
   const [selectedSku, setSelectedSku] = useState<string | null>(null);
   const [editStock, setEditStock] = useState<{ id: string; value: number } | null>(null);
 
   useEffect(() => {
-    getPublicProductsApi(1, 1000).then((data) => {
-      if (data && data.items) {
-        const mapped: InventoryItem[] = data.items.map((p: ApiProduct) => {
+    Promise.all([
+      getPublicProductsApi(1, 1000),
+      getCategoriesApi()
+    ]).then(([productsData, categoriesData]) => {
+      if (categoriesData && Array.isArray(categoriesData)) {
+        setCategories(categoriesData.map((c: { slug: string; name: string }) => ({ slug: c.slug, name: c.name })));
+      }
+
+      if (productsData && productsData.items) {
+        const mapped: ExtendedInventoryItem[] = productsData.items.map((p: ApiProduct) => {
           const stock = p.stock !== undefined ? p.stock : 10;
           const status = stock === 0 ? "out-of-stock" : stock <= 5 ? "low-stock" : "in-stock";
           return {
-            id: p._id || p.id,
-            sku: p.sku || `KT-${p._id?.substring(0, 6) || "INV"}`,
+            id: p._id || p.id || "",
+            kind: p.kind || "glasses",
+            sku: p.sku || `KT-${(p._id || "").substring(0, 6)}`,
             name: p.name,
             image: p.images && p.images[0] ? p.images[0] : "",
-            category: p.category || "Sunglasses",
+            category: p.category || "General",
             stock,
             reserved: 0,
             available: stock,
@@ -50,7 +71,7 @@ export function AdminInventoryPage() {
           };
         });
         setItems(mapped);
-        setTotal(data.total || mapped.length);
+        setTotal(productsData.total || mapped.length);
       }
     }).catch(() => {});
   }, []);
@@ -84,7 +105,9 @@ export function AdminInventoryPage() {
   const filtered = items.filter((item) => {
     const matchesSearch = !search || item.name.toLowerCase().includes(search.toLowerCase()) || item.sku.toLowerCase().includes(search.toLowerCase());
     const matchesStock = stockFilter === "All" || (stockFilter === "In Stock" && item.status === "in-stock") || (stockFilter === "Low Stock" && item.status === "low-stock") || (stockFilter === "Out of Stock" && item.status === "out-of-stock");
-    return matchesSearch && matchesStock;
+    const matchesKind = kindFilter === "All" || (kindFilter === "Glasses" && item.kind === "glasses") || (kindFilter === "Lenses" && item.kind === "lenses");
+    const matchesCategory = categoryFilter === "All" || item.category.toLowerCase() === categoryFilter.toLowerCase();
+    return matchesSearch && matchesStock && matchesKind && matchesCategory;
   });
   const histForItem: InventoryHistory[] = [];
 
@@ -116,15 +139,59 @@ export function AdminInventoryPage() {
 
       {!showHistory ? (
         <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)]">
-          <div className="flex flex-col gap-4 border-b border-[color:var(--color-border)] p-4 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-4 border-b border-[color:var(--color-border)] p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative flex-1 sm:max-w-xs">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-text-tertiary)]" />
-              <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search inventory..." className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] py-2.5 pl-10 pr-4 text-sm" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  if (!e.target.value) {
+                    searchParams.delete("search");
+                    setSearchParams(searchParams);
+                  }
+                }}
+                placeholder="Search inventory by SKU or Name..."
+                className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] py-2.5 pl-10 pr-4 text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-accent-teal)] focus:outline-none"
+              />
             </div>
-            <div className="flex gap-1">
-              {stockFilters.map((f) => (
-                <button key={f} type="button" onClick={() => setStockFilter(f)} className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition-colors", stockFilter === f ? "bg-[color:var(--color-brand-primary)] text-white" : "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-secondary)] hover:text-[color:var(--color-text-primary)]")}>{f}</button>
-              ))}
+            
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex gap-1">
+                {kindFilters.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setKindFilter(k)}
+                    className={cn(
+                      "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
+                      kindFilter === k ? "bg-[color:var(--color-brand-primary)] text-white" : "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-secondary)] hover:text-[color:var(--color-text-primary)]"
+                    )}
+                  >
+                    {k}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-1 border-l border-[color:var(--color-border)] pl-2">
+                {stockFilters.map((f) => (
+                  <button key={f} type="button" onClick={() => setStockFilter(f)} className={cn("rounded-lg px-3 py-1.5 text-xs font-medium transition-colors", stockFilter === f ? "bg-[color:var(--color-brand-primary)] text-white" : "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-secondary)] hover:text-[color:var(--color-text-primary)]")}>{f}</button>
+                ))}
+              </div>
+
+              {categories.length > 0 && (
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-xs text-[color:var(--color-text-secondary)] focus:outline-none"
+                >
+                  <option value="All">All Categories</option>
+                  {categories.map((c) => (
+                    <option key={c.slug} value={c.slug}>{c.name}</option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
@@ -132,7 +199,7 @@ export function AdminInventoryPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[color:var(--color-border)]">
-                  {["Product", "SKU", "Stock", "Reserved", "Available", "Status", "Last Restocked", "Actions"].map((h) => (
+                  {["Product", "Kind", "SKU", "Category", "Stock", "Reserved", "Available", "Status", "Last Restocked", "Actions"].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">{h}</th>
                   ))}
                 </tr>
@@ -147,7 +214,13 @@ export function AdminInventoryPage() {
                           <span className="text-sm font-medium text-[color:var(--color-text-primary)]">{item.name}</span>
                         </div>
                       </td>
+                      <td className="px-4 py-3">
+                        <span className={cn("inline-block rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider", item.kind === "lenses" ? "bg-teal-500/10 text-teal-600" : "bg-amber-500/10 text-amber-600")}>
+                          {item.kind === "lenses" ? "Lenses" : "Glasses"}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-xs text-[color:var(--color-text-tertiary)]">{item.sku}</td>
+                      <td className="px-4 py-3 text-xs text-[color:var(--color-text-tertiary)] capitalize">{item.category}</td>
                       <td className="px-4 py-3">
                         {editStock?.id === item.id ? (
                           <div className="flex items-center gap-1">
@@ -166,7 +239,14 @@ export function AdminInventoryPage() {
                       <td className="px-4 py-3 text-xs text-[color:var(--color-text-tertiary)]">{item.lastRestocked}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => { setSelectedSku(item.sku); setShowHistory(true); }} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]">
+                          <Link
+                            to={item.kind === "lenses" ? `/admin/products/${item.id}/edit-lenses` : `/admin/products/${item.id}/edit-glasses`}
+                            title="Edit Product Catalog"
+                            className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </Link>
+                          <button type="button" onClick={() => { setSelectedSku(item.sku); setShowHistory(true); }} title="View Stock History" className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]">
                             <History className="h-3.5 w-3.5" />
                           </button>
                         </div>
@@ -188,7 +268,7 @@ export function AdminInventoryPage() {
               {selectedSku && (
                 <button type="button" onClick={() => setSelectedSku(null)} className="text-xs text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]">Show All</button>
               )}
-              <button type="button" onClick={() => setShowHistory(false)} className="text-xs text-[color:var(--color-accent-teal)] hover:underline">Back to Stock</button>
+              <button type="button" onClick={() => setShowHistory(false)} className="text-xs text-[color:var(--color-accent-teal)] hover.underline">Back to Stock</button>
             </div>
           </div>
           <div className="mt-4 space-y-2">
@@ -226,3 +306,4 @@ export function AdminInventoryPage() {
     </div>
   );
 }
+

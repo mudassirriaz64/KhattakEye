@@ -86,8 +86,7 @@ const toLensTypeOption = (opt: ApiLensOption): LensTypeOption => ({
   priceOnRequest: false,
   description: opt.description || "",
   info: opt.info || "",
-  delegatesToAppliesTo:
-    opt.delegatesToAppliesTo === "common" ? undefined : opt.delegatesToAppliesTo,
+  delegatesToAppliesTo: opt.delegatesToAppliesTo,
   collections: opt.collections && opt.collections.length > 0
     ? opt.collections.map(toLensCollection)
     : undefined,

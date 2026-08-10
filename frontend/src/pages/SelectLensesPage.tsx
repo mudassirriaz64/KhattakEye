@@ -135,10 +135,10 @@ export function SelectLensesPage() {
         setLensLoadError(true);
       }
 
-      // Also fetch sunglasses options for eyeglasses sunglasses delegation (Sun coating)
+      // Also fetch the common tints (Sun's re-used options) for eyeglasses Sun delegation
       if (product.category === "eyeglasses") {
         try {
-          const sunOpts = await getLensOptionsApi("sunglasses");
+          const sunOpts = await getLensOptionsApi("common");
           setDelegatedOptions(sunOpts);
           const sunDef = getDefaultSelection(sunOpts);
           setDelegatedSelection(sunDef);
@@ -181,7 +181,7 @@ export function SelectLensesPage() {
   const lensDetail = resolveSelection(lensOptions, lensSelection);
   const delegatedDetail = isEyeglasses ? resolveSelection(delegatedOptions, delegatedSelection) : null;
   const currentLensOption = lensDetail?.type ?? lensOptions[0];
-  const isDelegated = isEyeglasses && currentLensOption?.delegatesToAppliesTo === "sunglasses";
+  const isDelegated = isEyeglasses && currentLensOption?.delegatesToAppliesTo === "common";
   const effectiveLensPrice = (isDelegated ? delegatedSelection?.price : lensSelection?.price) ?? null;
   const isPriceOnRequest = isDelegated
     ? (delegatedSelection?.priceOnRequest ?? false)

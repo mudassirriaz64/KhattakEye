@@ -839,9 +839,10 @@ function LensOptionEditor({
                       <option value="">None (shows its own options)</option>
                       <option value="sunglasses">Sunglasses options</option>
                       <option value="eyeglasses">Eyeglasses options</option>
+                      <option value="common">Common (both) options</option>
                     </select>
                     <p className="mt-1 text-[11px] text-[color:var(--color-text-tertiary)]">
-                      Used only by “Sun” so it reuses the sunglasses tints.
+                      “Sun” reuses the common tints (Basic Tint, Medium Premium Tint, Gradient, Polarized HD).
                     </p>
                   </div>
                 )}
@@ -976,7 +977,7 @@ export default function LensConfigurationPage() {
           />
         </div>
         <div className="flex gap-1.5">
-          {(["all", "sunglasses", "eyeglasses", "common"] as const).map((t) => (
+          {(["all", "eyeglasses", "common"] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -1057,6 +1058,18 @@ export default function LensConfigurationPage() {
                   <Info className="h-3 w-3 text-[color:var(--color-text-tertiary)]" />
                   {o.info ? "Has hover info" : "No hover info"}
                 </div>
+                {o.delegatesToAppliesTo && (
+                  <div className="flex items-start gap-1.5">
+                    <Layers className="h-3 w-3 mt-0.5 text-[color:var(--color-text-tertiary)] flex-shrink-0" />
+                    <span>
+                      Reuses:{" "}
+                      {options
+                        .filter((d) => d.appliesTo === o.delegatesToAppliesTo && d._id !== o._id)
+                        .map((d) => d.name)
+                        .join(", ") || "—"}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="mt-3 flex items-center gap-2">
