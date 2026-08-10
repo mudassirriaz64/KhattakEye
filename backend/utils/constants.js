@@ -1,9 +1,12 @@
 const ORDER_STATUSES = {
   PENDING: 'pending',
+  PENDING_QUOTE: 'pending-quote',
   PAYMENT_VERIFICATION: 'payment-verification',
   CONFIRMED: 'confirmed',
   PROCESSING: 'processing',
+  PACKED: 'packed',
   SHIPPED: 'shipped',
+  OUT_FOR_DELIVERY: 'out-for-delivery',
   DELIVERED: 'delivered',
   CANCELLED: 'cancelled'
 };

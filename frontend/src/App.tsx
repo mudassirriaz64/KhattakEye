@@ -59,6 +59,7 @@ import { AdminAddGlassesPage } from "@/pages/admin/AdminAddGlassesPage";
 import { AdminAddLensesPage } from "@/pages/admin/AdminAddLensesPage";
 import { AdminCategoriesPage } from "@/pages/admin/CategoriesPage";
 import { AdminLensesCategoriesPage } from "@/pages/admin/LensesCategoriesPage";
+import AdminLensConfigurationPage from "@/pages/admin/LensConfigurationPage";
 import { AdminBrandsPage } from "@/pages/admin/BrandsPage";
 import { AdminOrdersListPage } from "@/pages/admin/OrdersListPage";
 import { AdminOrderDetailsPage } from "@/pages/admin/OrderDetailsPage";
@@ -140,6 +141,7 @@ function AppRoutes() {
           <Route path="categories" element={<AdminCategoriesPage />} />
           <Route path="categories/glasses" element={<AdminCategoriesPage />} />
           <Route path="categories/lenses" element={<AdminLensesCategoriesPage />} />
+          <Route path="buy-lenses" element={<AdminLensConfigurationPage />} />
           <Route path="brands" element={<AdminBrandsPage />} />
           <Route path="orders" element={<AdminOrdersListPage />} />
           <Route path="orders/:id" element={<AdminOrderDetailsPage />} />

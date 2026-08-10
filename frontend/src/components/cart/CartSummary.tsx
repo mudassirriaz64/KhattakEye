@@ -4,6 +4,7 @@ import { useCartStore } from "@/lib/stores/cart-store";
 import { Button } from "@/components/primitives/Button";
 
 export function CartSummary() {
+  const items = useCartStore((s) => s.items);
   const getSubtotal = useCartStore((s) => s.getSubtotal);
   const getDiscount = useCartStore((s) => s.getDiscount);
   const getShipping = useCartStore((s) => s.getShipping);
@@ -13,6 +14,7 @@ export function CartSummary() {
   const discount = getDiscount();
   const shipping = getShipping();
   const total = getTotal();
+  const hasPriceOnRequest = items.some((i) => i.customization?.priceOnRequest === true);
 
   const trustItems = [
     { icon: Shield, text: "Secure Checkout" },
@@ -53,6 +55,11 @@ export function CartSummary() {
           <span className="text-base font-semibold text-[color:var(--color-text-primary)]">Total</span>
           <span className="text-xl font-bold text-[color:var(--color-text-primary)]">Rs. {total.toLocaleString()}</span>
         </div>
+        {hasPriceOnRequest && (
+          <p className="mt-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-[11px] font-medium text-amber-700">
+            One or more lenses are on request — final total is confirmed by our team before payment.
+          </p>
+        )}
       </div>
 
       <Link to="/checkout" className="mt-5 block">

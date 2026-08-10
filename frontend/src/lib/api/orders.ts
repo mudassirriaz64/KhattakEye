@@ -31,11 +31,14 @@ export type CreateOrderPayload = {
 
 export const createOrderApi = async (payload: CreateOrderPayload) => {
   let fileToUpload: File | null = null;
-  
+  let hasFilePrescription = false;
+
   if (payload.items && Array.isArray(payload.items)) {
     for (const item of payload.items) {
-      if (item.customization?.prescriptionFileCacheKey) {
-        const file = prescriptionFilesCache.get(item.customization.prescriptionFileCacheKey);
+      if (item.customization?.prescriptionType === "file") {
+        hasFilePrescription = true;
+        const key = item.customization.prescriptionFileCacheKey;
+        const file = key ? prescriptionFilesCache.get(key) : undefined;
         if (file) {
           fileToUpload = file;
           break;
@@ -83,6 +86,16 @@ export const createOrderApi = async (payload: CreateOrderPayload) => {
     prescriptionFilesCache.clear();
     return response.data;
   } else {
+    // Reload-safety guard (Rules.md §6b): a "file" prescription whose photo is
+    // missing from the in-memory cache must not be submitted silently — the
+    // customer needs to reselect the prescription photo.
+    if (hasFilePrescription) {
+      const error: Error & { code?: string } = new Error(
+        "Your prescription photo could not be found after reload. Please remove the item from your cart and re-select your prescription photo."
+      );
+      error.code = "PRESCRIPTION_FILE_MISSING";
+      throw error;
+    }
     const response = await api.post('/orders', payload);
     return response.data;
   }

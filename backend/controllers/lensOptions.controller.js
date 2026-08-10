@@ -6,8 +6,14 @@ exports.getLensOptions = async (req, res, next) => {
     const { appliesTo } = req.query;
 
     const filter = { isActive: true };
-    if (appliesTo === 'sunglasses' || appliesTo === 'eyeglasses') {
-      filter.appliesTo = appliesTo;
+    // Common options (e.g. Sun) serve the eyeglasses flow; the sunglasses flow
+    // stays pure so delegated tints never re-list a delegating option.
+    if (appliesTo === 'eyeglasses') {
+      filter.appliesTo = { $in: ['eyeglasses', 'common'] };
+    } else if (appliesTo === 'sunglasses') {
+      filter.appliesTo = 'sunglasses';
+    } else if (appliesTo === 'common') {
+      filter.appliesTo = 'common';
     }
 
     const lensOptions = await LensOption.find(filter).sort({ order: 1 });

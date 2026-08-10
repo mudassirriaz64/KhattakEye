@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Grid3X3, Eye, Bookmark, ShoppingCart, Users, FileText, BarChart3, Settings, LogOut, ChevronLeft,
-  ShieldCheck, Star, MessageSquare, ClipboardList, Image, Tag, Mail, Globe, Layout,
+  ShieldCheck, Star, MessageSquare, ClipboardList, Image, Tag, Mail, Globe, Layout, Glasses,
   TrendingUp, Lock, Bell, Activity, UserCog, ScrollText, Shield, type LucideIcon,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/stores/admin-store";
@@ -24,6 +24,7 @@ const navItems: NavItem[] = [
   // "matches" disambiguates the shared /admin/categories prefix so the two items never both activate.
   { to: "/admin/categories", icon: Grid3X3, label: "Glasses Categories", matches: ["/admin/categories", "/admin/categories/glasses"] },
   { to: "/admin/categories/lenses", icon: Eye, label: "Lenses Categories", matches: ["/admin/categories/lenses"] },
+  { to: "/admin/buy-lenses", icon: Glasses, label: "Buy Lenses Config" },
   { to: "/admin/brands", icon: Bookmark, label: "Brands" },
   { to: "/admin/payments", icon: ShieldCheck, label: "Payments" },
   { to: "/admin/inventory", icon: ClipboardList, label: "Inventory" },

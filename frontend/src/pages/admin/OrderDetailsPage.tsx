@@ -13,40 +13,50 @@ const statusFlow = ["pending", "payment-verification", "confirmed", "processing"
 
 export function AdminOrderDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const [order, setOrder] = useState<AdminOrderDetail>(adminOrders[0]);
+  const [order, setOrder] = useState<AdminOrderDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [currentStatus, setCurrentStatus] = useState("pending");
   const [showStatusMenu, setShowStatusMenu] = useState(false);
 
   useEffect(() => {
     if (id) {
-      getOrderByIdApi(id).then((data) => {
-        if (data) {
-          setOrder({
-            id: data._id || id,
-            orderNumber: data.orderNumber || id,
-            customer: {
-              name: data.customerName || "Customer",
-              email: data.customerEmail || "customer@example.com",
-              phone: data.customerPhone || "",
-              avatar: null
-            },
-            status: data.status || "pending",
-            shippingAddress: data.shippingAddress ? `${data.shippingAddress.street}, ${data.shippingAddress.city}` : "Address",
-            items: data.items || [],
-            subtotal: data.subtotal ?? adminOrders[0].subtotal,
-            shipping: data.shipping ?? adminOrders[0].shipping,
-            discount: data.discount ?? adminOrders[0].discount,
-            total: data.total || 0,
-            paymentMethod: data.paymentMethod || "COD",
-            transactionId: data.transactionId ?? adminOrders[0].transactionId,
-            paymentStatus: data.paymentStatus ?? adminOrders[0].paymentStatus,
-            estimatedDelivery: data.estimatedDelivery ?? adminOrders[0].estimatedDelivery,
-            date: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
-            timeline: data.timeline || adminOrders[0].timeline
-          });
-          setCurrentStatus(data.status || "pending");
-        }
-      }).catch(() => {});
+      setLoading(true);
+      getOrderByIdApi(id)
+        .then((data) => {
+          if (data) {
+            setOrder({
+              id: data._id || id,
+              orderNumber: data.orderNumber || id,
+              customer: {
+                name: data.customerName || "Customer",
+                email: data.customerEmail || "",
+                phone: data.customerPhone || "",
+                avatar: null
+              },
+              status: data.status || "pending",
+              shippingAddress: data.shippingAddress
+                ? `${data.shippingAddress.street || ""}, ${data.shippingAddress.city || ""}, ${data.shippingAddress.province || ""}`.replace(/^, /, "")
+                : "Standard Delivery Address",
+              items: data.items || [],
+              subtotal: data.subtotal ?? 0,
+              shipping: data.shipping ?? 0,
+              discount: data.discount ?? 0,
+              total: data.total || 0,
+              paymentMethod: data.paymentMethod || "COD",
+              transactionId: data.paymentProof?.transactionId || undefined,
+              paymentStatus: data.status === "payment-verification" ? "Verification Required" : data.status === "cancelled" ? "Cancelled" : "Confirmed",
+              estimatedDelivery: data.estimatedDelivery ? new Date(data.estimatedDelivery).toLocaleDateString() : undefined,
+              date: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
+              timeline: data.timeline || [
+                { status: "pending", label: "Order Placed", date: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : "Today", description: "Order received into system", completed: true },
+                { status: data.status || "pending", label: "Current Status", date: "Now", description: `Order is currently ${data.status}`, completed: true }
+              ]
+            });
+            setCurrentStatus(data.status || "pending");
+          }
+        })
+        .catch((err) => console.error("Failed to load order details:", err))
+        .finally(() => setLoading(false));
     }
   }, [id]);
 
@@ -61,6 +71,25 @@ export function AdminOrderDetailsPage() {
       }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-sm text-[color:var(--color-text-tertiary)]">Loading order details...</p>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-base text-[color:var(--color-text-primary)]">Order not found</p>
+        <Link to="/admin/orders" className="mt-4 inline-block text-xs font-semibold text-[color:var(--color-brand-primary)] hover:underline">
+          Back to Orders
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div>

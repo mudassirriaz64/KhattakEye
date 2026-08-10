@@ -40,9 +40,13 @@ const CustomizationSchema = new Schema({
   usageType: { type: String },
   multifocalSubtype: { type: String },
   lensCoating: { type: String },
+  lensOptionCollectionSlug: { type: String },
+  lensOptionBrandSlug: { type: String },
+  lensOptionTypeSlug: { type: String },
+  priceOnRequest: { type: Boolean },
   tintColor: { type: String },
   tintStrength: { type: String },
-  priceAdded: { type: Number, default: 0 }
+  priceAdded: { type: Number, default: null }
 }, { _id: false });
 
 const OrderItemSchema = new Schema({

@@ -7,25 +7,25 @@ import { useCartStore, prescriptionFilesCache } from "@/lib/stores/cart-store";
 import { useUiStore } from "@/lib/stores/ui-store";
 import { getProductBySlug } from "@/lib/api/products";
 import { getLensOptionsApi } from "@/lib/api/lens-options";
-import { type Product } from "@/lib/shop-data";
 import { AudioInstructionPlayer } from "@/components/product/configurator/AudioInstructionPlayer";
 import { PrescriptionFormStep } from "@/components/product/configurator/PrescriptionFormStep";
-import { LensTypeStep, type LensTypeOption } from "@/components/product/configurator/LensTypeStep";
+import {
+  LensTypeStep,
+  type LensTypeOption,
+  type LensSelection,
+  getDefaultSelection,
+  resolveSelection
+} from "@/components/product/configurator/LensTypeStep";
 import { ConfiguratorReviewStep } from "@/components/product/configurator/ConfiguratorReviewStep";
 import { SelectableOptionCard } from "@/components/product/configurator/SelectableOptionCard";
 import { type PrescriptionData } from "@/components/product/configurator/PrescriptionSummaryTable";
 
 // Usage types for eyeglasses (category "eyeglasses") — ERP.md §6 enum values
-const USAGE_OPTIONS: { id: "distance" | "multifocal" | "reading" | "non-prescription"; name: string; description: string }[] = [
+const USAGE_OPTIONS: { id: "distance" | "reading" | "non-prescription"; name: string; description: string }[] = [
   {
     id: "distance",
     name: "Distance",
     description: "For driving, TV, and everyday long-distance vision."
-  },
-  {
-    id: "multifocal",
-    name: "Multifocal",
-    description: "Multiple focal zones combined into a single lens."
   },
   {
     id: "reading",
@@ -36,143 +36,6 @@ const USAGE_OPTIONS: { id: "distance" | "multifocal" | "reading" | "non-prescrip
     id: "non-prescription",
     name: "Non Prescription / No Eyesight",
     description: "No prescription needed — standard lenses without power."
-  }
-];
-
-// Revealed inline only when "Multifocal" is selected — ERP.md §6 multifocalSubtype enum
-const MULTIFOCAL_SUBTYPES: { id: "progressive" | "bifocal"; name: string; description: string }[] = [
-  {
-    id: "progressive",
-    name: "Progressive (Varifocal)",
-    description: "Seamless far, intermediate, and near vision in one lens."
-  },
-  {
-    id: "bifocal",
-    name: "Bifocal",
-    description: "Two zones — distance and near reading segment below."
-  }
-];
-
-// Offline fallback only — the API is the source of truth (GET /api/lens-options)
-const FALLBACK_LENS_OPTIONS: LensTypeOption[] = [
-  {
-    id: "basic-tint",
-    name: "Basic Tint",
-    price: 1000,
-    description: "Standard UV protection with classic solid tinting.",
-    info: "Best for casual daily wear. Provides 100% UV protection with clear view contrast.",
-    strengths: ["Light (35%)", "Medium (50%)", "Dark (85%)"],
-    colors: [
-      { name: "Solid Black", hex: "#1f2937" },
-      { name: "Solid Brown", hex: "#78350f" },
-      { name: "Solid Green", hex: "#064e3b" }
-    ]
-  },
-  {
-    id: "medium-premium-tint",
-    name: "Medium Premium Tint",
-    price: 1800,
-    description: "Extra optical contrast and anti-glare back coating.",
-    info: "Reduces eye strain under bright conditions. Anti-reflective back coatings prevent reflection shadows.",
-    strengths: ["Medium (50%)", "Dark (85%)"],
-    colors: [
-      { name: "Solid Black", hex: "#1f2937" },
-      { name: "Solid Brown", hex: "#78350f" },
-      { name: "Solid Green", hex: "#064e3b" }
-    ]
-  },
-  {
-    id: "gradient-fashion-tint",
-    name: "Gradient Fashion Tint",
-    price: 2500,
-    description: "Dark top fading to clear bottom. Preferred by drivers.",
-    info: "Fades down elegantly. The darker top blocks overhead sun rays, while the lighter bottom helps you view dashboards clearly.",
-    strengths: ["Standard Gradient"],
-    colors: [
-      { name: "Smoke Gradient", hex: "linear-gradient(180deg, #1f2937 0%, rgba(31,41,55,0.1) 100%)" },
-      { name: "Amber Gradient", hex: "linear-gradient(180deg, #78350f 0%, rgba(120,53,15,0.1) 100%)" },
-      { name: "Forest Gradient", hex: "linear-gradient(180deg, #064e3b 0%, rgba(6,78,59,0.1) 100%)" }
-    ]
-  },
-  {
-    id: "polarized-hd",
-    name: "Polarized HD Anti-Glare",
-    price: 3500,
-    description: "Ultimate glare reduction. Blocks reflections from water/road.",
-    info: "Contains vertical polarization filters. Ideal for driving, sports, marine outings. Eliminates blinding reflections.",
-    strengths: ["Dark Polarized (85%)"],
-    colors: [
-      { name: "HD Polarized Grey", hex: "#0f172a" },
-      { name: "HD Polarized Brown", hex: "#451a03" }
-    ]
-  }
-];
-
-// Eyeglasses coating fallback — mirrors the §8b/§14 seed (placeholder prices)
-const FALLBACK_EYEGLASSES_OPTIONS: LensTypeOption[] = [
-  {
-    id: "clear-antiglare",
-    name: "Clear & Antiglare",
-    price: 0,
-    description: "Essential clear lenses with antiglare coating.",
-    info: "Reduces reflections from screens and headlights for clearer vision.",
-    hasTiers: true,
-    tiers: [
-      { slug: 'standard-white', name: 'Standard White Lens', price: 600, description: 'Standard white plastic lenses for normal use.' },
-      { slug: 'basic-antiglare', name: 'Basic Anti Glare Lens', price: 1200, description: 'Lenses with UV-protective, anti-reflective coatings for everyday use.' },
-      { slug: 'medium-antiglare', name: 'Medium Anti Glare Lens', price: 2500, description: 'Quality 1.56 index lenses with UV-protective, anti-scratch, anti-reflective coatings.' },
-      { slug: 'premium-antiglare', name: 'Premium Anti Glare Lens', price: 4000, description: 'Our advanced lens with enhanced clarity, UV-protective, anti-scratch and premium anti-reflective coatings.' },
-      { slug: 'thin-antiglare-167', name: '1.67 Index Thin Antiglare Lens', price: 9000, description: '1.67 index thin lens for prescription above 4.00 numbers having all the premium features.' }
-    ]
-  },
-  {
-    id: "blue-light-filtering",
-    name: "Blue Light Filtering",
-    price: 0,
-    description: "Filters harmful blue light from digital screens.",
-    info: "Reduces eye strain, headaches, and sleep disruption during long screen hours.",
-    hasTiers: true,
-    tiers: [
-      { slug: 'basic-blue-light', name: 'Basic Blue Light Lens', price: 800, description: 'Our basic blue light filtering lens. Special filtering technology reduces exposure to potentially harmful blue light.' },
-      { slug: 'blue-light-smart', name: 'Blue Light Smart Lens', price: 1500, description: 'Our blue light smart filtering lens, with anti-glare coating for all-day, anywhere protection.' },
-      { slug: 'blue-light-plus', name: 'Blue Light Plus Lens', price: 2500, description: 'Our blue light plus filtering lens, with anti-glare coating, UV protection for all-day long.' },
-      { slug: 'premium-blue-light', name: 'Premium Blue Light Lens', price: 4000, description: 'Our most advanced blue light filtering lens, with anti-glare, UV protection coating for all-day, having all the premium features.' }
-    ]
-  },
-  {
-    id: "transitions-photochromic",
-    name: "Transitions® & Photochromic",
-    price: 0,
-    description: "Clear indoors, automatically darkens in sunlight.",
-    info: "One pair of glasses for both indoor and outdoor use.",
-    hasTiers: true,
-    tiers: [
-      { slug: 'basic-transition', name: 'Basic Transition Lens', price: 1200, description: 'Basic plastic transition lens which turns dark, gray or brown in sunlight and remain white indoor.' },
-      { slug: 'medium-transition', name: 'Medium Transition Lens', price: 2000, description: 'Transition lenses are fully clear indoors and darken outdoors to provide your eyes with a better vision experience and protection.' },
-      { slug: 'premium-transition', name: 'Premium Transition Lens', price: 3200, description: 'Premium transition lenses are fully clear indoors and darken outdoors in seconds to provide your eyes with a better vision experience and protection. They block 100% UVA/UVB harmful light from the sun.' }
-    ]
-  },
-  {
-    id: "blue-light-transition",
-    name: "Blue Light + Transition",
-    price: 0,
-    description: "Blue light filtering combined with light-adaptive lenses.",
-    info: "Day-to-night protection with automatic darkening and screen glare reduction.",
-    hasTiers: true,
-    tiers: [
-      { slug: 'basic-blue-light-transition', name: 'Basic Blue Light + Transition Lens', price: 1800, description: 'Our basic blue light + transition lens has special filtering technology which reduces exposure to harmful blue light that darken in direct sunlight.' },
-      { slug: 'medium-blue-light-transition', name: 'Medium Blue Light + Transition Lens', price: 3200, description: 'Medium blue light + transition lens, with anti-glare coating, UV protection for all-day long that darken in direct sunlight.' },
-      { slug: 'premium-blue-light-transition', name: 'Premium Blue Light + Transition Lens', price: 4600, description: 'Our most advanced blue light + transition lens, with anti-glare, UV protection coating for all-day, having all the premium features which turns instant dark in sunlight. They block 100% UVA/UVB harmful light from the sun.' }
-    ]
-  },
-  {
-    id: "sun",
-    name: "Sun",
-    price: 0,
-    description: "Darkened tint lenses for bright outdoor conditions.",
-    info: "Full UV protection with a comfortable dark tint for outdoor wear.",
-    hasTiers: false,
-    delegatesToAppliesTo: "sunglasses"
   }
 ];
 
@@ -220,24 +83,18 @@ export function SelectLensesPage() {
   const [prescriptionText, setPrescriptionText] = useState("");
 
   // Usage state (eyeglasses only) — ERP.md §6 enum values
-  const [usageType, setUsageType] = useState<"distance" | "multifocal" | "reading" | "non-prescription">("distance");
-  const [multifocalSubtype, setMultifocalSubtype] = useState<"progressive" | "bifocal">("progressive");
+  const [usageType, setUsageType] = useState<"distance" | "reading" | "non-prescription">("distance");
 
-  // Lens State — fallback chosen by category once the product loads; the API is the source of truth
-  const [lensOptions, setLensOptions] = useState<LensTypeOption[]>(FALLBACK_LENS_OPTIONS);
-  const [selectedLensId, setSelectedLensId] = useState(FALLBACK_LENS_OPTIONS[0].id);
-  const [selectedLensPrice, setSelectedLensPrice] = useState(FALLBACK_LENS_OPTIONS[0].price);
-  const [selectedStrength, setSelectedStrength] = useState(FALLBACK_LENS_OPTIONS[0].strengths?.[0] ?? "");
-  const [selectedColorNameOpt, setSelectedColorNameOpt] = useState(FALLBACK_LENS_OPTIONS[0].colors?.[0]?.name ?? "");
-
-  // Delegated sunglasses states when sunglasses coating (Sun) is chosen on eyeglasses
-  const [delegatedOptions, setDelegatedOptions] = useState<LensTypeOption[]>(FALLBACK_LENS_OPTIONS);
-  const [delegatedLensId, setDelegatedLensId] = useState(FALLBACK_LENS_OPTIONS[0].id);
-  const [delegatedLensPrice, setDelegatedLensPrice] = useState(FALLBACK_LENS_OPTIONS[0].price);
-  const [delegatedStrength, setDelegatedStrength] = useState(FALLBACK_LENS_OPTIONS[0].strengths?.[0] ?? "");
-  const [delegatedColorName, setDelegatedColorName] = useState(FALLBACK_LENS_OPTIONS[0].colors?.[0]?.name ?? "");
-
-  const [selectedLensTierSlug, setSelectedLensTierSlug] = useState("");
+  // Lens state — single path object per branch (main + delegated Sun); the API is the source of truth
+  const [lensOptions, setLensOptions] = useState<LensTypeOption[]>([]);
+  const [lensSelection, setLensSelection] = useState<LensSelection | null>(null);
+  const [selectedStrength, setSelectedStrength] = useState("");
+  const [selectedColorNameOpt, setSelectedColorNameOpt] = useState("");
+  const [delegatedOptions, setDelegatedOptions] = useState<LensTypeOption[]>([]);
+  const [delegatedSelection, setDelegatedSelection] = useState<LensSelection | null>(null);
+  const [delegatedStrength, setDelegatedStrength] = useState("");
+  const [delegatedColorName, setDelegatedColorName] = useState("");
+  const [lensLoadError, setLensLoadError] = useState(false);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -262,76 +119,36 @@ export function SelectLensesPage() {
     async function fetchLensOptions() {
       if (!product) return;
       const appliesTo = product.category === "eyeglasses" ? "eyeglasses" : "sunglasses";
-      const fallback = appliesTo === "eyeglasses" ? FALLBACK_EYEGLASSES_OPTIONS : FALLBACK_LENS_OPTIONS;
       try {
         const options = await getLensOptionsApi(appliesTo);
-        if (options.length > 0) {
-          setLensOptions(options);
-          setSelectedLensId(options[0].id);
-          const firstOpt = options[0];
-          if (firstOpt.hasTiers && firstOpt.tiers && firstOpt.tiers.length > 0) {
-            setSelectedLensPrice(firstOpt.tiers[0].price);
-            setSelectedLensTierSlug(firstOpt.tiers[0].slug);
-          } else {
-            setSelectedLensPrice(firstOpt.price);
-            setSelectedLensTierSlug("");
-          }
-          setSelectedStrength(firstOpt.strengths?.[0] ?? "");
-          setSelectedColorNameOpt(firstOpt.colors?.[0]?.name ?? "");
-        } else {
-          setLensOptions(fallback);
-          setSelectedLensId(fallback[0].id);
-          const firstOpt = fallback[0];
-          if (firstOpt.hasTiers && firstOpt.tiers && firstOpt.tiers.length > 0) {
-            setSelectedLensPrice(firstOpt.tiers[0].price);
-            setSelectedLensTierSlug(firstOpt.tiers[0].slug);
-          } else {
-            setSelectedLensPrice(firstOpt.price);
-            setSelectedLensTierSlug("");
-          }
-          setSelectedStrength(firstOpt.strengths?.[0] ?? "");
-          setSelectedColorNameOpt(firstOpt.colors?.[0]?.name ?? "");
+        setLensOptions(options);
+        const def = getDefaultSelection(options);
+        setLensSelection(def);
+        if (def) {
+          const leaf = resolveSelection(options, def).type;
+          if (leaf?.strengths?.length) setSelectedStrength(leaf.strengths[0]);
+          if (leaf?.colors?.length) setSelectedColorNameOpt(leaf.colors[0].name);
         }
+        setLensLoadError(false);
       } catch (err) {
-        console.error("Failed to fetch lens options, using fallback:", err);
-        setLensOptions(fallback);
-        setSelectedLensId(fallback[0].id);
-        const firstOpt = fallback[0];
-        if (firstOpt.hasTiers && firstOpt.tiers && firstOpt.tiers.length > 0) {
-          setSelectedLensPrice(firstOpt.tiers[0].price);
-          setSelectedLensTierSlug(firstOpt.tiers[0].slug);
-        } else {
-          setSelectedLensPrice(firstOpt.price);
-          setSelectedLensTierSlug("");
-        }
-        setSelectedStrength(firstOpt.strengths?.[0] ?? "");
-        setSelectedColorNameOpt(firstOpt.colors?.[0]?.name ?? "");
+        console.error("Failed to fetch lens options:", err);
+        setLensLoadError(true);
       }
 
       // Also fetch sunglasses options for eyeglasses sunglasses delegation (Sun coating)
       if (product.category === "eyeglasses") {
         try {
           const sunOpts = await getLensOptionsApi("sunglasses");
-          if (sunOpts.length > 0) {
-            setDelegatedOptions(sunOpts);
-            setDelegatedLensId(sunOpts[0].id);
-            setDelegatedLensPrice(sunOpts[0].price);
-            setDelegatedStrength(sunOpts[0].strengths?.[0] ?? "");
-            setDelegatedColorName(sunOpts[0].colors?.[0]?.name ?? "");
-          } else {
-            setDelegatedOptions(FALLBACK_LENS_OPTIONS);
-            setDelegatedLensId(FALLBACK_LENS_OPTIONS[0].id);
-            setDelegatedLensPrice(FALLBACK_LENS_OPTIONS[0].price);
-            setDelegatedStrength(FALLBACK_LENS_OPTIONS[0].strengths?.[0] ?? "");
-            setDelegatedColorName(FALLBACK_LENS_OPTIONS[0].colors?.[0]?.name ?? "");
+          setDelegatedOptions(sunOpts);
+          const sunDef = getDefaultSelection(sunOpts);
+          setDelegatedSelection(sunDef);
+          if (sunDef) {
+            const sunLeaf = resolveSelection(sunOpts, sunDef).type;
+            if (sunLeaf?.strengths?.length) setDelegatedStrength(sunLeaf.strengths[0]);
+            if (sunLeaf?.colors?.length) setDelegatedColorName(sunLeaf.colors[0].name);
           }
         } catch (err) {
-          console.error("Failed to fetch sunglasses options for delegation, using fallback:", err);
-          setDelegatedOptions(FALLBACK_LENS_OPTIONS);
-          setDelegatedLensId(FALLBACK_LENS_OPTIONS[0].id);
-          setDelegatedLensPrice(FALLBACK_LENS_OPTIONS[0].price);
-          setDelegatedStrength(FALLBACK_LENS_OPTIONS[0].strengths?.[0] ?? "");
-          setDelegatedColorName(FALLBACK_LENS_OPTIONS[0].colors?.[0]?.name ?? "");
+          console.error("Failed to fetch sunglasses options for delegation:", err);
         }
       }
     }
@@ -361,11 +178,43 @@ export function SelectLensesPage() {
   // §8b item 2: when usage = "non-prescription" the prescription step is not rendered at all
   const prescriptionSkipped = isEyeglasses && usageType === "non-prescription";
   const totalSteps = isEyeglasses ? (prescriptionSkipped ? 3 : 4) : 3;
-  const currentLensOption = lensOptions.find((l) => l.id === selectedLensId) || lensOptions[0];
-  const isDelegated = isEyeglasses && currentLensOption.delegatesToAppliesTo === "sunglasses";
-  const effectiveLensPrice = isDelegated ? delegatedLensPrice : selectedLensPrice;
-  const runningSubtotal = product.price + effectiveLensPrice;
-  const isGradientLens = /gradient/i.test(currentLensOption.name);
+  const lensDetail = resolveSelection(lensOptions, lensSelection);
+  const delegatedDetail = isEyeglasses ? resolveSelection(delegatedOptions, delegatedSelection) : null;
+  const currentLensOption = lensDetail?.type ?? lensOptions[0];
+  const isDelegated = isEyeglasses && currentLensOption?.delegatesToAppliesTo === "sunglasses";
+  const effectiveLensPrice = (isDelegated ? delegatedSelection?.price : lensSelection?.price) ?? null;
+  const isPriceOnRequest = isDelegated
+    ? (delegatedSelection?.priceOnRequest ?? false)
+    : (lensSelection?.priceOnRequest ?? false);
+  const runningSubtotal = product.price + (effectiveLensPrice ?? 0);
+  const effectiveLensName = isDelegated
+    ? (delegatedDetail?.type?.name ?? "")
+    : (currentLensOption?.name ?? "");
+  const effectiveColorName = isDelegated ? delegatedColorName : selectedColorNameOpt;
+  const effectiveStrength = isDelegated ? delegatedStrength : selectedStrength;
+  const isGradientLens = /gradient/i.test(effectiveLensName);
+  const lensSubtotalNote = isDelegated
+    ? `${currentLensOption?.name ?? ""} - ${delegatedDetail?.type?.name ?? ""}`
+    : [lensDetail?.collection?.name, lensDetail?.brand?.name, lensDetail?.type?.name]
+        .filter(Boolean)
+        .join(" - ") || "";
+  const reviewLensOption: LensTypeOption =
+    (isDelegated ? delegatedDetail?.type : currentLensOption) ??
+    (isDelegated ? delegatedOptions[0] : lensOptions[0]) ?? {
+      kind: "type",
+      id: "",
+      name: "",
+      price: null,
+      description: "",
+      info: "",
+    };
+
+  const handleSelectLens = (partial: Partial<LensSelection>) => {
+    setLensSelection((prev) => (prev ? { ...prev, ...partial } : (partial as LensSelection)));
+  };
+  const handleSelectDelegated = (partial: Partial<LensSelection>) => {
+    setDelegatedSelection((prev) => (prev ? { ...prev, ...partial } : (partial as LensSelection)));
+  };
 
   // Prescription lives on step 1 for sunglasses, step 2 for eyeglasses (after Usage).
   // Skipped (never rendered, never used as a step) when usage = "non-prescription".
@@ -406,28 +255,26 @@ export function SelectLensesPage() {
       prescriptionFilesCache.set(fileKey, prescriptionFile);
     }
 
-    const lensTypeDisplay = isDelegated
-      ? (delegatedOptions.find((o) => o.id === delegatedLensId)?.name || currentLensOption.name)
-      : (currentLensOption.hasTiers
-          ? (currentLensOption.tiers?.find((t) => t.slug === selectedLensTierSlug)?.name || currentLensOption.name)
-          : currentLensOption.name);
-
     const customization = {
       prescriptionType,
       prescriptionData: prescriptionType === "manual" ? prescriptionData : undefined,
       prescriptionFileCacheKey: fileKey,
       prescriptionText: prescriptionType === "written" ? prescriptionText : undefined,
-      // §6: lensOptionSlug is sunglasses-only; eyeglasses reference the coating via lensCoating (slug).
-      // However, when delegated, we send the delegated sunglasses option as lensOptionSlug.
-      lensOptionSlug: isEyeglasses ? (isDelegated ? delegatedLensId : undefined) : currentLensOption.id,
-      lensOptionTierSlug: isEyeglasses && currentLensOption.hasTiers ? selectedLensTierSlug : undefined,
-      lensType: lensTypeDisplay,
+      // §6/§14: the category is referenced via lensOptionSlug (sunglasses) or lensCoating (eyeglasses);
+      // collection → brand → lensType slugs resolve the server-authoritative price.
+      lensOptionSlug: isEyeglasses
+        ? (isDelegated ? delegatedSelection?.categoryId : undefined)
+        : (lensSelection?.categoryId ?? undefined),
+      lensOptionCollectionSlug: isDelegated ? undefined : (lensSelection?.collectionSlug ?? undefined),
+      lensOptionBrandSlug: isDelegated ? undefined : (lensSelection?.brandSlug ?? undefined),
+      lensOptionTypeSlug: isDelegated ? undefined : (lensSelection?.typeSlug ?? undefined),
+      lensType: effectiveLensName,
       usageType: isEyeglasses ? usageType : undefined,
-      multifocalSubtype: isEyeglasses && usageType === "multifocal" ? multifocalSubtype : undefined,
-      lensCoating: isEyeglasses ? currentLensOption.id : undefined,
+      lensCoating: isEyeglasses ? (lensSelection?.categoryId ?? undefined) : undefined,
       tintColor: isEyeglasses ? (isDelegated ? delegatedColorName : undefined) : selectedColorNameOpt,
       tintStrength: isEyeglasses ? (isDelegated ? delegatedStrength : undefined) : selectedStrength,
-      priceAdded: effectiveLensPrice
+      priceAdded: effectiveLensPrice,
+      priceOnRequest: isPriceOnRequest
     };
 
     const variant = product.variants?.[selectedVariantIndex];
@@ -443,10 +290,8 @@ export function SelectLensesPage() {
       colorName: variant?.colorName || "Standard",
       size: "Medium",
       lensType: isEyeglasses
-        ? `${lensTypeDisplay} • ${usageType === "multifocal"
-            ? `${USAGE_OPTIONS.find((u) => u.id === "multifocal")?.name} (${MULTIFOCAL_SUBTYPES.find((s) => s.id === multifocalSubtype)?.name})`
-            : USAGE_OPTIONS.find((u) => u.id === usageType)?.name}`
-        : `${currentLensOption.name} (${selectedColorNameOpt})`,
+        ? `${effectiveLensName} • ${USAGE_OPTIONS.find((u) => u.id === usageType)?.name}`
+        : `${effectiveLensName}${selectedColorNameOpt ? ` (${selectedColorNameOpt})` : ""}`,
       sku: product.sku,
       stock: product.stock,
       customization
@@ -538,7 +383,7 @@ export function SelectLensesPage() {
           </div>
 
           {/* Active Step Panel */}
-          <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 shadow-sm min-h-[400px] flex flex-col">
+          <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 shadow-sm min-h-[400px] flex flex-col" style={{ overflowAnchor: "none" }}>
             <div className="flex-1">
               {isEyeglasses && step === 1 && (
                 <div className="space-y-6">
@@ -548,56 +393,13 @@ export function SelectLensesPage() {
                     <p className="text-[11px] text-[color:var(--color-text-secondary)] mt-0.5 mb-4">Choose the usage that matches your daily needs.</p>
                     <div className="flex flex-col gap-3">
                       {USAGE_OPTIONS.map((usage) => (
-                        <div key={usage.id} className="flex flex-col gap-3">
-                          <SelectableOptionCard
-                            title={usage.name}
-                            description={usage.description}
-                            selected={usageType === usage.id}
-                            onClick={() => setUsageType(usage.id)}
-                          />
-                          {/* Multifocal sub-choice — reveals inline like the sunglasses tint options */}
-                          {usage.id === "multifocal" && usageType === "multifocal" && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="ml-4 border-l-2 border-[color:var(--color-brand-primary)]/30 pl-4 space-y-2">
-                                <p className="text-[10px] font-bold text-[color:var(--color-text-tertiary)] uppercase tracking-wider">
-                                  Choose your multifocal type
-                                </p>
-                                {MULTIFOCAL_SUBTYPES.map((sub) => (
-                                  <button
-                                    key={sub.id}
-                                    type="button"
-                                    onClick={() => setMultifocalSubtype(sub.id)}
-                                    className={cn(
-                                      "w-full rounded-xl border p-3.5 transition-all text-left",
-                                      multifocalSubtype === sub.id
-                                        ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-brand-primary)]/5"
-                                        : "border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] hover:border-[color:var(--color-text-secondary)]"
-                                    )}
-                                  >
-                                    <span className="flex items-center justify-between">
-                                      <span className="text-sm font-bold text-[color:var(--color-text-primary)]">{sub.name}</span>
-                                      <span
-                                        className={cn(
-                                          "h-4 w-4 rounded-full border flex items-center justify-center shrink-0 ml-3",
-                                          multifocalSubtype === sub.id
-                                            ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-brand-primary)]"
-                                            : "border-[color:var(--color-border)]"
-                                        )}
-                                      >
-                                        {multifocalSubtype === sub.id && <Check className="h-2.5 w-2.5 text-white" />}
-                                      </span>
-                                    </span>
-                                    <span className="mt-0.5 block text-[11px] text-[color:var(--color-text-secondary)]">{sub.description}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            </motion.div>
-                          )}
-                        </div>
+                        <SelectableOptionCard
+                          key={usage.id}
+                          title={usage.name}
+                          description={usage.description}
+                          selected={usageType === usage.id}
+                          onClick={() => setUsageType(usage.id)}
+                        />
                       ))}
                     </div>
                   </div>
@@ -698,33 +500,35 @@ export function SelectLensesPage() {
               )}
 
               {step === lensTypeStep && (
-                <LensTypeStep
-                  options={lensOptions}
-                  selectedLensId={selectedLensId}
-                  selectedStrength={selectedStrength}
-                  selectedColorName={selectedColorNameOpt}
-                  onSelectLens={(id, pr) => {
-                    setSelectedLensId(id);
-                    setSelectedLensPrice(pr);
-                  }}
-                  onSelectStrength={setSelectedStrength}
-                  onSelectColor={setSelectedColorNameOpt}
-                  delegatedOptions={delegatedOptions}
-                  delegatedLensId={delegatedLensId}
-                  delegatedStrength={delegatedStrength}
-                  delegatedColorName={delegatedColorName}
-                  onSelectDelegatedLens={(id, pr) => {
-                    setDelegatedLensId(id);
-                    setDelegatedLensPrice(pr);
-                  }}
-                  onSelectDelegatedStrength={setDelegatedStrength}
-                  onSelectDelegatedColor={setDelegatedColorName}
-                  selectedTierSlug={selectedLensTierSlug}
-                  onSelectTier={(slug, pr) => {
-                    setSelectedLensTierSlug(slug);
-                    setSelectedLensPrice(pr);
-                  }}
-                />
+                <div className="space-y-4">
+                  {lensLoadError && (
+                    <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 flex items-start gap-2.5">
+                      <ShieldAlert className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-bold text-red-700">Couldn't load lens options</p>
+                        <p className="text-[11px] text-red-600/90 mt-0.5">
+                          We couldn't fetch the latest lens pricing. Please refresh the page or try again later.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <LensTypeStep
+                    options={lensOptions}
+                    selection={lensSelection}
+                    onSelect={handleSelectLens}
+                    selectedStrength={selectedStrength}
+                    selectedColorName={selectedColorNameOpt}
+                    onSelectStrength={setSelectedStrength}
+                    onSelectColor={setSelectedColorNameOpt}
+                    delegatedOptions={delegatedOptions}
+                    delegatedSelection={delegatedSelection}
+                    delegatedStrength={delegatedStrength}
+                    delegatedColorName={delegatedColorName}
+                    onSelectDelegated={handleSelectDelegated}
+                    onSelectDelegatedStrength={setDelegatedStrength}
+                    onSelectDelegatedColor={setDelegatedColorName}
+                  />
+                </div>
               )}
 
               {step === totalSteps && (
@@ -739,25 +543,15 @@ export function SelectLensesPage() {
                   prescriptionData={prescriptionData}
                   prescriptionFile={prescriptionFile}
                   prescriptionText={prescriptionText}
-                  lensOption={isDelegated ? {
-                    id: delegatedLensId,
-                    name: delegatedOptions.find((o) => o.id === delegatedLensId)?.name || "",
-                    price: delegatedLensPrice,
-                    description: delegatedOptions.find((o) => o.id === delegatedLensId)?.description || "",
-                    info: delegatedOptions.find((o) => o.id === delegatedLensId)?.info || "",
-                  } : (currentLensOption.hasTiers ? {
-                    id: currentLensOption.id,
-                    name: currentLensOption.tiers?.find((t) => t.slug === selectedLensTierSlug)?.name || currentLensOption.name,
-                    price: selectedLensPrice,
-                    description: currentLensOption.tiers?.find((t) => t.slug === selectedLensTierSlug)?.description || currentLensOption.description,
-                    info: currentLensOption.tiers?.find((t) => t.slug === selectedLensTierSlug)?.info || currentLensOption.info,
-                  } : currentLensOption)}
-                  selectedColorName={isDelegated ? delegatedColorName : selectedColorNameOpt}
-                  selectedStrength={isDelegated ? delegatedStrength : selectedStrength}
-                  usageType={isEyeglasses ? (usageType === "multifocal"
-                    ? `${USAGE_OPTIONS.find((u) => u.id === "multifocal")?.name} (${MULTIFOCAL_SUBTYPES.find((s) => s.id === multifocalSubtype)?.name})`
-                    : USAGE_OPTIONS.find((u) => u.id === usageType)?.name) : undefined}
-                  lensCoating={isEyeglasses ? currentLensOption.name : undefined}
+                  lensOption={reviewLensOption}
+                  selectedColorName={effectiveColorName}
+                  selectedStrength={effectiveStrength}
+                  usageType={isEyeglasses ? (USAGE_OPTIONS.find((u) => u.id === usageType)?.name) : undefined}
+                  lensCoating={isEyeglasses ? (lensDetail?.category?.name ?? currentLensOption?.name) : undefined}
+                  collectionName={lensDetail?.collection?.name}
+                  brandName={lensDetail?.brand?.name}
+                  lensTypeName={lensDetail?.type?.name}
+                  priceOnRequest={isPriceOnRequest}
                 />
               )}
             </div>
@@ -766,9 +560,15 @@ export function SelectLensesPage() {
             <div className="border-t border-[color:var(--color-border)] pt-5 mt-6 flex justify-between items-center gap-4">
               <div className="min-w-0">
                 <p className="text-[10px] text-[color:var(--color-text-tertiary)] uppercase font-bold tracking-wider">Subtotal</p>
-                <p className="text-base font-bold text-[color:var(--color-text-primary)]">Rs. {runningSubtotal.toLocaleString()}</p>
+                <p className={cn("text-base font-bold", isPriceOnRequest ? "text-amber-700" : "text-[color:var(--color-text-primary)]")}>
+                  {isPriceOnRequest
+                    ? `Rs. ${product.price.toLocaleString()} + Lens on request`
+                    : `Rs. ${runningSubtotal.toLocaleString()}`}
+                </p>
                 <p className="text-[10px] text-[color:var(--color-text-secondary)] font-medium mt-0.5 truncate max-w-[200px] sm:max-w-none">
-                  (Rs. {product.price.toLocaleString()} Frame + Rs. {effectiveLensPrice.toLocaleString()} {isDelegated ? `${currentLensOption.name} - ${delegatedOptions.find((o) => o.id === delegatedLensId)?.name || ""}` : (currentLensOption.hasTiers ? `${currentLensOption.name} (${currentLensOption.tiers?.find((t) => t.slug === selectedLensTierSlug)?.name || ""})` : currentLensOption.name)})
+                  {isPriceOnRequest
+                    ? `(Rs. ${product.price.toLocaleString()} Frame + ${lensSubtotalNote} — price confirmed by our team before payment)`
+                    : `(Rs. ${product.price.toLocaleString()} Frame + Rs. ${(effectiveLensPrice ?? 0).toLocaleString()} ${lensSubtotalNote})`}
                 </p>
               </div>
 
@@ -797,7 +597,9 @@ export function SelectLensesPage() {
                     onClick={handleAddToCart}
                     className="flex items-center gap-1.5 rounded-xl bg-[color:var(--color-brand-primary)] px-6 py-3 text-xs font-bold text-white shadow hover:bg-black transition-colors"
                   >
-                    Add to Cart & Checkout
+                    {isPriceOnRequest
+                      ? "Confirm & add to cart — price confirmed by our team before payment"
+                      : "Add to Cart & Checkout"}
                   </button>
                 )}
               </div>

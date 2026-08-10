@@ -33,30 +33,35 @@ export function AdminOrdersListPage() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [paymentFilter, setPaymentFilter] = useState("All Methods");
   const [dbOrders, setDbOrders] = useState<OrderRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    adminGetOrdersApi(1, 100).then((data) => {
-      if (data && data.items) {
-        const mapped = data.items.map((o: { _id?: string; id?: string; orderNumber?: string; customerName?: string; customerEmail?: string; customerPhone?: string; items?: unknown[]; total?: number; paymentMethod?: string; status?: string; createdAt?: string }) => ({
-          id: o._id || o.id || "",
-          orderNumber: o.orderNumber || "",
-          customer: {
-            name: o.customerName || "Customer",
-            email: o.customerEmail || "customer@example.com",
-            phone: o.customerPhone || ""
-          },
-          items: o.items || [],
-          total: o.total || 0,
-          paymentMethod: o.paymentMethod || "COD",
-          status: o.status || "pending",
-          date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : new Date().toLocaleDateString()
-        }));
-        setDbOrders(mapped);
-      }
-    }).catch(() => {});
+    setLoading(true);
+    adminGetOrdersApi(1, 100)
+      .then((data) => {
+        if (data && Array.isArray(data.items)) {
+          const mapped = data.items.map((o: { _id?: string; id?: string; orderNumber?: string; customerName?: string; customerEmail?: string; customerPhone?: string; items?: unknown[]; total?: number; paymentMethod?: string; status?: string; createdAt?: string }) => ({
+            id: o._id || o.id || "",
+            orderNumber: o.orderNumber || "",
+            customer: {
+              name: o.customerName || "Customer",
+              email: o.customerEmail || "customer@example.com",
+              phone: o.customerPhone || ""
+            },
+            items: o.items || [],
+            total: o.total || 0,
+            paymentMethod: o.paymentMethod || "COD",
+            status: o.status || "pending",
+            date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : new Date().toLocaleDateString()
+          }));
+          setDbOrders(mapped);
+        }
+      })
+      .catch((err) => console.error("Failed to load admin orders:", err))
+      .finally(() => setLoading(false));
   }, []);
 
-  const activeOrdersList = dbOrders.length > 0 ? dbOrders : adminOrders;
+  const activeOrdersList = dbOrders;
 
   const filtered = activeOrdersList.filter((o) => {
     const matchStatus = statusFilter === "All" || o.status.toLowerCase() === statusFilter.toLowerCase();

@@ -12,19 +12,35 @@ const ColorSchema = new Schema({
   hex: { type: String, trim: true }
 }, { _id: false });
 
-const TierSchema = new Schema({
+const LensTypeEntrySchema = new Schema({
   slug: { type: String, required: true, trim: true },
   name: { type: String, required: true, trim: true },
-  price: { type: Number, required: true, min: 0 },
+  price: { type: Number, min: 0 },
+  priceOnRequest: { type: Boolean, default: false },
   description: { type: String, trim: true },
   info: { type: String, trim: true }
 }, { _id: false });
 
+const BrandSchema = new Schema({
+  slug: { type: String, required: true, trim: true },
+  name: { type: String, required: true, trim: true },
+  info: { type: String, trim: true },
+  lensTypes: { type: [LensTypeEntrySchema], default: [] }
+}, { _id: false });
+
+const CollectionSchema = new Schema({
+  slug: { type: String, required: true, trim: true },
+  name: { type: String, required: true, trim: true },
+  info: { type: String, trim: true },
+  brands: { type: [BrandSchema], default: undefined },
+  lensTypes: { type: [LensTypeEntrySchema], default: [] }
+}, { _id: false });
+
 const LensOptionSchema = new Schema({
   slug: { type: String, required: true, unique: true, index: true, trim: true },
-  appliesTo: { type: String, enum: ["sunglasses", "eyeglasses"], required: true, index: true },
+  appliesTo: { type: String, enum: ["sunglasses", "eyeglasses", "common"], required: true, index: true },
   name: { type: String, required: true, trim: true },
-  price: { type: Number, required: true, min: 0 },
+  price: { type: Number, min: 0 },
   description: { type: String, trim: true },
   info: { type: String, trim: true },
   icon: { type: String, trim: true },
@@ -32,13 +48,21 @@ const LensOptionSchema = new Schema({
   strengths: { type: [StrengthSchema], default: [] },
   hasColorOptions: { type: Boolean, default: false },
   colors: { type: [ColorSchema], default: [] },
-  hasTiers: { type: Boolean, default: false },
-  tiers: { type: [TierSchema], default: [] },
+  collections: { type: [CollectionSchema], default: [] },
   delegatesToAppliesTo: { type: String, enum: ["sunglasses", "eyeglasses"] },
   isActive: { type: Boolean, default: true },
   order: { type: Number, default: 0 }
 }, {
   timestamps: true
+});
+
+LensOptionSchema.pre('validate', function () {
+  const hasOwnPrice = typeof this.price === 'number';
+  const hasCollections = Array.isArray(this.collections) && this.collections.length > 0;
+  const hasDelegation = Boolean(this.delegatesToAppliesTo);
+  if (!hasOwnPrice && !hasCollections && !hasDelegation) {
+    throw new Error(`Lens option "${this.slug}" must have a price, collections, or delegatesToAppliesTo`);
+  }
 });
 
 module.exports = mongoose.model('LensOption', LensOptionSchema);

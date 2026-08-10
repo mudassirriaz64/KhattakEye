@@ -137,6 +137,7 @@ exports.createOrder = async (req, res, next) => {
     }
 
     let hasLensCustomization = false;
+    let hasPriceOnRequest = false;
     let subtotal = 0;
     const formattedItems = [];
 
@@ -171,7 +172,8 @@ exports.createOrder = async (req, res, next) => {
       }
 
       let customization = null;
-      let priceAdded = 0;
+      let priceAdded = null;
+      let priceOnRequest = false;
 
       if (raw.customization) {
         hasLensCustomization = true;
@@ -180,7 +182,6 @@ exports.createOrder = async (req, res, next) => {
         // Server-authoritative lens price: resolve from the LensOption collection.
         // A client-sent priceAdded is only trusted when no lens option slug is provided
         // (legacy carts created before the slug fields existed).
-        let priceAdded = 0;
         const primarySlug = cust.lensCoating || cust.lensOptionSlug;
         const mainOption = primarySlug ? lensOptionMap.get(primarySlug) : undefined;
 
@@ -191,12 +192,27 @@ exports.createOrder = async (req, res, next) => {
               return res.status(400).json({ message: `Invalid delegated lens option "${cust.lensOptionSlug}" for coating "${primarySlug}"` });
             }
             priceAdded = delegatedOption.price;
-          } else if (mainOption.hasTiers) {
-            const tier = mainOption.tiers && mainOption.tiers.find((t) => t.slug === cust.lensOptionTierSlug);
-            if (!tier) {
-              return res.status(400).json({ message: `A valid tier is required for lens option "${primarySlug}"` });
+          } else if (mainOption.collections && mainOption.collections.length > 0) {
+            // collections → (brands) → lensTypes hierarchy (ERP.md §14)
+            const collection = mainOption.collections.find((c) => c.slug === cust.lensOptionCollectionSlug);
+            if (!collection) {
+              return res.status(400).json({ message: `A valid collection is required for lens option "${primarySlug}"` });
             }
-            priceAdded = tier.price;
+            const type = collection.brands && collection.brands.length > 0
+              ? (() => {
+                  const brand = collection.brands.find((b) => b.slug === cust.lensOptionBrandSlug);
+                  return brand && brand.lensTypes.find((lt) => lt.slug === cust.lensOptionTypeSlug);
+                })()
+              : collection.lensTypes.find((lt) => lt.slug === cust.lensOptionTypeSlug);
+            if (!type) {
+              return res.status(400).json({ message: `A valid lens type is required for collection "${collection.slug}"` });
+            }
+            if (type.priceOnRequest || type.price === undefined || type.price === null) {
+              priceOnRequest = true;
+              priceAdded = null;
+            } else {
+              priceAdded = type.price;
+            }
           } else {
             priceAdded = mainOption.price;
           }
@@ -218,18 +234,24 @@ exports.createOrder = async (req, res, next) => {
           prescriptionFilePublicId: fileId || undefined,
           prescriptionText: cust.prescriptionText || undefined,
           lensOptionSlug: cust.lensOptionSlug || undefined,
-          lensOptionTierSlug: cust.lensOptionTierSlug || undefined,
+          lensOptionCollectionSlug: cust.lensOptionCollectionSlug || undefined,
+          lensOptionBrandSlug: cust.lensOptionBrandSlug || undefined,
+          lensOptionTypeSlug: cust.lensOptionTypeSlug || undefined,
           lensType: cust.lensType || undefined,
           usageType: cust.usageType || undefined,
-          multifocalSubtype: cust.multifocalSubtype || undefined,
           lensCoating: cust.lensCoating || undefined,
           tintColor: cust.tintColor || undefined,
           tintStrength: cust.tintStrength || undefined,
+          priceOnRequest,
           priceAdded
         };
       }
 
-      const itemPrice = product.price + priceAdded;
+      if (priceOnRequest) {
+        hasPriceOnRequest = true;
+      }
+
+      const itemPrice = product.price + (priceAdded || 0);
       subtotal += itemPrice * qty;
 
       formattedItems.push({
@@ -285,8 +307,18 @@ exports.createOrder = async (req, res, next) => {
     const shipping = subtotal >= 3000 ? 0 : 350;
     const total = Math.max(0, subtotal + shipping - discount);
 
+    const isPendingQuote = hasPriceOnRequest;
+
     const defaultTimeline = [
-      { status: 'pending', label: 'Order Placed', date: new Date(), description: 'Your order has been received and confirmed.', completed: true },
+      {
+        status: isPendingQuote ? 'pending-quote' : 'pending',
+        label: isPendingQuote ? 'Awaiting Price Quote' : 'Order Placed',
+        date: new Date(),
+        description: isPendingQuote
+          ? 'Your order has been received. Lens price is pending admin confirmation.'
+          : 'Your order has been received and confirmed.',
+        completed: true
+      },
       { status: 'processing', label: 'Lab Processing', date: new Date(), description: 'Lenses are being cut and fitted into frames.', completed: false },
       { status: 'processing', label: 'Quality Control', date: new Date(), description: 'Frame inspection and prescription alignment check.', completed: false },
       { status: 'shipped', label: 'Out for Delivery', date: new Date(), description: 'Dispatched with courier tracking.', completed: false },
@@ -317,7 +349,7 @@ exports.createOrder = async (req, res, next) => {
       total,
       paymentMethod,
       paymentType,
-      status: 'pending',
+      status: isPendingQuote ? 'pending-quote' : 'pending',
       timeline: defaultTimeline,
       couponCode: appliedCoupon ? appliedCoupon.code : undefined,
       estimatedDelivery: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000)
@@ -325,11 +357,16 @@ exports.createOrder = async (req, res, next) => {
 
     await order.save();
 
-    // Trigger order confirmation email notification
-    try {
-      await sendOrderConfirmationEmail(order);
-    } catch (err) {
-      console.error("Order confirmation email failed:", err);
+    // Trigger order confirmation email notification.
+    // Pending-quote orders do not get a confirmation email yet — the lens price is
+    // set by the admin first (ERP.md §14 / Rules.md §6a); the email fires once the
+    // order moves out of "pending-quote" into payment verification.
+    if (!isPendingQuote) {
+      try {
+        await sendOrderConfirmationEmail(order);
+      } catch (err) {
+        console.error("Order confirmation email failed:", err);
+      }
     }
 
     // Only after a successful order do we consume the coupon usage.

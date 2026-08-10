@@ -26,13 +26,16 @@ export type CartItem = {
     prescriptionFileCacheKey?: string;
     prescriptionText?: string;
     lensOptionSlug?: string;
+    lensOptionCollectionSlug?: string;
+    lensOptionBrandSlug?: string;
+    lensOptionTypeSlug?: string;
     lensType: string;
     usageType?: string;
-    multifocalSubtype?: string;
     lensCoating?: string;
     tintColor?: string;
     tintStrength?: string;
-    priceAdded: number;
+    priceAdded: number | null;
+    priceOnRequest?: boolean;
   };
 };
 

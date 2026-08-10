@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { X } from "lucide-react";
+import { X, Play, Pause } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { announcements } from "@/lib/landing-data";
 import { useUiStore } from "@/lib/stores/ui-store";
@@ -67,20 +67,31 @@ export function AnnouncementBar() {
                 </motion.div>
               </AnimatePresence>
 
-              <div className="ml-3 flex items-center gap-1.5">
-                {items.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setCurrent(i)}
-                    className={`h-1 rounded-full transition-all duration-300 ${
-                      i === current
-                        ? "w-3 bg-[#D3A095]"
-                        : "w-1 bg-white/25 hover:bg-white/50"
-                    }`}
-                    aria-label={`Show announcement ${i + 1}`}
-                  />
-                ))}
+              <div className="ml-3 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaused((prev) => !prev)}
+                  className="flex h-4 w-4 items-center justify-center rounded text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                  aria-label={paused ? "Resume announcement rotation" : "Pause announcement rotation"}
+                  title={paused ? "Resume rotation" : "Pause rotation"}
+                >
+                  {paused ? <Play className="h-2.5 w-2.5 fill-current" /> : <Pause className="h-2.5 w-2.5 fill-current" />}
+                </button>
+                <div className="flex items-center gap-1.5">
+                  {items.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setCurrent(i)}
+                      className={`h-1 rounded-full transition-all duration-300 ${
+                        i === current
+                          ? "w-3 bg-[#D3A095]"
+                          : "w-1 bg-white/25 hover:bg-white/50"
+                      }`}
+                      aria-label={`Show announcement ${i + 1}`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 

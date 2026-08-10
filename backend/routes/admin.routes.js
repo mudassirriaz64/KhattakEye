@@ -201,4 +201,17 @@ router.post('/coupons', auth.protectAdmin, requireRole(['admin', 'manager', 'sup
 router.put('/coupons/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateCoupon);
 router.delete('/coupons/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteCoupon);
 
+const {
+  getAllLensOptionsAdmin,
+  createLensOption,
+  updateLensOption,
+  deleteLensOption
+} = require('../controllers/lensOptionsAdmin.controller');
+
+// Buy Lenses Configuration (LensOption) admin routes
+router.get('/lens-options', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getAllLensOptionsAdmin);
+router.post('/lens-options', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), createLensOption);
+router.put('/lens-options/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateLensOption);
+router.delete('/lens-options/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteLensOption);
+
 module.exports = router;
