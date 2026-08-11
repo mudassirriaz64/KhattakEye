@@ -14,6 +14,9 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.js" },
     { "source": "/assets/(.*)", "destination": "/frontend/assets/$1" },
-    { "source": "/(.*)", "destination": "/frontend/index.html" }
+    { "source": "/khattak.png", "destination": "/frontend/khattak.png" },
+    { "source": "/khattak.jpeg", "destination": "/frontend/khattak.jpeg" },
+    { "source": "/favicon.svg", "destination": "/frontend/favicon.svg" },
+    { "source": "/((?!api|assets|khattak.png|khattak.jpeg|favicon.svg).*)", "destination": "/frontend/index.html" }
   ]
 }
