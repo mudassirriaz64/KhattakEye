@@ -10,8 +10,19 @@ import { AdminTopBar } from "./AdminTopBar";
 export function AdminLayout() {
   useTheme();
   const location = useLocation();
-  const { isAuthenticated, sidebarCollapsed } = useAdminStore();
+  const { isAuthenticated, isLoading, sidebarCollapsed } = useAdminStore();
   const [mobileSidebar, setMobileSidebar] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-[color:var(--color-app-bg)]">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[color:var(--color-brand-primary)] border-t-transparent" />
+          <p className="text-xs font-semibold text-[color:var(--color-text-secondary)]">Authenticating Admin Access...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) return <Navigate to="/admin/login" replace />;
 
