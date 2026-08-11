@@ -1,20 +1,33 @@
 const connectDB = require('./config/db');
 const app = require('./app');
-const PORT = process.env.PORT || 5000;
 
-async function startServer() {
-  try {
-    // Explicitly connect to the database first
+// Ensure MongoDB connects on every serverless invocation/cold start
+let isConnected = false;
+async function ensureDbConnected() {
+  if (!isConnected) {
     await connectDB();
-    
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-    });
-  } catch (err) {
-    console.error('Fatal error starting server:', err);
-    process.exit(1);
+    isConnected = true;
   }
 }
 
-startServer();
+// Middleware to lazily connect DB per request on Vercel
+app.use(async (req, res, next) => {
+  try {
+    await ensureDbConnected();
+    next();
+  } catch (err) {
+    console.error('Database connection error:', err);
+    res.status(500).json({ error: 'Database connection failed' });
+  }
+});
 
+// Local Development Only (Vercel ignores this block)
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} in development mode`);
+  });
+}
+
+// CRITICAL FOR VERCEL: Export the Express app
+module.exports = app;
