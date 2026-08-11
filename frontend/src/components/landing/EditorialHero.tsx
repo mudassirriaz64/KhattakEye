@@ -178,7 +178,6 @@ export function EditorialHero() {
                       <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                       {activeSlide.floatingProduct.rating}
                     </span>
-                    <span className="text-xs font-bold text-red-400">{activeSlide.floatingProduct.price}</span>
                   </div>
                 </div>
               </motion.div>
