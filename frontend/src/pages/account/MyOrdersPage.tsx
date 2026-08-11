@@ -13,7 +13,13 @@ interface DbOrder {
   status: string;
   total: number;
   itemCount: number;
-  items: number;
+  items: {
+    name: string;
+    color: string;
+    quantity: number;
+    price: number;
+    image: string;
+  }[];
 }
 
 const filters = ["All", "Processing", "Shipped", "Delivered", "Cancelled"];
@@ -35,6 +41,7 @@ export function MyOrdersPage() {
     getMyOrdersApi().then((data) => {
       if (Array.isArray(data) && data.length > 0) {
         const mapped = data.map((o) => ({
+          id: o._id || o.id,
           orderNumber: o.orderNumber,
           date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : new Date().toLocaleDateString(),
           status: o.status || "pending",
@@ -46,7 +53,7 @@ export function MyOrdersPage() {
             quantity: i.quantity,
             price: i.price,
             image: i.image
-          })) as unknown as number
+          }))
         }));
         setDbOrders(mapped);
       }
@@ -100,7 +107,7 @@ export function MyOrdersPage() {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-[color:var(--color-text-primary)]">{order.orderNumber}</p>
-                      <p className="text-xs text-[color:var(--color-text-tertiary)]">{order.date} · {order.items} item{order.items > 1 ? "s" : ""}</p>
+                      <p className="text-xs text-[color:var(--color-text-tertiary)]">{order.date} · {order.itemCount} item{order.itemCount > 1 ? "s" : ""}</p>
                     </div>
                   </div>
                   <span className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold capitalize ${statusColor[order.status] || "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]"}`}>{order.status}</span>
