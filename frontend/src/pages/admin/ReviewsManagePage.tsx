@@ -22,7 +22,7 @@ type ReviewRow = {
 };
 
 export function AdminReviewsManagePage() {
-  const [reviews, setReviews] = useState<ReviewRow[]>(adminReviewsManage);
+  const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [replyText, setReplyText] = useState<string | null>(null);

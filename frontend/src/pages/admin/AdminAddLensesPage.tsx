@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, X, ImagePlus, LoaderCircle, Eye } from "lucide-react";
+import { ArrowLeft, Save, X, ImagePlus, LoaderCircle, Eye, Video } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
-import { createProductApi, adminGetProductByIdApi } from "@/lib/api/admin";
+import { createProductApi, updateProductApi, adminGetProductByIdApi } from "@/lib/api/admin";
 import { useToastStore } from "@/lib/stores/toast-store";
 import { isAxiosError } from "axios";
+
+const MAX_VIDEO_SIZE = 200 * 1024 * 1024; // 200 MB per video
+const MAX_VIDEO_DURATION = 60; // 60 seconds max
 
 export function AdminAddLensesPage() {
   const { id } = useParams<{ id?: string }>();
@@ -44,7 +47,10 @@ export function AdminAddLensesPage() {
 
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [videos, setVideos] = useState<File[]>([]);
+  const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (id) {
@@ -54,7 +60,7 @@ export function AdminAddLensesPage() {
             kind: "lenses",
             name: product.name || "",
             brand: product.brand || "Bella",
-            category: product.category || "contact-lenses",
+            category: "contact-lenses",
             subcategory: product.subcategory || "",
             description: product.description || "",
             shortDescription: product.shortDescription || "",
@@ -82,6 +88,9 @@ export function AdminAddLensesPage() {
           if (Array.isArray(product.images)) {
             setImagePreviews(product.images);
           }
+          if (Array.isArray(product.videos)) {
+            setVideoPreviews(product.videos);
+          }
         }
       }).catch((err) => console.error("Failed to fetch lenses details for edit:", err));
     }
@@ -99,6 +108,59 @@ export function AdminAddLensesPage() {
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleVideoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const selectedFiles = Array.from(e.target.files);
+
+    if (videoPreviews.length + selectedFiles.length > 3) {
+      addToast({ title: "Limit Exceeded", description: "You can upload a maximum of 3 product videos.", type: "error" });
+      return;
+    }
+
+    for (const file of selectedFiles) {
+      if (file.size > MAX_VIDEO_SIZE) {
+        addToast({
+          title: "Video Too Large",
+          description: `"${file.name}" exceeds the 200 MB maximum size limit.`,
+          type: "error",
+        });
+        continue;
+      }
+
+      try {
+        const duration = await new Promise<number>((resolve, reject) => {
+          const tempVid = document.createElement("video");
+          tempVid.preload = "metadata";
+          tempVid.src = URL.createObjectURL(file);
+          tempVid.onloadedmetadata = () => {
+            URL.revokeObjectURL(tempVid.src);
+            resolve(tempVid.duration);
+          };
+          tempVid.onerror = () => reject(new Error("Failed to load video metadata"));
+        });
+
+        if (duration > MAX_VIDEO_DURATION) {
+          addToast({
+            title: "Video Too Long",
+            description: `"${file.name}" is ${Math.round(duration)} seconds. Maximum allowed duration is 60 seconds.`,
+            type: "error",
+          });
+          continue;
+        }
+
+        setVideos((prev) => [...prev, file]);
+        setVideoPreviews((prev) => [...prev, URL.createObjectURL(file)]);
+      } catch (err) {
+        addToast({ title: "Invalid Video", description: `Could not read video metadata for "${file.name}".`, type: "error" });
+      }
+    }
+  };
+
+  const removeVideo = (index: number) => {
+    setVideos((prev) => prev.filter((_, i) => i !== index));
+    setVideoPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -145,7 +207,20 @@ export function AdminAddLensesPage() {
         formData.append("images", file);
       });
 
-      await createProductApi(formData);
+      videos.forEach((file) => {
+        formData.append("videos", file);
+      });
+
+      const cleanedVideos = videoPreviews.filter((v) => typeof v === "string" && !v.startsWith("blob:"));
+      if (cleanedVideos.length > 0) {
+        formData.append("videos", JSON.stringify(cleanedVideos));
+      }
+
+      if (id) {
+        await updateProductApi(id, formData);
+      } else {
+        await createProductApi(formData);
+      }
       addToast({ title: "Success", description: id ? "Contact Lenses updated successfully" : "Contact Lenses added successfully", type: "success" });
       navigate("/admin/products");
     } catch (err) {
@@ -270,8 +345,15 @@ export function AdminAddLensesPage() {
           </div>
 
           {/* Media Upload */}
-          <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 space-y-4">
-            <h2 className="font-display text-lg text-[color:var(--color-text-primary)] border-b border-[color:var(--color-border)] pb-3">Product Media</h2>
+          <div className="rounded-2xl border-2 border-[color:var(--color-brand-primary)]/30 bg-[color:var(--color-panel)] p-6 space-y-4 shadow-sm">
+            <div className="border-b border-[color:var(--color-border)] pb-3">
+              <h2 className="font-display text-lg font-bold text-[color:var(--color-text-primary)] flex items-center gap-2">
+                Main Cover & Feature Media <span className="rounded-md bg-amber-500/10 text-amber-700 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">Primary / Required</span>
+              </h2>
+              <p className="text-xs text-[color:var(--color-text-secondary)] mt-0.5">
+                These are the primary photos for this product — shown on listing cards, search results, and product detail galleries.
+              </p>
+            </div>
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
               {imagePreviews.map((src, idx) => (
                 <div key={idx} className="group relative aspect-square overflow-hidden rounded-xl border border-[color:var(--color-border)] bg-black/5">
@@ -286,6 +368,31 @@ export function AdminAddLensesPage() {
                 <span className="text-[10px] font-semibold">Add Image</span>
               </button>
               <input ref={fileInputRef} type="file" multiple accept="image/*" onChange={handleImageChange} className="hidden" />
+            </div>
+          </div>
+
+          {/* Product Showcase Videos (Max 3, Max 200MB, Max 60s) */}
+          <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 space-y-4">
+            <div className="border-b border-[color:var(--color-border)] pb-3">
+              <h2 className="font-display text-lg text-[color:var(--color-text-primary)]">Product Showcase Videos</h2>
+              <p className="text-xs text-[color:var(--color-text-secondary)]">Upload up to 3 product videos (max 200 MB, max 60s per video)</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {videoPreviews.map((src, idx) => (
+                <div key={idx} className="group relative aspect-video overflow-hidden rounded-xl border border-[color:var(--color-border)] bg-black">
+                  <video src={src} controls className="h-full w-full object-cover" />
+                  <button type="button" onClick={() => removeVideo(idx)} className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100 z-10">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              {videoPreviews.length < 3 && (
+                <button type="button" onClick={() => videoInputRef.current?.click()} className="flex aspect-video flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[color:var(--color-border)] text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-brand-primary)] hover:text-[color:var(--color-brand-primary)]">
+                  <Video className="h-6 w-6" />
+                  <span className="text-[11px] font-semibold">Add Video (Max 60s)</span>
+                </button>
+              )}
+              <input ref={videoInputRef} type="file" multiple accept="video/*" onChange={handleVideoChange} className="hidden" />
             </div>
           </div>
         </div>

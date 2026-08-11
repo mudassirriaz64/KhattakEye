@@ -37,7 +37,7 @@ const faceShapes = [
 
 export function FaceShapeGuide() {
   return (
-    <section className="bg-[color:var(--color-app-bg)] py-20 md:py-28">
+    <section className="bg-[color:var(--color-app-bg)] pt-10 pb-20 md:pt-12 md:pb-28">
       <div className="mx-auto max-w-[1440px] px-4 md:px-8">
         <SectionHeading
           eyebrow="Shop by Face Shape"

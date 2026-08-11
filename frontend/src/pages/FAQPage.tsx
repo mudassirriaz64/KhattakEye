@@ -1,9 +1,11 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { MessageCircle, HeadphonesIcon } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
 import { SectionHeading } from "@/components/shared/SectionHeading";
 import { ProductAccordion } from "@/components/product/ProductAccordion";
+import axios from "@/lib/api/axios";
 
 type FaqItem = {
   q: string;
@@ -15,7 +17,7 @@ type FaqGroup = {
   items: FaqItem[];
 };
 
-const faqGroups: FaqGroup[] = [
+const defaultFaqGroups: FaqGroup[] = [
   {
     title: "Products & Sizing",
     items: [
@@ -99,6 +101,27 @@ const faqGroups: FaqGroup[] = [
 ];
 
 export function FAQPage() {
+  const [groups, setGroups] = useState<FaqGroup[]>(defaultFaqGroups);
+
+  useEffect(() => {
+    axios.get("/faqs").then((res) => {
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        const categoryMap: Record<string, FaqItem[]> = {};
+        res.data.forEach((faq: { category?: string; question: string; answer: string }) => {
+          const catName = faq.category || "General";
+          if (!categoryMap[catName]) categoryMap[catName] = [];
+          categoryMap[catName].push({ q: faq.question, a: faq.answer });
+        });
+        const formatted = Object.entries(categoryMap).map(([title, items]) => ({
+          title,
+          items,
+        }));
+        if (formatted.length > 0) {
+          setGroups(formatted);
+        }
+      }
+    }).catch(() => {});
+  }, []);
   return (
     <div className="bg-[color:var(--color-app-bg)]">
       {/* Hero */}
@@ -124,7 +147,7 @@ export function FAQPage() {
       <section className="pb-20 md:pb-24">
         <div className="mx-auto max-w-3xl px-4 md:px-8">
           <div className="space-y-12">
-            {faqGroups.map((group, index) => (
+            {groups.map((group, index) => (
               <ScrollReveal key={group.title} delay={index * 0.05}>
                 <div>
                   <h2 className="mb-2 flex items-center gap-3 font-display text-2xl text-[color:var(--color-text-primary)]">

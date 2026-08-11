@@ -17,8 +17,11 @@ app.use(async (req, res, next) => {
 
 app.set('trust proxy', 1);
 
+// CORS is only needed for local development (frontend on :5173, backend on :5000).
+// In production both services run under one Vercel domain via Vercel Services, so
+// requests are same-origin and no CORS configuration is required — Architecture.md §1.
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || true,
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true
 }));
 

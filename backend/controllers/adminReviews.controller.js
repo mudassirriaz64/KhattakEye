@@ -30,11 +30,17 @@ const getAllReviewsAdmin = async (req, res, next) => {
   }
 };
 
+const mongoose = require('mongoose');
+
 // PUT /api/admin/reviews/:id/status
 const updateReviewStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status, adminReply } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: `Invalid Review ID format: '${id}'` });
+    }
 
     const review = await Review.findById(id);
     if (!review) {
@@ -61,6 +67,9 @@ const updateReviewStatus = async (req, res, next) => {
 const deleteReview = async (req, res, next) => {
   try {
     const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: `Invalid Review ID format: '${id}'` });
+    }
     const review = await Review.findByIdAndDelete(id);
     if (review && review.product) {
       await updateProductStats(review.product);

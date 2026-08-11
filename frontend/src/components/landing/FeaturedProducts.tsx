@@ -82,11 +82,11 @@ export function FeaturedProducts() {
   const currentProducts = productsMap[activeTab] || [];
 
   return (
-    <section className="bg-[color:var(--color-app-bg)] py-20 md:py-28">
+    <section className="bg-[color:var(--color-app-bg)] pt-20 pb-10 md:pt-28 md:pb-12">
       <div className="mx-auto max-w-[1440px] px-4 md:px-8">
         <ScrollReveal>
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <div className="max-w-xl space-y-3">
+          <div className="flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
+            <div className="space-y-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--color-brand-soft)]/20 px-3.5 py-1 text-xs font-semibold uppercase tracking-widest text-[color:var(--color-brand-primary)]">
                 <activeTabMeta.icon className="h-3.5 w-3.5" />
                 {activeTabMeta.eyebrow}
@@ -144,7 +144,7 @@ export function FeaturedProducts() {
           </AnimatePresence>
         )}
 
-        <div className="mt-12 text-center">
+        <div className="mt-8 text-center">
           <Link
             to="/shop"
             className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-6 py-3 text-xs font-bold uppercase tracking-wider text-[color:var(--color-text-primary)] shadow-sm hover:border-[color:var(--color-brand-primary)] hover:text-[color:var(--color-brand-primary)] transition-all"

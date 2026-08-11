@@ -13,7 +13,10 @@ const formatProduct = (product) => {
 // GET /api/wishlist
 const getWishlist = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user._id).populate('wishlist');
+    const user = await User.findById(req.user._id).populate({
+      path: 'wishlist',
+      match: { isDeleted: { $ne: true } }
+    });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -29,7 +32,7 @@ const getWishlist = async (req, res, next) => {
 const addToWishlist = async (req, res, next) => {
   try {
     const { productId } = req.params;
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).where('isDeleted').ne(true);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }

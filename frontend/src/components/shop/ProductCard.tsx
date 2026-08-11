@@ -194,18 +194,6 @@ export const ProductCard = React.forwardRef(
             </span>
           )}
         </div>
-
-        {/* Proportional "Add to Cart" Button */}
-        <div className="mt-auto pt-3">
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[color:var(--color-brand-primary)] px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-black hover:shadow"
-          >
-            <ShoppingBag className="h-3.5 w-3.5" />
-            Add to Cart
-          </button>
-        </div>
       </div>
     </motion.div>
   );

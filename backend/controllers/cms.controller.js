@@ -247,10 +247,56 @@ const getSiteSettings = async (req, res, next) => {
   }
 };
 
+const defaultFaqsSeed = [
+  // Products & Sizing
+  { question: "How do I find my frame size?", answer: "Check the inside of your current frames for measurements (e.g., 52-18-145). The first number is lens width, the second is bridge width, and the third is temple length.", category: "Products & Sizing", targetPages: ["general", "products-sizing"], order: 1 },
+  { question: "Do you offer prescription lenses?", answer: "Yes. Most of our frames can be fitted with prescription lenses. Simply choose SELECT LENSES on the product page and follow the instructions.", category: "Products & Sizing", targetPages: ["general", "products-sizing"], order: 2 },
+  { question: "What materials are your frames made from?", answer: "We use Italian acetates, Japanese titanium, and stainless steel, finished with German-engineered lens coatings.", category: "Products & Sizing", targetPages: ["general", "products-sizing"], order: 3 },
+  { question: "How do I take care of my lenses?", answer: "Clean with a microfiber cloth and lens-safe spray only. Avoid paper towels and household cleaners.", category: "Products & Sizing", targetPages: ["general", "products-sizing"], order: 4 },
+
+  // Orders & Payments
+  { question: "What payment methods do you accept?", answer: "We accept Bank Transfer, JazzCash, EasyPaisa, and Cash on Delivery. For online payments, submit your transaction ID at checkout.", category: "Orders & Payments", targetPages: ["general", "orders-payments"], order: 1 },
+  { question: "How do I use a coupon code?", answer: "Enter your coupon code in the 'Coupon' field at checkout. The discount will be applied to your order total automatically.", category: "Orders & Payments", targetPages: ["general", "orders-payments"], order: 2 },
+  { question: "How can I track my order?", answer: "Use the Track Order page with your order number. We also email you a tracking link once your order ships.", category: "Orders & Payments", targetPages: ["general", "orders-payments"], order: 3 },
+  { question: "Can I change or cancel my order?", answer: "If your order hasn't shipped yet, contact us within 24 hours and we'll update or cancel it free of charge.", category: "Orders & Payments", targetPages: ["general", "orders-payments"], order: 4 },
+
+  // Shipping & Returns
+  { question: "How long does shipping take?", answer: "Standard shipping takes 3–5 business days within Pakistan. Express shipping (1–2 days) is available at checkout.", category: "Shipping & Returns", targetPages: ["general", "shipping-returns"], order: 1 },
+  { question: "Can I return or exchange my frames?", answer: "Yes, you can return or exchange within 14 days of delivery. Items must be unused and in original packaging.", category: "Shipping & Returns", targetPages: ["general", "shipping-returns"], order: 2 },
+  { question: "What if I receive a damaged or incorrect item?", answer: "Contact us within 48 hours with your order number and a photo of the item, and we'll arrange a replacement or full refund right away.", category: "Shipping & Returns", targetPages: ["general", "shipping-returns"], order: 3 },
+  { question: "Do you deliver internationally?", answer: "Not yet. We currently deliver across Pakistan. International shipping is on our roadmap.", category: "Shipping & Returns", targetPages: ["general", "shipping-returns"], order: 4 },
+
+  // Warranty & Support
+  { question: "What does the warranty cover?", answer: "Every pair includes a 2-year warranty covering manufacturing defects in frames and lenses under normal use.", category: "Warranty & Support", targetPages: ["general", "warranty-support"], order: 1 },
+  { question: "How do I file a warranty claim?", answer: "Email or message our support team with your order number, a photo of the issue, and a short description.", category: "Warranty & Support", targetPages: ["general", "warranty-support"], order: 2 },
+  { question: "Can you adjust or repair my frames?", answer: "Yes. Bring any pair to the atelier and our technicians will adjust the fit. Minor repairs on Khattak frames are free within warranty.", category: "Warranty & Support", targetPages: ["general", "warranty-support"], order: 3 },
+
+  // Blue Light Lenses
+  { question: "Is it harmful to wear blue light lenses all day long?", answer: "No, blue light blocking lenses are completely safe and beneficial for all-day wear. They function like regular clear lenses while filtering high-energy visible (HEV) screen radiation.", category: "Blue Light", targetPages: ["blue-light"], order: 1 },
+  { question: "Should I wear blue light glasses to watch TV or play video games?", answer: "Yes! Modern televisions, gaming monitors, and smartphone screens emit significant amounts of artificial blue light. Wearing blue light glasses reduces eye strain and fatigue.", category: "Blue Light", targetPages: ["blue-light"], order: 2 },
+  { question: "Can I get blue light protection with prescription lenses?", answer: "Absolutely. All our blue light blocking technologies can be customized with your exact single vision, bifocal, or progressive prescription.", category: "Blue Light", targetPages: ["blue-light"], order: 3 },
+
+  // Computer Glasses
+  { question: "Do Computer Glasses Really Work?", answer: "Yes! Computer glasses are specialized eyewear designed with anti-reflective and blue-light filtering technology to protect your eyes from artificial screen radiation.", category: "Computer Glasses", targetPages: ["computer"], order: 1 },
+  { question: "What is the difference between Computer Glasses and Regular Glasses?", answer: "Regular prescription glasses correct distance or reading vision, but computer glasses are specifically optimized for intermediate screen distances (approx. 20-26 inches).", category: "Computer Glasses", targetPages: ["computer"], order: 2 },
+
+  // Anti-Glare Lenses
+  { question: "Why is Anti-Glare Coating so Important?", answer: "Anti-glare (AR) coating eliminates internal and external reflections from your spectacle lenses, allowing 99.5% of light to reach your eyes for sharper contrast.", category: "Anti-Glare", targetPages: ["anti-glare"], order: 1 },
+  { question: "Do Anti-Glare Glasses Help Night Driving?", answer: "Yes! Night driving glare from oncoming LED headlights and street lamps creates distracting starbursts. Anti-reflective lenses eliminate these reflections.", category: "Anti-Glare", targetPages: ["anti-glare"], order: 2 },
+
+  // Photochromic Lenses
+  { question: "How do Photochromic / Transition Lenses work?", answer: "Photochromic lenses contain micro-photochromic molecules that react to outdoor UV sunlight, darkening rapidly outdoors and returning 100% clear indoors.", category: "Photochromic", targetPages: ["photochromic"], order: 1 },
+  { question: "How fast do Transition Lenses darken and clear?", answer: "Khattak High-Definition Photochromic lenses darken in under 30 seconds outdoors and clear back to transparent indoors within 2-3 minutes.", category: "Photochromic", targetPages: ["photochromic"], order: 2 }
+];
+
 // GET /api/faqs
 const getFAQs = async (req, res, next) => {
   try {
     const { page } = req.query;
+    const count = await FAQ.countDocuments();
+    if (count === 0) {
+      await FAQ.insertMany(defaultFaqsSeed);
+    }
     const filter = { isActive: true };
     if (page) {
       filter.targetPages = page.toLowerCase();
@@ -265,6 +311,10 @@ const getFAQs = async (req, res, next) => {
 // GET /api/admin/faqs
 const getAllFAQsAdmin = async (req, res, next) => {
   try {
+    const count = await FAQ.countDocuments();
+    if (count === 0) {
+      await FAQ.insertMany(defaultFaqsSeed);
+    }
     const faqs = await FAQ.find().sort({ order: 1 });
     res.status(200).json(faqs);
   } catch (error) {

@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { HelpCircle, Plus, Edit3, Trash2, X, Check } from "lucide-react";
+import { Plus, Edit3, Trash2, X, Tag } from "lucide-react";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
 import axios from "@/lib/api/axios";
+
 
 export type AdminFaq = {
   _id?: string;
@@ -17,22 +18,63 @@ export type AdminFaq = {
   isActive: boolean;
 };
 
+/**
+ * Maps each page to the categories it owns.
+ * "General FAQ Page" is the top-level container — it hosts Products & Sizing,
+ * Orders & Payments, Shipping & Returns, and Warranty & Support as nested sections.
+ */
+/** Page → its available categories (General FAQ nests 4 sub-categories) */
+const PAGE_CATEGORIES: Record<string, string[]> = {
+  "general": ["Products & Sizing", "Orders & Payments", "Shipping & Returns", "Warranty & Support"],
+  "blue-light": ["Blue Light"],
+  "computer": ["Computer Glasses"],
+  "anti-glare": ["Anti-Glare"],
+  "photochromic": ["Photochromic"],
+  "home": ["General"],
+};
+
+/** Only real storefront pages — sub-categories are NOT pages */
 const AVAILABLE_PAGES = [
-  { id: "home", label: "Homepage" },
+  { id: "general", label: "General FAQ Page" },
   { id: "blue-light", label: "Blue Light Glasses" },
   { id: "computer", label: "Computer Glasses" },
   { id: "anti-glare", label: "Anti-Glare Glasses" },
   { id: "photochromic", label: "Photochromic Glasses" },
-  { id: "general", label: "General FAQ Page" }
+  { id: "home", label: "Homepage" },
 ];
 
-const faqFormDefault = {
+/** Returns deduplicated categories available for the given page IDs. */
+function getCategoriesForPages(pages: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const pid of pages) {
+    for (const cat of PAGE_CATEGORIES[pid] ?? []) {
+      if (!seen.has(cat)) { seen.add(cat); result.push(cat); }
+    }
+  }
+  return result;
+}
+
+type FaqFormState = {
+  question: string;
+  answer: string;
+  targetPages: string[];
+  category: string;
+  order: number;
+  isActive: boolean;
+  _customCategoryInput: string;
+  _showCustomCategoryInput: boolean;
+};
+
+const faqFormDefault: FaqFormState = {
   question: "",
   answer: "",
   targetPages: ["general"],
-  category: "General",
+  category: "Products & Sizing",
   order: 1,
-  isActive: true
+  isActive: true,
+  _customCategoryInput: "",
+  _showCustomCategoryInput: false,
 };
 
 export function AdminPagesCMSPage() {
@@ -41,19 +83,15 @@ export function AdminPagesCMSPage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingFaq, setEditingFaq] = useState<AdminFaq | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [faqForm, setFaqForm] = useState(faqFormDefault);
+  const [faqForm, setFaqForm] = useState<FaqFormState>(faqFormDefault);
 
-  useEffect(() => {
-    fetchFaqs();
-  }, []);
+  useEffect(() => { fetchFaqs(); }, []);
 
   const fetchFaqs = async () => {
     setLoading(true);
     try {
       const res = await axios.get("/admin/faqs");
-      if (res.data && Array.isArray(res.data)) {
-        setFaqs(res.data);
-      }
+      if (res.data && Array.isArray(res.data)) setFaqs(res.data);
     } catch (err) {
       console.error("Failed to load FAQs:", err);
     } finally {
@@ -67,37 +105,54 @@ export function AdminPagesCMSPage() {
     setFaqForm({
       question: f.question,
       answer: f.answer,
-      targetPages: f.targetPages && f.targetPages.length > 0 ? f.targetPages : ["general"],
+      targetPages: f.targetPages?.length > 0 ? f.targetPages : ["general"],
       category: f.category || "General",
       order: f.order || 1,
-      isActive: f.isActive !== undefined ? f.isActive : true
+      isActive: f.isActive !== undefined ? f.isActive : true,
+      _customCategoryInput: "",
+      _showCustomCategoryInput: false,
     });
     setEditingFaq(f);
     setShowForm(true);
   };
 
-  const togglePageTarget = (pageId: string) => {
+  /** Single-select: clicking a page replaces the current selection */
+  const selectPage = (pageId: string) => {
     setFaqForm((prev) => {
-      const exists = prev.targetPages.includes(pageId);
-      const updated = exists
-        ? prev.targetPages.filter((p) => p !== pageId)
-        : [...prev.targetPages, pageId];
-      return { ...prev, targetPages: updated };
+      const availableCats = getCategoriesForPages([pageId]);
+      return {
+        ...prev,
+        targetPages: [pageId],
+        category: availableCats[0] ?? "",
+        _showCustomCategoryInput: false,
+        _customCategoryInput: "",
+      };
     });
   };
 
+  /** Derived categories based on currently-selected pages */
+  const availableCategories = useMemo(
+    () => getCategoriesForPages(faqForm.targetPages),
+    [faqForm.targetPages]
+  );
+
   const saveForm = async () => {
     try {
+      const finalCategory =
+        faqForm._showCustomCategoryInput && faqForm._customCategoryInput.trim()
+          ? faqForm._customCategoryInput.trim()
+          : faqForm.category;
+
       const payload = {
         question: faqForm.question,
         answer: faqForm.answer,
         targetPages: faqForm.targetPages.length > 0 ? faqForm.targetPages : ["general"],
-        category: faqForm.category,
+        category: finalCategory,
         order: faqForm.order,
-        isActive: faqForm.isActive
+        isActive: faqForm.isActive,
       };
 
-      if (editingFaq && editingFaq._id) {
+      if (editingFaq?._id) {
         await axios.put(`/admin/faqs/${editingFaq._id}`, payload);
       } else {
         await axios.post("/admin/faqs", payload);
@@ -125,6 +180,7 @@ export function AdminPagesCMSPage() {
 
   return (
     <div>
+      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl text-[color:var(--color-text-primary)] md:text-3xl">FAQ Management</h1>
@@ -133,17 +189,14 @@ export function AdminPagesCMSPage() {
         <Button
           variant="primary"
           iconLeft={<Plus className="h-4 w-4" />}
-          onClick={() => {
-            resetFaqForm();
-            setEditingFaq(null);
-            setShowForm(true);
-          }}
+          onClick={() => { resetFaqForm(); setEditingFaq(null); setShowForm(true); }}
           className="text-xs"
         >
           Add New FAQ
         </Button>
       </div>
 
+      {/* ── FAQ Form ── */}
       {showForm && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="mb-6 overflow-hidden">
           <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-5 shadow-lg">
@@ -153,8 +206,9 @@ export function AdminPagesCMSPage() {
                 <X className="h-4 w-4" />
               </button>
             </div>
-            
+
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {/* Question */}
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Question</label>
                 <input
@@ -166,6 +220,7 @@ export function AdminPagesCMSPage() {
                 />
               </div>
 
+              {/* Answer */}
               <div className="sm:col-span-2">
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Answer</label>
                 <textarea
@@ -177,27 +232,32 @@ export function AdminPagesCMSPage() {
                 />
               </div>
 
-              {/* Multi-Page Target Assignment Checkboxes */}
+              {/* ── STEP 1: Page assignment (single-select) ── */}
               <div className="sm:col-span-2 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-app-bg)] p-4">
                 <label className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-brand-primary)]">
-                  Assign to Pages (Multi-Select)
+                  Assign to Page
                 </label>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {AVAILABLE_PAGES.map((page) => {
-                    const isSelected = faqForm.targetPages.includes(page.id);
+                    const isSelected = faqForm.targetPages[0] === page.id;
                     return (
                       <button
                         key={page.id}
                         type="button"
-                        onClick={() => togglePageTarget(page.id)}
+                        onClick={() => selectPage(page.id)}
                         className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
                           isSelected
                             ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-brand-soft)]/20 text-[color:var(--color-brand-primary)] font-semibold shadow-sm"
                             : "border-[color:var(--color-border)] bg-[color:var(--color-panel)] text-[color:var(--color-text-secondary)] hover:border-[color:var(--color-text-tertiary)]"
                         }`}
                       >
-                        <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${isSelected ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-brand-primary)] text-white" : "border-[color:var(--color-border)]"}`}>
-                          {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
+                        {/* Radio dot */}
+                        <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
+                          isSelected
+                            ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-brand-primary)]"
+                            : "border-[color:var(--color-border)] bg-transparent"
+                        }`}>
+                          {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                         </div>
                         <span className="truncate">{page.label}</span>
                       </button>
@@ -206,17 +266,92 @@ export function AdminPagesCMSPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Category</label>
-                <input
-                  type="text"
-                  value={faqForm.category}
-                  onChange={(e) => setFaqForm((p) => ({ ...p, category: e.target.value }))}
-                  placeholder="General / Coatings / Prescriptions"
-                  className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]"
-                />
+              {/* ── STEP 2: Nested Category ── */}
+              <div className="sm:col-span-2 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-app-bg)] p-4">
+                <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-brand-primary)]">
+                  Category
+                  <span className="ml-1.5 normal-case font-normal text-[color:var(--color-text-tertiary)]">
+                    — nested inside selected page(s)
+                  </span>
+                </label>
+
+                {availableCategories.length === 0 && !faqForm._showCustomCategoryInput ? (
+                  <p className="mt-1 text-xs italic text-[color:var(--color-text-tertiary)]">
+                    Select at least one page above to see its categories.
+                  </p>
+                ) : (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {availableCategories.map((cat) => {
+                      const isSelected = !faqForm._showCustomCategoryInput && faqForm.category === cat;
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setFaqForm((p) => ({ ...p, category: cat, _showCustomCategoryInput: false, _customCategoryInput: "" }))}
+                          className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                            isSelected
+                              ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-brand-primary)] text-white shadow-sm"
+                              : "border-[color:var(--color-border)] bg-[color:var(--color-panel)] text-[color:var(--color-text-secondary)] hover:border-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
+                          }`}
+                        >
+                          <Tag className="h-3 w-3 shrink-0" />
+                          {cat}
+                        </button>
+                      );
+                    })}
+
+                    {/* + Add new category button */}
+                    <button
+                      type="button"
+                      onClick={() => setFaqForm((p) => ({ ...p, _showCustomCategoryInput: !p._showCustomCategoryInput, _customCategoryInput: "" }))}
+                      className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                        faqForm._showCustomCategoryInput
+                          ? "border-violet-500 bg-violet-500 text-white shadow-sm"
+                          : "border-dashed border-[color:var(--color-border)] bg-transparent text-[color:var(--color-text-tertiary)] hover:border-violet-400 hover:text-violet-500"
+                      }`}
+                    >
+                      <Plus className="h-3 w-3 shrink-0" />
+                      {faqForm._showCustomCategoryInput ? "Cancel custom" : "Add new category"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Custom category text input — animated reveal */}
+                <AnimatePresence>
+                  {faqForm._showCustomCategoryInput && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-3 flex items-center gap-2">
+                        <input
+                          autoFocus
+                          type="text"
+                          value={faqForm._customCategoryInput}
+                          onChange={(e) => setFaqForm((p) => ({ ...p, _customCategoryInput: e.target.value }))}
+                          placeholder="e.g. Lens Coatings, Prescriptions…"
+                          className="flex-1 rounded-xl border border-violet-400 bg-[color:var(--color-surface-muted)] px-4 py-2 text-sm text-[color:var(--color-text-primary)] focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                        />
+                        <span className="shrink-0 text-[10px] text-[color:var(--color-text-tertiary)]">saved as category name</span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Preview of resolved category */}
+                <p className="mt-2 text-[10px] text-[color:var(--color-text-tertiary)]">
+                  Saving as:{" "}
+                  <span className="font-semibold text-[color:var(--color-text-secondary)]">
+                    {faqForm._showCustomCategoryInput && faqForm._customCategoryInput.trim()
+                      ? faqForm._customCategoryInput.trim()
+                      : faqForm.category || "—"}
+                  </span>
+                </p>
               </div>
 
+              {/* Display Order */}
               <div>
                 <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">Display Order</label>
                 <input
@@ -228,6 +363,7 @@ export function AdminPagesCMSPage() {
                 />
               </div>
 
+              {/* Active toggle */}
               <div className="flex items-center">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -236,7 +372,7 @@ export function AdminPagesCMSPage() {
                     onChange={(e) => setFaqForm((p) => ({ ...p, isActive: e.target.checked }))}
                     className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-brand-primary)]"
                   />
-                  <span className="text-xs font-medium text-[color:var(--color-text-primary)]">Active & Visible</span>
+                  <span className="text-xs font-medium text-[color:var(--color-text-primary)]">Active &amp; Visible</span>
                 </label>
               </div>
             </div>
@@ -253,7 +389,7 @@ export function AdminPagesCMSPage() {
         </motion.div>
       )}
 
-      {/* FAQ List Cards */}
+      {/* ── FAQ List ── */}
       <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] shadow-sm">
         <div className="border-b border-[color:var(--color-border)] px-5 py-4 flex items-center justify-between">
           <p className="text-xs font-semibold text-[color:var(--color-text-secondary)]">
@@ -281,8 +417,16 @@ export function AdminPagesCMSPage() {
                       <StatusBadge status={faq.isActive ? "active" : "inactive"} />
                     </div>
                     <p className="text-xs text-[color:var(--color-text-secondary)] line-clamp-2 leading-relaxed">{faq.answer}</p>
-                    
-                    {/* Display assigned target pages */}
+
+                    {/* Category badge */}
+                    {faq.category && (
+                      <div className="flex items-center gap-1 pt-0.5">
+                        <Tag className="h-3 w-3 text-[color:var(--color-text-tertiary)]" />
+                        <span className="text-[10px] font-semibold text-[color:var(--color-text-tertiary)]">{faq.category}</span>
+                      </div>
+                    )}
+
+                    {/* Assigned pages */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-1">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--color-text-tertiary)] mr-1">Appears on:</span>
                       {(faq.targetPages || ["general"]).map((target) => (
@@ -320,3 +464,4 @@ export function AdminPagesCMSPage() {
     </div>
   );
 }
+

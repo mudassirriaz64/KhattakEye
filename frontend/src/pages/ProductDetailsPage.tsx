@@ -20,6 +20,11 @@ interface ProductDetailsVariant {
   colorName?: string;
   hexCode?: string;
   image?: string;
+  images?: string[];
+  lensWidth?: string;
+  bridgeWidth?: string;
+  templeLength?: string;
+  frameMaterial?: string;
 }
 
 interface ProductDetailsData {
@@ -34,6 +39,7 @@ interface ProductDetailsData {
   description: string;
   shortDescription: string;
   images: string[];
+  videos?: string[];
   colors: { name: string; hex: string }[];
   sku: string;
   inStock: boolean;
@@ -44,6 +50,8 @@ interface ProductDetailsData {
   frameMaterial: string;
   lensType: string;
   gender: string;
+  isPolarized?: boolean;
+  isPremium?: boolean;
   badges: string[];
   variants: ProductDetailsVariant[];
   dimensions: { eyeWidth: number; bridgeWidth: number; templeLength: number };
@@ -83,11 +91,12 @@ export function ProductDetailsPage() {
             brand: data.brand || "Khattak Atelier",
             price: data.price,
             originalPrice: data.originalPrice || data.price,
-            rating: data.rating || 5.0,
-            reviewCount: data.reviewCount || 14,
+            rating: data.rating !== undefined ? data.rating : 0,
+            reviewCount: data.reviewCount !== undefined ? data.reviewCount : 0,
             description: data.description || "",
             shortDescription: data.shortDescription || data.description || "",
-            images: (data.images && data.images.length > 0 ? data.images : ["/hero-sunglasses.png"]) as string[],
+            images: sanitizeProductImages(data.images),
+            videos: Array.isArray(data.videos) ? data.videos : [],
             colors: data.variants ? data.variants.map((v: { colorName?: string; hexCode?: string }) => ({ name: v.colorName || "Default", hex: v.hexCode || "#000", image: data.images[0] || "" })) : [{ name: "Black", hex: "#000" }],
             sku: data.sku || `KT-${data._id?.substring(0, 6) || "SPEC"}`,
             inStock: data.stock > 0,
@@ -98,6 +107,8 @@ export function ProductDetailsPage() {
             frameMaterial: data.frameMaterial || "Acetate",
             lensType: data.lensType || "Polarized",
             gender: Array.isArray(data.gender) ? data.gender[0] : (data.gender || "Unisex"),
+            isPolarized: Boolean(data.isPolarized),
+            isPremium: Boolean(data.isPremium),
             badges: data.badges || ["Handcrafted"],
             variants: data.variants || [],
             dimensions: {
@@ -130,10 +141,14 @@ export function ProductDetailsPage() {
     );
   }
 
-  const variantImage = product.variants[selectedVariant]?.image;
-  const rawGalleryImages = variantImage
-    ? [variantImage, ...product.images.filter((img) => img !== variantImage)]
-    : product.images;
+  const activeVariant = product.variants[selectedVariant];
+  const variantImages = activeVariant?.images && activeVariant.images.length > 0
+    ? activeVariant.images
+    : activeVariant?.image
+      ? [activeVariant.image]
+      : [];
+
+  const rawGalleryImages = variantImages.length > 0 ? variantImages : product.images;
   const galleryImages = sanitizeProductImages(rawGalleryImages);
   const displayImages = galleryImages.length > 0 ? galleryImages : [productImageFallback(product.slug || product.name || "eyewear")];
 
@@ -213,6 +228,7 @@ export function ProductDetailsPage() {
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }} className="sticky top-[104px] self-start">
             <ProductGallery 
               images={displayImages} 
+              videos={product.videos}
               name={product.name}
               action={
                 <Link
@@ -229,11 +245,11 @@ export function ProductDetailsPage() {
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4, delay: 0.1 }} className="card-luxury space-y-6 p-6 sm:p-8">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                {product.category === "sunglasses" && (
-                  <>
-                    <span className="rounded-md bg-blue-600 px-2.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">Polarized</span>
-                    <span className="rounded-md bg-amber-400 px-2.5 py-0.5 text-[10px] font-bold text-black uppercase tracking-wider">Premium</span>
-                  </>
+                {product.isPolarized && (
+                  <span className="rounded-md bg-blue-600 px-2.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">Polarized</span>
+                )}
+                {product.isPremium && (
+                  <span className="rounded-md bg-amber-400 px-2.5 py-0.5 text-[10px] font-bold text-black uppercase tracking-wider">Premium</span>
                 )}
               </div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--color-text-tertiary)]">{product.brand}</p>
@@ -298,11 +314,17 @@ export function ProductDetailsPage() {
                     )}
                     title={v.colorName}
                   >
-                    <img 
-                      src={v.image || product.images[0]} 
-                      alt={v.colorName} 
-                      className="h-full w-full object-contain"
-                    />
+                    {(() => {
+                      const candidateImgs = [v.image, ...(v.images || []), ...product.images].filter((img): img is string => typeof img === "string" && img.trim().length > 0 && !img.includes("blob:"));
+                      const swatchUrl = sanitizeProductImages([candidateImgs[0]])[0];
+                      return (
+                        <img 
+                          src={swatchUrl} 
+                          alt={v.colorName || "Variant"} 
+                          className="h-full w-full object-contain"
+                        />
+                      );
+                    })()}
                   </button>
                 ))}
               </div>
@@ -310,7 +332,10 @@ export function ProductDetailsPage() {
 
             {/* Frame Size Information */}
             <div className="text-xs text-[color:var(--color-text-secondary)] font-medium">
-              Size : <span className="font-bold text-[color:var(--color-text-primary)]">Large ( 54 ▢ 18 - 145 )</span>
+              Size :{" "}
+              <span className="font-bold text-[color:var(--color-text-primary)]">
+                {activeVariant?.lensWidth || product.dimensions.eyeWidth} ▢ {activeVariant?.bridgeWidth || product.dimensions.bridgeWidth} - {activeVariant?.templeLength || product.dimensions.templeLength}
+              </span>
             </div>
 
             <div className="grid grid-cols-3 gap-3">

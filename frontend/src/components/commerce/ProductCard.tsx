@@ -105,10 +105,7 @@ export function ProductCard({
           ))}
         </div>
         <div className="flex gap-3">
-          <Button className="flex-1" iconLeft={<ShoppingBag className="h-4 w-4" />}>
-            Add to Cart
-          </Button>
-          <Button variant="outline">Quick View</Button>
+          <Button variant="outline" className="w-full">Quick View</Button>
         </div>
       </div>
     </motion.article>

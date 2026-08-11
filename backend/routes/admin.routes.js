@@ -24,12 +24,12 @@ router.get(
 const { validateProductPayload } = require('../validators/product.validator');
 
 // POST /api/admin/products
-// Requires auth, admin/manager/super-admin role, and handles multipart form data for images
+// Requires auth, admin/manager/super-admin role, and handles multipart form data for images & variant images
 router.post(
   '/products',
   auth.protectAdmin,
   requireRole(['admin', 'manager', 'super-admin']),
-  upload.array('images', 5),
+  upload.any(),
   validateProductPayload,
   adminController.createProduct
 );
@@ -39,7 +39,8 @@ router.put(
   '/products/:id',
   auth.protectAdmin,
   requireRole(['admin', 'manager', 'super-admin']),
-  upload.array('images', 5),
+  upload.any(),
+  validateProductPayload,
   adminController.updateProduct
 );
 
@@ -49,6 +50,22 @@ router.delete(
   auth.protectAdmin,
   requireRole(['admin', 'manager', 'super-admin']),
   adminController.deleteProduct
+);
+
+// POST /api/admin/products/:id/restore
+router.post(
+  '/products/:id/restore',
+  auth.protectAdmin,
+  requireRole(['admin', 'manager', 'super-admin']),
+  adminController.restoreProduct
+);
+
+// DELETE /api/admin/products/:id/permanent
+router.delete(
+  '/products/:id/permanent',
+  auth.protectAdmin,
+  requireRole(['admin', 'manager', 'super-admin']),
+  adminController.permanentDeleteProduct
 );
 
 // POST /api/admin/products/:id/generate-3d

@@ -32,8 +32,12 @@ const ProductSchema = new Schema({
   featured: { type: Boolean, default: false },
   isNewArrival: { type: Boolean, default: false },
   isBestSeller: { type: Boolean, default: false },
+  isPolarized: { type: Boolean, default: false },
+  isPremium: { type: Boolean, default: false },
   status: { type: String, enum: ["draft", "active", "archived"], default: "active" },
-  model3d: { type: String, trim: true }
+  model3d: { type: String, trim: true },
+  isDeleted: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null }
 }, {
   discriminatorKey: 'kind',
   timestamps: true

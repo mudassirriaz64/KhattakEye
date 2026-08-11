@@ -24,6 +24,7 @@ export interface AdminProductFilters {
   stock?: string;
   featured?: string;
   search?: string;
+  trashed?: string;
 }
 
 export const adminGetProductsApi = async (page = 1, limit = 50, filters: AdminProductFilters = {}) => {
@@ -35,6 +36,21 @@ export const adminGetProductsApi = async (page = 1, limit = 50, filters: AdminPr
   return response.data;
 };
 
+export const adminDeleteProductApi = async (id: string) => {
+  const response = await api.delete(`/admin/products/${id}`);
+  return response.data;
+};
+
+export const adminRestoreProductApi = async (id: string) => {
+  const response = await api.post(`/admin/products/${id}/restore`);
+  return response.data;
+};
+
+export const adminPermanentDeleteProductApi = async (id: string) => {
+  const response = await api.delete(`/admin/products/${id}/permanent`);
+  return response.data;
+};
+
 export const adminGetProductByIdApi = async (id: string) => {
   const response = await api.get(`/admin/products/${id}`);
   return response.data;
@@ -42,6 +58,15 @@ export const adminGetProductByIdApi = async (id: string) => {
 
 export const createProductApi = async (formData: FormData) => {
   const response = await api.post('/admin/products', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+export const updateProductApi = async (id: string, formData: FormData) => {
+  const response = await api.put(`/admin/products/${id}`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },

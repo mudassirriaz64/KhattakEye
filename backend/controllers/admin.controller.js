@@ -8,7 +8,7 @@ const Order = require('../models/Order');
 const Category = require('../models/Category');
 const Brand = require('../models/Brand');
 const { compressMedia } = require('../utils/mediaCompression');
-const { uploadMedia, resolveImageUrl } = require('../utils/cloudinary');
+const { cloudinary, uploadMedia, resolveImageUrl } = require('../utils/cloudinary');
 const { ORDER_STATUS_LIST } = require('../utils/constants');
 
 // Helper to write buffer to temp file
@@ -63,25 +63,56 @@ const createProduct = async (req, res, next) => {
       variants
     } = req.body;
 
-    // Process images
+    // Require getVideoDuration helper
+    const { getVideoDuration } = require('../utils/mediaCompression');
+
+    // Process images and videos (general images, videos, and per-variant images)
     const publicIds = [];
+    const videoPublicIds = [];
+    const variantImageMap = {}; // vIdx -> array of uploaded image publicIds
+
+    console.log("ADMIN CREATE/UPDATE PRODUCT — ACTUAL HANDLER RUNNING");
     if (req.files && req.files.length > 0) {
+      console.log("1. RAW FIELDNAMES:", req.files.map(f => f.fieldname));
       for (const file of req.files) {
         let tempPath = null;
         let compressedPath = null;
+        const isVideo = file.mimetype.startsWith('video/');
+
         try {
           tempPath = await writeTempFile(file.buffer, file.originalname);
-          compressedPath = await compressMedia(tempPath, 'image');
-          const cloudinaryResult = await uploadMedia(compressedPath, 'products');
-          publicIds.push(cloudinaryResult.public_id);
+          
+          if (isVideo) {
+            // Server-side video duration check via ffprobe
+            const duration = await getVideoDuration(tempPath);
+            if (duration > 60) {
+              throw new Error(`Video duration (${Math.round(duration)}s) exceeds maximum allowed 60 seconds limit.`);
+            }
+          }
+
+          compressedPath = await compressMedia(tempPath, isVideo ? 'video' : 'image');
+          const folderName = isVideo ? 'khattak-eye/products/videos' : 'products';
+          const cloudinaryResult = await uploadMedia(compressedPath, folderName, isVideo ? { resource_type: 'video' } : {});
+          
+          if (file.fieldname && file.fieldname.startsWith('variant_images_') && !file.fieldname.startsWith('variant_images_count_')) {
+            const vIdx = file.fieldname.replace('variant_images_', '');
+            if (!variantImageMap[vIdx]) variantImageMap[vIdx] = [];
+            variantImageMap[vIdx].push(cloudinaryResult.public_id);
+          } else if (isVideo || (file.fieldname && file.fieldname.startsWith('video'))) {
+            videoPublicIds.push(cloudinaryResult.public_id);
+          } else if (file.fieldname === 'images' || file.fieldname === 'image') {
+            publicIds.push(cloudinaryResult.public_id);
+          }
         } catch (err) {
-          console.error("Image processing error:", err);
+          console.error("Media processing error:", err);
+          return res.status(400).json({ success: false, message: err.message || "Failed to process media upload" });
         } finally {
           if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
           if (compressedPath && fs.existsSync(compressedPath)) fs.unlinkSync(compressedPath);
         }
       }
     }
+    console.log("2. variantImageMap AFTER LOOP:", JSON.stringify(variantImageMap));
 
     let parsedVariants = [];
     if (variants) {
@@ -91,6 +122,21 @@ const createProduct = async (req, res, next) => {
         console.error("Failed to parse variants JSON:", err);
       }
     }
+
+    // Merge uploaded variant images into parsedVariants
+    if (Array.isArray(parsedVariants)) {
+      parsedVariants = parsedVariants.map((v, i) => {
+        const newImgs = variantImageMap[i] || [];
+        const existingImgs = Array.isArray(v.images) ? v.images : [];
+        const combined = [...existingImgs, ...newImgs];
+        return {
+          ...v,
+          images: combined,
+          image: combined[0] || v.image || ''
+        };
+      });
+    }
+    console.log("4. parsedVariants AFTER MERGE:", JSON.stringify(parsedVariants));
 
     const baseProductData = {
       name,
@@ -109,7 +155,10 @@ const createProduct = async (req, res, next) => {
       featured: featured === 'true' || featured === true,
       isNewArrival: req.body.isNewArrival === 'true' || req.body.isNewArrival === true,
       isBestSeller: req.body.isBestSeller === 'true' || req.body.isBestSeller === true,
+      isPolarized: req.body.isPolarized === 'true' || req.body.isPolarized === true,
+      isPremium: req.body.isPremium === 'true' || req.body.isPremium === true,
       images: publicIds.length > 0 ? publicIds : (Array.isArray(req.body.images) ? req.body.images : []),
+      videos: videoPublicIds.length > 0 ? videoPublicIds : (Array.isArray(req.body.videos) ? req.body.videos : []),
       availability: (Number(stock) || 10) > 0 ? 'in-stock' : 'out-of-stock',
     };
 
@@ -155,7 +204,7 @@ const createProduct = async (req, res, next) => {
           glassesData.gender = typeof req.body.gender === 'string' ? req.body.gender.split(',') : req.body.gender;
         }
       }
-
+      console.log("5. FINAL VARIANTS BEING SAVED:", JSON.stringify(glassesData.variants));
       newProduct = await Glasses.create(glassesData);
     }
 
@@ -173,8 +222,10 @@ const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const getProducts = async (req, res, next) => {
   try {
-    const { page = 1, limit = 50, kind, category, subcategory, brand, stock, featured, search } = req.query;
+    const { page = 1, limit = 50, kind, category, subcategory, brand, stock, featured, search, trashed } = req.query;
     const filter = {};
+    if (trashed === 'true') filter.isDeleted = true;
+    else filter.isDeleted = { $ne: true };
     if (kind) filter.kind = kind;
     if (category) filter.category = category;
     if (subcategory) filter.subcategory = subcategory;
@@ -218,7 +269,7 @@ const getProducts = async (req, res, next) => {
 const getProductById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const product = await Product.findById(id);
+    const product = await Product.findById(id).where('isDeleted').ne(true);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -235,7 +286,7 @@ const getProductById = async (req, res, next) => {
 const generateProduct3D = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const product = await Product.findById(id);
+    const product = await Product.findById(id).where('isDeleted').ne(true);
 
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
@@ -264,17 +315,158 @@ const generateProduct3D = async (req, res, next) => {
 const updateProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const updateData = { ...req.body };
-
-    // Handle files if uploaded
-    if (req.files && req.files.length > 0) {
-      updateData.images = req.files.map(file => file.path || file.filename);
-    }
-
-    const updated = await Product.findByIdAndUpdate(id, updateData, { returnDocument: 'after', runValidators: true });
-    if (!updated) {
+    const existingProduct = await Product.findById(id).where('isDeleted').ne(true);
+    if (!existingProduct) {
       return res.status(404).json({ message: 'Product not found' });
     }
+
+    const {
+      name,
+      brand,
+      category,
+      subcategory,
+      shortDescription,
+      description,
+      price,
+      oldPrice,
+      cost,
+      sku,
+      stock,
+      status,
+      featured,
+      weight,
+      frameShape,
+      frameMaterial,
+      lensType,
+      lensColor,
+      frameColor,
+      frameWidth,
+      lensWidth,
+      bridgeWidth,
+      templeLength,
+      variants
+    } = req.body;
+
+    const publicIds = [];
+    const videoPublicIds = [];
+    const variantImageMap = {};
+
+    console.log("ADMIN UPDATE PRODUCT — ACTUAL HANDLER RUNNING");
+    if (req.files && req.files.length > 0) {
+      console.log("1. RAW FIELDNAMES (UPDATE):", req.files.map(f => f.fieldname));
+      for (const file of req.files) {
+        let tempPath = null;
+        let compressedPath = null;
+        const isVideo = file.mimetype.startsWith('video/');
+
+        try {
+          tempPath = await writeTempFile(file.buffer, file.originalname);
+
+          if (isVideo) {
+            const { getVideoDuration } = require('../utils/mediaCompression');
+            const duration = await getVideoDuration(tempPath);
+            if (duration > 60) {
+              throw new Error(`Video duration (${Math.round(duration)}s) exceeds maximum allowed 60 seconds limit.`);
+            }
+          }
+
+          compressedPath = await compressMedia(tempPath, isVideo ? 'video' : 'image');
+          const folderName = isVideo ? 'khattak-eye/products/videos' : 'products';
+          const cloudinaryResult = await uploadMedia(compressedPath, folderName, isVideo ? { resource_type: 'video' } : {});
+          
+          if (file.fieldname && file.fieldname.startsWith('variant_images_') && !file.fieldname.startsWith('variant_images_count_')) {
+            const vIdx = file.fieldname.replace('variant_images_', '');
+            if (!variantImageMap[vIdx]) variantImageMap[vIdx] = [];
+            variantImageMap[vIdx].push(cloudinaryResult.public_id);
+          } else if (isVideo || (file.fieldname && file.fieldname.startsWith('video'))) {
+            videoPublicIds.push(cloudinaryResult.public_id);
+          } else if (file.fieldname === 'images' || file.fieldname === 'image') {
+            publicIds.push(cloudinaryResult.public_id);
+          }
+        } catch (err) {
+          console.error("Media processing error:", err);
+          return res.status(400).json({ success: false, message: err.message || "Failed to process media upload" });
+        } finally {
+          if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+          if (compressedPath && fs.existsSync(compressedPath)) fs.unlinkSync(compressedPath);
+        }
+      }
+    }
+    console.log("2. variantImageMap AFTER LOOP (UPDATE):", JSON.stringify(variantImageMap));
+
+    let parsedVariants = null;
+    if (variants !== undefined) {
+      try {
+        parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
+      } catch (err) {
+        console.error("Failed to parse variants JSON:", err);
+      }
+    }
+
+    if (Array.isArray(parsedVariants)) {
+      parsedVariants = parsedVariants.map((v, i) => {
+        const newImgs = variantImageMap[i] || [];
+        const existingImgs = (Array.isArray(v.images) ? v.images : []).filter(img => typeof img === 'string' && !img.includes('blob:'));
+        const combined = [...existingImgs, ...newImgs];
+        return {
+          ...v,
+          images: combined,
+          image: combined[0] || (v.image && !v.image.includes('blob:') ? v.image : '')
+        };
+      });
+    }
+    console.log("4. parsedVariants AFTER MERGE (UPDATE):", JSON.stringify(parsedVariants));
+
+    const updateFields = {
+      ...(name && { name, slug: name.toLowerCase().replace(/[\s_]+/g, '-').replace(/[^\w-]+/g, '') }),
+      ...(brand && { brand }),
+      ...(category && { category }),
+      ...(subcategory !== undefined && { subcategory }),
+      ...(shortDescription !== undefined && { shortDescription }),
+      ...(description !== undefined && { description }),
+      ...(price !== undefined && { price: Number(price) }),
+      ...(oldPrice !== undefined && { oldPrice: oldPrice ? Number(oldPrice) : null }),
+      ...(cost !== undefined && { cost: cost ? Number(cost) : null }),
+      ...(sku && { sku }),
+      ...(stock !== undefined && { stock: Number(stock), availability: Number(stock) > 0 ? 'in-stock' : 'out-of-stock' }),
+      ...(status && { status }),
+      ...(featured !== undefined && { featured: featured === 'true' || featured === true }),
+      ...(req.body.isNewArrival !== undefined && { isNewArrival: req.body.isNewArrival === 'true' || req.body.isNewArrival === true }),
+      ...(req.body.isBestSeller !== undefined && { isBestSeller: req.body.isBestSeller === 'true' || req.body.isBestSeller === true }),
+      ...(req.body.isPolarized !== undefined && { isPolarized: req.body.isPolarized === 'true' || req.body.isPolarized === true }),
+      ...(req.body.isPremium !== undefined && { isPremium: req.body.isPremium === 'true' || req.body.isPremium === true }),
+    };
+
+    if (publicIds.length > 0) {
+      updateFields.images = [...(existingProduct.images || []), ...publicIds];
+    }
+
+    if (videoPublicIds.length > 0) {
+      updateFields.videos = [...(existingProduct.videos || []), ...videoPublicIds];
+    }
+
+    if (parsedVariants) {
+      updateFields.variants = parsedVariants;
+    }
+
+    if (existingProduct.kind === 'glasses') {
+      if (frameShape) updateFields.frameShape = frameShape;
+      if (frameMaterial) updateFields.frameMaterial = frameMaterial;
+      if (lensType) updateFields.lensType = lensType;
+      if (lensColor) updateFields.lensColor = lensColor;
+      if (frameColor) updateFields.frameColor = frameColor;
+      if (weight) updateFields.weight = `${weight}g`;
+      if (req.body.gender) {
+        try {
+          updateFields.gender = typeof req.body.gender === 'string' ? JSON.parse(req.body.gender) : req.body.gender;
+        } catch (e) {
+          updateFields.gender = typeof req.body.gender === 'string' ? req.body.gender.split(',') : req.body.gender;
+        }
+      }
+    }
+
+    console.log("5. FINAL VARIANTS BEING SAVED (UPDATE):", JSON.stringify(updateFields.variants));
+    const updated = await Product.findByIdAndUpdate(id, { $set: updateFields }, { returnDocument: 'after', runValidators: true });
     res.status(200).json(updated);
   } catch (error) {
     next(error);
@@ -284,11 +476,93 @@ const updateProduct = async (req, res, next) => {
 const deleteProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const deleted = await Product.findByIdAndDelete(id);
+    const deleted = await Product.findOneAndUpdate(
+      { _id: id, isDeleted: { $ne: true } },
+      { $set: { isDeleted: true, deletedAt: new Date() } },
+      { new: true }
+    );
     if (!deleted) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    res.status(200).json({ message: 'Product deleted successfully' });
+    res.status(200).json({ message: 'Product moved to trash', product: deleted });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Collect all Cloudinary public_ids referenced by a product document.
+const collectCloudinaryPublicIds = (product) => {
+  const publicIds = new Set();
+  const add = (value) => {
+    if (typeof value === 'string' && value && !value.startsWith('http')) {
+      publicIds.add(value);
+    }
+  };
+  (product.images || []).forEach(add);
+  add(product.hoverImage);
+  (product.videos || []).forEach(add);
+  (product.variants || []).forEach((v) => {
+    add(v.image);
+    add(v.hoverImage);
+    (v.images || []).forEach(add);
+  });
+  return [...publicIds];
+};
+
+const restoreProduct = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const restored = await Product.findOneAndUpdate(
+      { _id: id, isDeleted: true },
+      { $set: { isDeleted: false, deletedAt: null } },
+      { new: true }
+    );
+    if (!restored) {
+      return res.status(404).json({ message: 'Product not found in trash' });
+    }
+    res.status(200).json({ message: 'Product restored successfully', product: restored });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const permanentDeleteProduct = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const product = await Product.findOne({ _id: id });
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Destroy every Cloudinary asset first (image + video resource types).
+    const publicIds = collectCloudinaryPublicIds(product);
+    const videoIds = new Set(product.videos || []);
+    const failures = [];
+
+    for (const publicId of publicIds) {
+      try {
+        const result = await cloudinary.uploader.destroy(publicId, {
+          resource_type: videoIds.has(publicId) ? 'video' : 'image'
+        });
+        if (result && result.result === 'error') {
+          failures.push(publicId);
+        }
+      } catch (error) {
+        console.error(`Cloudinary destroy failed for ${publicId}:`, error.message);
+        failures.push(publicId);
+      }
+    }
+
+    // Proceed with Mongo removal even if some Cloudinary assets failed to delete,
+    // so the product is never stranded in Trash.
+    await Product.findByIdAndDelete(id);
+
+    res.status(200).json({
+      message: 'Product permanently deleted',
+      product: product.name,
+      assetsDestroyed: publicIds.length - failures.length,
+      failedAssets: failures
+    });
   } catch (error) {
     next(error);
   }
@@ -412,14 +686,14 @@ const verifyPayment = async (req, res, next) => {
 const getDashboardStats = async (req, res, next) => {
   try {
     const [productsCount, ordersCount, pendingOrdersCount, orders] = await Promise.all([
-      Product.countDocuments(),
+      Product.countDocuments({ isDeleted: { $ne: true } }),
       Order.countDocuments(),
       Order.countDocuments({ status: 'pending' }),
       Order.find({ status: { $ne: 'cancelled' } }, 'total')
     ]);
 
     const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const lowStockCount = await Product.countDocuments({ stock: { $lte: 5 } });
+    const lowStockCount = await Product.countDocuments({ stock: { $lte: 5 }, isDeleted: { $ne: true } });
 
     res.status(200).json({
       totalRevenue,
@@ -524,6 +798,8 @@ module.exports = {
   getProductById,
   updateProduct,
   deleteProduct,
+  restoreProduct,
+  permanentDeleteProduct,
   getAdminOrders,
   updateOrderStatus,
   verifyPayment,

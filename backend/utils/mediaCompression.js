@@ -1,11 +1,31 @@
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegStatic = require('ffmpeg-static');
+const ffprobeStatic = require('ffprobe-static');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
-// Set the path to the ffmpeg binary
+// Set the path to the ffmpeg & ffprobe binaries
 ffmpeg.setFfmpegPath(ffmpegStatic);
+ffmpeg.setFfprobePath(ffprobeStatic.path);
+
+/**
+ * Probes a video file to retrieve its exact duration in seconds.
+ * @param {string} inputPath - Path to the video file
+ * @returns {Promise<number>} - Duration in seconds
+ */
+const getVideoDuration = (inputPath) => {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(inputPath, (err, metadata) => {
+      if (err) return reject(err);
+      const duration = metadata?.format?.duration;
+      if (duration === undefined || isNaN(Number(duration))) {
+        return reject(new Error('Unable to determine video duration'));
+      }
+      resolve(Number(duration));
+    });
+  });
+};
 
 /**
  * Compresses an image or video file using ffmpeg.
@@ -55,4 +75,4 @@ const compressMedia = (inputPath, resourceType = 'image') => {
   });
 };
 
-module.exports = { compressMedia };
+module.exports = { compressMedia, getVideoDuration };

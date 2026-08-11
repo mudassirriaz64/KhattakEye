@@ -220,7 +220,7 @@ exports.createOrder = async (req, res, next) => {
         return res.status(400).json({ message: `Invalid quantity for "${raw.name || 'item'}"` });
       }
 
-      const product = await Product.findById(raw.product || raw.id);
+      const product = await Product.findById(raw.product || raw.id).where('isDeleted').ne(true);
       if (!product || product.status !== 'active') {
         return res.status(404).json({ message: `Product "${raw.name || 'item'}" is unavailable` });
       }

@@ -12,34 +12,11 @@ import { getProducts, mapProductCard } from "@/lib/api/products";
 import { type Product } from "@/lib/shop-data";
 import axios from "@/lib/api/axios";
 
-const faqs = [
-  {
-    q: "Do Computer Glasses Really Work?",
-    a: "Yes! Computer glasses are specialized eyewear designed with anti-reflective and blue-light filtering technology to protect your eyes from artificial screen radiation. They significantly reduce digital eye strain, blurry vision, dry eyes, and headaches caused by prolonged screen usage."
-  },
-  {
-    q: "What is the difference between Computer Glasses and Regular Glasses?",
-    a: "Regular prescription glasses correct distance or reading vision, but computer glasses are specifically optimized for intermediate screen distances (approx. 20-26 inches). They also incorporate anti-glare coatings and blue-light blocking filters that standard clear lenses lack."
-  },
-  {
-    q: "Can I wear Computer Glasses all day long?",
-    a: "Absolutely. Khattak Eyewear computer lenses are built on high-clarity polymer bases. They can be worn comfortably throughout the day for both screen work and outdoor activities."
-  },
-  {
-    q: "How to order online Computer Glasses in Pakistan?",
-    a: "Browse our Computer Glasses collection below, select your preferred frame, click 'Select Lenses', enter your prescription (or choose non-prescription 0.00 power), and select 'Computer & Blue Cut' lens. We craft and deliver your glasses right to your doorstep."
-  },
-  {
-    q: "What is the price range of Computer Glasses in Pakistan?",
-    a: "At Khattak Eyewear, our complete computer glasses (frame + specialized anti-glare blue-light filtering lenses) start from Rs. 2,490 up to premium designer titanium frames."
-  }
-];
-
 const ITEMS_PER_PAGE = 12;
 
 export function ComputerGlassesPage() {
   const [dbProducts, setDbProducts] = useState<Product[]>([]);
-  const [dynamicFaqs, setDynamicFaqs] = useState<{ q: string; a: string }[]>(faqs);
+  const [faqs, setFaqs] = useState<{ q: string; a: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
@@ -60,7 +37,7 @@ export function ComputerGlassesPage() {
     axios.get("/faqs?page=computer")
       .then((res) => {
         if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          setDynamicFaqs(res.data.map((f: { question: string; answer: string }) => ({ q: f.question, a: f.answer })));
+          setFaqs(res.data.map((f: { question: string; answer: string }) => ({ q: f.question, a: f.answer })));
         }
       })
       .catch(() => {});
@@ -256,7 +233,7 @@ export function ComputerGlassesPage() {
         </div>
 
         <div className="mt-8 space-y-4 max-w-4xl mx-auto">
-          {dynamicFaqs.map((faq, idx) => {
+          {faqs.map((faq, idx) => {
             const isOpen = openFaqIndex === idx;
             return (
               <div key={idx} className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-app-bg)] overflow-hidden transition-all">

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Bell, Menu, LogOut, Settings } from "lucide-react";
+import { Search, Bell, Menu, LogOut, Settings, Trash2 } from "lucide-react";
 import { useAdminStore } from "@/lib/stores/admin-store";
 
 type Props = { onMenuClick: () => void };
@@ -39,6 +39,15 @@ export function AdminTopBar({ onMenuClick }: Props) {
         <button type="button" className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)] sm:hidden" onClick={() => setSearchOpen(!searchOpen)}>
           <Search className="h-4.5 w-4.5" />
         </button>
+
+        {/* Product Trash quick-access button */}
+        <Link
+          to="/admin/products?status=Trash"
+          title="Product Trash"
+          className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-danger)]"
+        >
+          <Trash2 className="h-4.5 w-4.5" />
+        </Link>
 
         <div className="relative">
           <button type="button" onClick={() => setShowNotifications(!showNotifications)} className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)]">

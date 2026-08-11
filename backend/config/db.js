@@ -16,9 +16,10 @@ const connectDB = async () => {
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error(`MongoDB Connection Error: ${error.message}`);
-    if (process.env.NODE_ENV !== 'production') {
-      process.exit(1);
-    }
+    // Always exit on boot-time connection failure — a disconnected server is not
+    // usable in any environment. Let the process supervisor (nodemon / Vercel)
+    // restart it rather than silently serving requests with no DB.
+    process.exit(1);
   }
 };
 

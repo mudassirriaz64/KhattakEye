@@ -38,7 +38,7 @@ const initialState = {
   totalPages: 1,
   isLoading: false,
   selectedFilters: {} as Record<string, string[]>,
-  priceRange: [0, 50000] as [number, number],
+  priceRange: [0, 100000] as [number, number],
   sortBy: "popular",
   viewMode: "grid" as ViewMode,
   currentPage: 1,
@@ -112,7 +112,7 @@ export const useShopStore = create<ShopState>((set, get) => ({
   resetFilters: () =>
     set({
       selectedFilters: {},
-      priceRange: [0, 50000],
+      priceRange: [0, 100000],
       sortBy: "popular",
       currentPage: 1,
     }),

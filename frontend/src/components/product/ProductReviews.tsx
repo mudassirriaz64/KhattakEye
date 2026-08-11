@@ -174,9 +174,14 @@ export function ProductReviews({ productId, reviews: initialReviews = [], rating
                       {(review.user?.fullName || review.customer || review.name || "Customer").charAt(0)}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[color:var(--color-text-primary)]">
-                        {review.user?.fullName || review.customer || review.name || "Valued Customer"}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-[color:var(--color-text-primary)]">
+                          {review.user?.fullName || review.customer || review.name || "Valued Customer"}
+                        </p>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[9px] font-bold text-green-700 uppercase tracking-wider">
+                          <CheckCircle2 className="h-2.5 w-2.5" /> Verified Buyer
+                        </span>
+                      </div>
                       <p className="text-xs text-[color:var(--color-text-tertiary)]">
                         {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : review.date || "Recent"}
                       </p>

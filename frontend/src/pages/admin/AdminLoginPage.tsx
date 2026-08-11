@@ -52,8 +52,8 @@ export function AdminLoginPage() {
   };
 
   const handleQuickFillDemo = () => {
-    setEmail("admin@khattak.com");
-    setPassword("admin123");
+    setEmail("admin@khattakeye.com");
+    setPassword("Admin1234");
     setError("");
   };
 
@@ -124,7 +124,7 @@ export function AdminLoginPage() {
             <div className="mb-6 flex items-center justify-between rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)]/80 p-3 shadow-sm backdrop-blur-sm">
               <div className="flex items-center gap-2 text-xs text-[color:var(--color-text-secondary)]">
                 <KeyRound className="h-4 w-4 text-[color:var(--color-brand-primary)]" />
-                <span>Demo Creds: <strong>admin@khattak.com</strong></span>
+                <span>Demo Creds: <strong>admin@khattakeye.com</strong></span>
               </div>
               <button
                 type="button"

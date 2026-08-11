@@ -5,7 +5,12 @@ export interface ApiProductVariant {
   hexCode?: string;
   colorName?: string;
   image?: string;
+  images?: string[];
   stock?: number;
+  lensWidth?: string;
+  bridgeWidth?: string;
+  templeLength?: string;
+  frameMaterial?: string;
 }
 
 export interface ApiProduct {
@@ -23,6 +28,7 @@ export interface ApiProduct {
   description?: string;
   shortDescription?: string;
   images?: (string | { url?: string })[];
+  videos?: string[];
   variants?: ApiProductVariant[];
   category?: string;
   subcategory?: string;
@@ -30,6 +36,8 @@ export interface ApiProduct {
   badges?: string[];
   isBestSeller?: boolean;
   isNewArrival?: boolean;
+  isPolarized?: boolean;
+  isPremium?: boolean;
   gender?: string | string[];
   frameShape?: string;
   frameMaterial?: string;
@@ -153,11 +161,24 @@ const getFallbackImage = (idStr: string) => {
   return fallbackOpticsImages[Math.abs(hash) % fallbackOpticsImages.length];
 };
 
+export const resolveCloudinaryUrl = (path: string): string => {
+  if (!path) return "";
+  if (path.startsWith("http") || path.startsWith("/")) return path;
+  return `https://res.cloudinary.com/dng10x82r/image/upload/${path}`;
+};
+
+export const resolveCloudinaryVideoUrl = (path: string): string => {
+  if (!path) return "";
+  if (path.startsWith("http") || path.startsWith("/")) return path;
+  return `https://res.cloudinary.com/yu7gjemi/video/upload/${path}`;
+};
+
 export const sanitizeProductImages = (images: (string | { url?: string })[] | undefined): string[] => {
   const raw = images && images.length > 0 ? images : [];
   return raw
     .map((img) => (typeof img === "string" ? img : img?.url))
-    .filter((url): url is string => typeof url === "string" && url.trim().length > 0 && !url.includes("trae.ai"));
+    .filter((url): url is string => typeof url === "string" && url.trim().length > 0 && !url.includes("trae.ai"))
+    .map(resolveCloudinaryUrl);
 };
 
 export const productImageFallback = (idStr: string) => getFallbackImage(idStr);
@@ -193,8 +214,13 @@ export const mapProductCard = (p: ApiProduct): ProductCard => {
     variants: variants.map((v) => ({
       color: v.color || v.hexCode || "#000",
       colorName: v.colorName || "Standard",
-      image: v.image || images[0] || "",
+      image: v.image || (v.images && v.images.length > 0 ? v.images[0] : images[0] || ""),
+      images: Array.isArray(v.images) && v.images.length > 0 ? v.images : (v.image ? [v.image] : []),
       stock: v.stock ?? stock,
+      lensWidth: v.lensWidth || "",
+      bridgeWidth: v.bridgeWidth || "",
+      templeLength: v.templeLength || "",
+      frameMaterial: v.frameMaterial || "",
     })),
     colors: variants.map((v) => ({ name: v.colorName || "Standard", hex: v.color || v.hexCode || "#000" })),
     stock,

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
+import axios from "@/lib/api/axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Eye, Zap, Sparkles, CheckCircle2, ChevronDown, HelpCircle, ArrowRight, Laptop, Monitor, Smartphone, Sun } from "lucide-react";
 import { Breadcrumb } from "@/components/shop/Breadcrumb";
@@ -10,36 +11,8 @@ import { useShopStore } from "@/lib/stores/shop-store";
 import { getProducts, mapProductCard } from "@/lib/api/products";
 import { type Product } from "@/lib/shop-data";
 
-const faqs = [
-  {
-    q: "Is it harmful to wear blue light lenses all day long?",
-    a: "No, blue light blocking lenses are completely safe and beneficial for all-day wear. They function like regular clear lenses while filtering high-energy visible (HEV) screen radiation without distorting natural colors."
-  },
-  {
-    q: "Should I wear blue light glasses to watch TV or play video games?",
-    a: "Yes! Modern televisions, gaming monitors, and smartphone screens emit significant amounts of artificial blue light. Wearing blue light glasses reduces eye strain, dryness, and fatigue during long gaming sessions or movie marathons."
-  },
-  {
-    q: "Can I get blue light protection with prescription lenses?",
-    a: "Absolutely. All our blue light blocking technologies (Dark Blue-Cut, Clear Blue-Cut, and Photochromic Transition) can be customized with your exact single vision, bifocal, or progressive prescription."
-  },
-  {
-    q: "Who should wear blue light filtering glasses?",
-    a: "Anyone who spends 2+ hours daily looking at digital screens—including software developers, office professionals, students, gamers, and night-time readers—can benefit from blue light protection."
-  },
-  {
-    q: "How does blue light affect my sleep quality?",
-    a: "Exposure to screen blue light in the evening suppresses melatonin production, delaying your brain's natural sleep signal. Blue light blocking glasses help preserve healthy sleep cycles when using screens at night."
-  },
-  {
-    q: "How to order online Blue Light Glasses in Pakistan?",
-    a: "Select any frame from our collection, click 'Select Lenses', choose your prescription type, and select 'Blue Cut' or 'Blue Light Shield' in the lens options. We craft and deliver your custom eyewear anywhere in Pakistan."
-  },
-  {
-    q: "Why choose Khattak Eyewear Blue Light Lenses?",
-    a: "Khattak Eyewear uses 99.8% high-clarity anti-reflective blue-blocking polymer lenses. Our lenses offer full UV400 protection, scratch-resistant hard coating, hydrophobic smudge protection, and come backed by our satisfaction warranty."
-  }
-];
+type FaqItem = { q: string; a: string };
+
 
 const comparisonData = [
   { feature: "Overall Structure", dark: "✔", clear: "✔", photo: "✔", photoDark: "✔" },
@@ -59,6 +32,16 @@ export function BlueLightLensesPage() {
   const [dbProducts, setDbProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [faqs, setFaqs] = useState<FaqItem[]>([]);
+
+  useEffect(() => {
+    axios.get('/faqs?page=blue-light').then((res) => {
+      if (res.data && Array.isArray(res.data)) {
+        const items = res.data.map((faq: { question: string; answer: string }) => ({ q: faq.question, a: faq.answer }));
+        setFaqs(items);
+      }
+    }).catch(() => {});
+  }, []);
 
   const selectedFilters = useShopStore((s) => s.selectedFilters);
   const priceRange = useShopStore((s) => s.priceRange);
@@ -367,14 +350,16 @@ export function BlueLightLensesPage() {
                 <AnimatePresence>
                   {isOpen && (
                     <motion.div
+                      key="answer"
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25 }}
+                      transition={{ duration: 0.25, ease: "easeInOut" }}
+                      className="overflow-hidden"
                     >
-                      <div className="border-t border-[color:var(--color-border)] px-5 pb-5 pt-3 text-sm leading-relaxed text-[color:var(--color-text-secondary)]">
+                      <p className="px-5 pb-5 text-sm leading-relaxed text-[color:var(--color-text-secondary)]">
                         {faq.a}
-                      </div>
+                      </p>
                     </motion.div>
                   )}
                 </AnimatePresence>

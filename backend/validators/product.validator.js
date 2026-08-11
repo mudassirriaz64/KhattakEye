@@ -30,6 +30,15 @@ function validateProductPayload(req, res, next) {
     errors.push('Invalid product kind. Allowed values: glasses, lenses');
   }
 
+  // Check for invalid ephemeral blob: URLs in payload
+  const rawBodyStr = JSON.stringify(req.body);
+  if (rawBodyStr.includes('blob:')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid payload: Media fields must not contain ephemeral blob: URLs. Please upload valid media files.'
+    });
+  }
+
   if (errors.length > 0) {
     return res.status(400).json({ success: false, errors, message: errors.join(', ') });
   }

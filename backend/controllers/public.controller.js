@@ -19,6 +19,9 @@ const formatProduct = (product) => {
   if (p.variants && p.variants.length > 0) {
     p.variants = p.variants.map(v => {
       if (v.image) v.image = resolveImageUrl(v.image) || v.image;
+      if (v.images && v.images.length > 0) {
+        v.images = v.images.map(img => resolveImageUrl(img) || img);
+      }
       if (v.hoverImage) v.hoverImage = resolveImageUrl(v.hoverImage) || v.hoverImage;
       return v;
     });
@@ -42,12 +45,12 @@ exports.getCategories = async (req, res, next) => {
       if (cat.image) cat.image = resolveImageUrl(cat.image) || cat.image;
       
       // Dynamic count for parent category
-      cat.productCount = await Product.countDocuments({ category: cat.slug });
+      cat.productCount = await Product.countDocuments({ category: cat.slug, isDeleted: { $ne: true } });
       
       // Dynamic count for each subcategory
       if (Array.isArray(cat.subcategories)) {
         cat.subcategories = await Promise.all(cat.subcategories.map(async (sub) => {
-          sub.productCount = await Product.countDocuments({ subcategory: sub.slug });
+          sub.productCount = await Product.countDocuments({ subcategory: sub.slug, isDeleted: { $ne: true } });
           return sub;
         }));
       }
@@ -94,7 +97,7 @@ exports.getProducts = async (req, res, next) => {
       limit = 50 
     } = req.query;
 
-    const filter = {};
+    const filter = { isDeleted: { $ne: true } };
 
     if (kind) filter.kind = kind;
     if (featured !== undefined) filter.featured = featured === 'true';
@@ -158,9 +161,9 @@ exports.getProducts = async (req, res, next) => {
 exports.getProductBySlug = async (req, res, next) => {
   try {
     const { slug } = req.params;
-    let product = await Product.findOne({ slug });
+    let product = await Product.findOne({ slug, isDeleted: { $ne: true } });
     if (!product && slug.match(/^[0-9a-fA-F]{24}$/)) {
-      product = await Product.findById(slug);
+      product = await Product.findById(slug).where('isDeleted').ne(true);
     }
     
     if (!product) {
