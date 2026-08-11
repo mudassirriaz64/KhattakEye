@@ -1,22 +1,16 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "builds": [
-    {
-      "src": "api/index.js",
-      "use": "@vercel/node"
+  "services": {
+    "frontend": {
+      "root": "frontend/"
     },
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+    "backend": {
+      "root": "backend/",
+      "framework": "express"
     }
-  ],
+  },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/index.js" },
-    { "source": "/assets/(.*)", "destination": "/frontend/assets/$1" },
-    { "source": "/khattak.png", "destination": "/frontend/khattak.png" },
-    { "source": "/khattak.jpeg", "destination": "/frontend/khattak.jpeg" },
-    { "source": "/favicon.svg", "destination": "/frontend/favicon.svg" },
-    { "source": "/((?!api|assets|khattak.png|khattak.jpeg|favicon.svg).*)", "destination": "/frontend/index.html" }
+    { "source": "/api/(.*)", "destination": { "service": "backend" } },
+    { "source": "/(.*)", "destination": { "service": "frontend" } }
   ]
 }
