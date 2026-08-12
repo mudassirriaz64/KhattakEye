@@ -1,8 +1,11 @@
 {
-  "rewrites": [
-    {
-      "source": "/((?!.*\\.[\\w]+$).*)",
-      "destination": "/index.html"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "main": true
     }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

@@ -14,8 +14,25 @@ const app = express();
 
 app.set('trust proxy', 1);
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+];
+if (process.env.CORS_ORIGIN) {
+  process.env.CORS_ORIGIN.split(',').forEach(o => allowedOrigins.push(o.trim()));
+}
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || true,
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    const cleanedOrigin = origin.replace(/\/$/, '');
+    const isAllowed = allowedOrigins.some(allowed => allowed.replace(/\/$/, '') === cleanedOrigin);
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Not allowed by CORS: ${origin}`));
+    }
+  },
   credentials: true
 }));
 

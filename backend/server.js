@@ -21,12 +21,19 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Local Development Only (Vercel ignores this block)
-if (process.env.NODE_ENV !== 'production') {
+// Start the server if running in a non-serverless environment (like Render or local dev)
+if (!process.env.VERCEL) {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} in development mode`);
-  });
+  ensureDbConnected()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error('Failed to connect to database on startup:', err);
+      process.exit(1);
+    });
 }
 
 // CRITICAL FOR VERCEL: Export the Express app
