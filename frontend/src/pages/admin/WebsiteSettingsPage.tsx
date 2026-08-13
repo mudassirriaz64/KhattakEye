@@ -26,7 +26,10 @@ export function AdminWebsiteSettingsPage() {
   useEffect(() => {
     axios.get("/settings").then((res) => {
       if (res.data) {
-        setSettings((prev) => ({ ...prev, ...res.data }));
+        const data = { ...res.data };
+        if (data.socialLinks && !data.social) data.social = { ...data.socialLinks };
+        if (data.social && !data.socialLinks) data.socialLinks = { ...data.social };
+        setSettings((prev) => ({ ...prev, ...data }));
       }
     }).catch(() => {});
   }, []);
@@ -47,9 +50,25 @@ export function AdminWebsiteSettingsPage() {
       const keys = path.split(".");
       let obj: Record<string, unknown> = copy;
       for (let i = 0; i < keys.length - 1; i++) {
+        if (!obj[keys[i]]) obj[keys[i]] = {};
         obj = obj[keys[i]] as Record<string, unknown>;
       }
       obj[keys[keys.length - 1]] = value;
+
+      // Sync social and socialLinks
+      if (path.startsWith("social.")) {
+        const sub = path.replace("social.", "");
+        if (!copy.socialLinks) copy.socialLinks = { ...cmsWebsiteSettings.socialLinks };
+        (copy.socialLinks as Record<string, unknown>)[sub] = value;
+      }
+
+      // Sync shipping aliases
+      if (path.startsWith("shipping.")) {
+        if (!copy.shipping) copy.shipping = { ...cmsWebsiteSettings.shipping };
+        const sh = copy.shipping as Record<string, unknown>;
+        if (path === "shipping.freeThreshold") sh.freeDeliveryThreshold = Number(value) || 0;
+        if (path === "shipping.standardRate") sh.flatRate = Number(value) || 0;
+      }
       return copy;
     });
   };
@@ -130,24 +149,286 @@ export function AdminWebsiteSettingsPage() {
             </div>
           )}
           {activeSection === "payments" && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-semibold">Payment Details</h3>
-              <h4 className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">Bank Transfer</h4>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {field("Bank Name", "bankDetails.bankName", "HBL")}
-                {field("Account Title", "bankDetails.accountTitle", "Khattak Eyewear Pvt Ltd")}
-                {field("Account Number", "bankDetails.accountNumber", "1234-5678-9012-3456")}
-                {field("IBAN", "bankDetails.iban", "PK36HBLB1234567890123456")}
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold">Payment Methods & Accounts</h3>
+                <p className="mt-0.5 text-xs text-[color:var(--color-text-tertiary)]">Configure active payment methods and details presented to customers at checkout.</p>
               </div>
-              <h4 className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">JazzCash</h4>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {field("Number", "jazzcash.number", "+92 300 111 2222")}
-                {field("Account Title", "jazzcash.accountTitle", "Khattak Eyewear")}
+
+              {/* Cash on Delivery */}
+              <div className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">Cash on Delivery (COD)</span>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-medium">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(readPath("payment.cod.active") ?? true)}
+                      onChange={(e) => update("payment.cod.active", e.target.checked as unknown as string)}
+                      className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-brand-primary)]"
+                    />
+                    <span>Active for Checkout</span>
+                  </label>
+                </div>
+                <div className="mt-3">
+                  {field("Instructions / Note", "payment.cod.instructions", "Pay cash upon delivery at your doorstep.")}
+                </div>
               </div>
-              <h4 className="mt-4 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">EasyPaisa</h4>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {field("Number", "easypaisa.number", "+92 300 111 2222")}
-                {field("Account Title", "easypaisa.accountTitle", "Khattak Eyewear")}
+
+              {/* Bank Transfer */}
+              <div className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">Bank Transfer</span>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-medium">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(readPath("payment.bankTransfer.active") ?? true)}
+                      onChange={(e) => update("payment.bankTransfer.active", e.target.checked as unknown as string)}
+                      className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-brand-primary)]"
+                    />
+                    <span>Active for Checkout</span>
+                  </label>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {field("Bank Name", "payment.bankTransfer.bankName", "Meezan Bank")}
+                  {field("Account Title", "payment.bankTransfer.accountTitle", "Khattak Eyewear Pvt Ltd")}
+                  {field("Account Number", "payment.bankTransfer.accountNumber", "01020304050607")}
+                  {field("IBAN", "payment.bankTransfer.iban", "PK36MEZN0001020304050607")}
+                </div>
+              </div>
+
+              {/* JazzCash */}
+              <div className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">JazzCash</span>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-medium">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(readPath("payment.jazzcash.active") ?? true)}
+                      onChange={(e) => update("payment.jazzcash.active", e.target.checked as unknown as string)}
+                      className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-brand-primary)]"
+                    />
+                    <span>Active for Checkout</span>
+                  </label>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {field("Mobile Number", "payment.jazzcash.number", "03001234567")}
+                  {field("Account Title", "payment.jazzcash.accountTitle", "Khattak Eyewear")}
+                </div>
+              </div>
+
+              {/* EasyPaisa */}
+              <div className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">EasyPaisa</span>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-medium">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(readPath("payment.easypaisa.active") ?? true)}
+                      onChange={(e) => update("payment.easypaisa.active", e.target.checked as unknown as string)}
+                      className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-brand-primary)]"
+                    />
+                    <span>Active for Checkout</span>
+                  </label>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {field("Mobile Number", "payment.easypaisa.number", "03001234567")}
+                  {field("Account Title", "payment.easypaisa.accountTitle", "Khattak Eyewear")}
+                </div>
+              </div>
+
+              {/* Custom Payment Methods */}
+              <div className="space-y-4 pt-4 border-t border-[color:var(--color-border)]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">Custom Payment Methods</h4>
+                    <p className="text-xs text-[color:var(--color-text-tertiary)]">Add custom options like SadaPay, NayaPay, Raast, or specialized wallets.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newMethod = {
+                        id: `custom-${Date.now()}`,
+                        name: "New Payment Method",
+                        accountTitle: "Khattak Eyewear",
+                        accountNumber: "",
+                        instructions: "Transfer payment to this account and upload receipt.",
+                        active: true
+                      };
+                      setSettings((prev) => {
+                        const currentPayment = (prev.payment || cmsWebsiteSettings.payment) as typeof cmsWebsiteSettings.payment;
+                        const currentCustom = Array.isArray(currentPayment.customMethods)
+                          ? currentPayment.customMethods
+                          : [];
+                        return {
+                          ...prev,
+                          payment: {
+                            ...cmsWebsiteSettings.payment,
+                            ...currentPayment,
+                            customMethods: [...currentCustom, newMethod]
+                          }
+                        };
+                      });
+                    }}
+                    className="flex items-center gap-1.5 rounded-xl bg-[color:var(--color-brand-primary)] px-3.5 py-2 text-xs font-semibold text-white transition-all hover:bg-black"
+                  >
+                    + Add Custom Payment Method
+                  </button>
+                </div>
+
+                {((settings.payment as typeof cmsWebsiteSettings.payment | undefined)?.customMethods || []).map((method, index) => (
+                  <div key={method.id || index} className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <input
+                        type="text"
+                        value={method.name || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSettings((prev) => {
+                            const currentPayment = (prev.payment || cmsWebsiteSettings.payment) as typeof cmsWebsiteSettings.payment;
+                            const currentCustom = Array.isArray(currentPayment.customMethods) ? currentPayment.customMethods : [];
+                            const nextCustom = currentCustom.map((m, i) => i === index ? { ...m, name: val } : m);
+                            return {
+                              ...prev,
+                              payment: {
+                                ...cmsWebsiteSettings.payment,
+                                ...currentPayment,
+                                customMethods: nextCustom
+                              }
+                            };
+                          });
+                        }}
+                        placeholder="Method Name (e.g. SadaPay, Raast)"
+                        className="font-semibold text-sm bg-transparent border-b border-[color:var(--color-border)] pb-1 focus:border-[color:var(--color-brand-primary)] focus:outline-none text-[color:var(--color-text-primary)]"
+                      />
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs font-medium">
+                          <input
+                            type="checkbox"
+                            checked={method.active !== false}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setSettings((prev) => {
+                                const currentPayment = (prev.payment || cmsWebsiteSettings.payment) as typeof cmsWebsiteSettings.payment;
+                                const currentCustom = Array.isArray(currentPayment.customMethods) ? currentPayment.customMethods : [];
+                                const nextCustom = currentCustom.map((m, i) => i === index ? { ...m, active: checked } : m);
+                                return {
+                                  ...prev,
+                                  payment: {
+                                    ...cmsWebsiteSettings.payment,
+                                    ...currentPayment,
+                                    customMethods: nextCustom
+                                  }
+                                };
+                              });
+                            }}
+                            className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-brand-primary)]"
+                          />
+                          <span>Active for Checkout</span>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSettings((prev) => {
+                              const currentPayment = (prev.payment || cmsWebsiteSettings.payment) as typeof cmsWebsiteSettings.payment;
+                              const currentCustom = Array.isArray(currentPayment.customMethods) ? currentPayment.customMethods : [];
+                              const nextCustom = currentCustom.filter((_, i) => i !== index);
+                              return {
+                                ...prev,
+                                payment: {
+                                  ...cmsWebsiteSettings.payment,
+                                  ...currentPayment,
+                                  customMethods: nextCustom
+                                }
+                              };
+                            });
+                          }}
+                          className="text-xs font-medium text-rose-600 hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Account Title</label>
+                        <input
+                          type="text"
+                          value={method.accountTitle || ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSettings((prev) => {
+                              const currentPayment = (prev.payment || cmsWebsiteSettings.payment) as typeof cmsWebsiteSettings.payment;
+                              const currentCustom = Array.isArray(currentPayment.customMethods) ? currentPayment.customMethods : [];
+                              const nextCustom = currentCustom.map((m, i) => i === index ? { ...m, accountTitle: val } : m);
+                              return {
+                                ...prev,
+                                payment: {
+                                  ...cmsWebsiteSettings.payment,
+                                  ...currentPayment,
+                                  customMethods: nextCustom
+                                }
+                              };
+                            });
+                          }}
+                          placeholder="e.g. Khattak Eyewear"
+                          className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Account Number / Phone / IBAN</label>
+                        <input
+                          type="text"
+                          value={method.accountNumber || ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSettings((prev) => {
+                              const currentPayment = (prev.payment || cmsWebsiteSettings.payment) as typeof cmsWebsiteSettings.payment;
+                              const currentCustom = Array.isArray(currentPayment.customMethods) ? currentPayment.customMethods : [];
+                              const nextCustom = currentCustom.map((m, i) => i === index ? { ...m, accountNumber: val } : m);
+                              return {
+                                ...prev,
+                                payment: {
+                                  ...cmsWebsiteSettings.payment,
+                                  ...currentPayment,
+                                  customMethods: nextCustom
+                                }
+                              };
+                            });
+                          }}
+                          placeholder="e.g. 03001234567"
+                          className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Instructions / Note for Customer</label>
+                      <input
+                        type="text"
+                        value={method.instructions || ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSettings((prev) => {
+                            const currentPayment = (prev.payment || cmsWebsiteSettings.payment) as typeof cmsWebsiteSettings.payment;
+                            const currentCustom = Array.isArray(currentPayment.customMethods) ? currentPayment.customMethods : [];
+                            const nextCustom = currentCustom.map((m, i) => i === index ? { ...m, instructions: val } : m);
+                            return {
+                              ...prev,
+                              payment: {
+                                ...cmsWebsiteSettings.payment,
+                                ...currentPayment,
+                                customMethods: nextCustom
+                              }
+                            };
+                          });
+                        }}
+                        placeholder="Instructions displayed at checkout"
+                        className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-xs"
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

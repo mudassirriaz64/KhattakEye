@@ -1,8 +1,8 @@
 import api from './axios';
 import type { ApiCategory } from '@/lib/admin-data';
 
-export const adminLoginApi = async (email: string, password: string) => {
-  const response = await api.post('/admin/auth/login', { email, password });
+export const adminLoginApi = async (email: string, password: string, rememberMe: boolean) => {
+  const response = await api.post('/admin/auth/login', { email, password, rememberMe });
   return response.data;
 };
 
@@ -167,5 +167,15 @@ export const adminDeleteBrandApi = async (id: string) => {
 
 export const adminUpdateProductApi = async (id: string, data: { stock?: number }) => {
   const response = await api.put(`/admin/products/${id}`, data);
+  return response.data;
+};
+
+export const adminSetOrderItemPriceApi = async (id: string, itemIndex: number, price: number) => {
+  const response = await api.patch(`/admin/orders/${id}/items/${itemIndex}/set-price`, { price });
+  return response.data;
+};
+
+export const adminGetUsersApi = async (page = 1, limit = 50) => {
+  const response = await api.get(`/admin/users?page=${page}&limit=${limit}`);
   return response.data;
 };

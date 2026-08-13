@@ -1,9 +1,11 @@
+import { useState, useEffect } from "react";
 import { Building2, Smartphone, Wallet, Banknote } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCheckoutStore, type PaymentMethod } from "@/lib/stores/checkout-store";
 import { cn } from "@/lib/utils";
+import axios from "@/lib/api/axios";
 
-const methods: { id: PaymentMethod; label: string; description: string; icon: React.ElementType }[] = [
+const defaultMethods: { id: PaymentMethod; label: string; description: string; icon: React.ElementType }[] = [
   { id: "bank-transfer", label: "Bank Transfer", description: "Direct bank transfer via IBAN", icon: Building2 },
   { id: "jazzcash", label: "JazzCash", description: "Send payment via JazzCash", icon: Smartphone },
   { id: "easypaisa", label: "EasyPaisa", description: "Send payment via EasyPaisa", icon: Wallet },
@@ -14,49 +16,92 @@ export function PaymentMethodSelector() {
   const payment = useCheckoutStore((s) => s.payment);
   const setPaymentMethod = useCheckoutStore((s) => s.setPaymentMethod);
   const setStep = useCheckoutStore((s) => s.setStep);
+  const [activeMethods, setActiveMethods] = useState(defaultMethods);
+
+  useEffect(() => {
+    axios.get("/settings").then((res) => {
+      if (res.data?.payment) {
+        const p = res.data.payment;
+        const filtered = defaultMethods.filter((m) => {
+          if (m.id === "cod" && p.cod?.active === false) return false;
+          if (m.id === "bank-transfer" && p.bankTransfer?.active === false) return false;
+          if (m.id === "jazzcash" && p.jazzcash?.active === false) return false;
+          if (m.id === "easypaisa" && p.easypaisa?.active === false) return false;
+          return true;
+        });
+
+        // Add custom payment methods if active
+        if (Array.isArray(p.customMethods)) {
+          p.customMethods.forEach((cm: { id: string; name: string; instructions?: string; active?: boolean }) => {
+            if (cm.active !== false) {
+              filtered.push({
+                id: cm.id as PaymentMethod,
+                label: cm.name || "Custom Payment",
+                description: cm.instructions || "Direct transfer via wallet/bank",
+                icon: Wallet
+              });
+            }
+          });
+        }
+
+        setActiveMethods(filtered);
+        
+        // Auto-select first active method if current method is inactive or unset
+        if (filtered.length > 0 && (!payment.method || !filtered.some((m) => m.id === payment.method))) {
+          setPaymentMethod(filtered[0].id);
+        }
+      }
+    }).catch(() => {});
+  }, []);
 
   return (
     <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 md:p-8">
       <h2 className="font-display text-2xl text-[color:var(--color-text-primary)]">Payment Method</h2>
       <p className="mt-1 text-sm text-[color:var(--color-text-secondary)]">Choose your preferred payment method.</p>
 
-      <div className="mt-6 grid gap-3">
-        {methods.map((method) => {
-          const Icon = method.icon;
-          const selected = payment.method === method.id;
-          return (
-            <motion.button
-              key={method.id}
-              type="button"
-              onClick={() => setPaymentMethod(method.id)}
-              whileTap={{ scale: 0.99 }}
-              className={cn(
-                "flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all",
-                selected
-                  ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-surface-muted)]"
-                  : "border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)]",
-              )}
-            >
-              <div className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-xl transition-colors",
-                selected ? "bg-[color:var(--color-brand-primary)] text-white" : "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]",
-              )}>
-                <Icon className="h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-[color:var(--color-text-primary)]">{method.label}</p>
-                <p className="text-xs text-[color:var(--color-text-tertiary)]">{method.description}</p>
-              </div>
-              <div className={cn(
-                "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all",
-                selected ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-brand-primary)]" : "border-[color:var(--color-border)]",
-              )}>
-                {selected && <div className="h-2 w-2 rounded-full bg-white" />}
-              </div>
-            </motion.button>
-          );
-        })}
-      </div>
+      {activeMethods.length === 0 ? (
+        <div className="mt-6 rounded-xl border border-dashed border-[color:var(--color-border)] p-6 text-center text-xs text-[color:var(--color-text-tertiary)]">
+          No payment methods are currently active. Please contact support.
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-3">
+          {activeMethods.map((method) => {
+            const Icon = method.icon;
+            const selected = payment.method === method.id;
+            return (
+              <motion.button
+                key={method.id}
+                type="button"
+                onClick={() => setPaymentMethod(method.id)}
+                whileTap={{ scale: 0.99 }}
+                className={cn(
+                  "flex items-center gap-4 rounded-xl border-2 p-4 text-left transition-all",
+                  selected
+                    ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-surface-muted)]"
+                    : "border-[color:var(--color-border)] hover:border-[color:var(--color-border-strong)]",
+                )}
+              >
+                <div className={cn(
+                  "flex h-12 w-12 items-center justify-center rounded-xl transition-colors",
+                  selected ? "bg-[color:var(--color-brand-primary)] text-white" : "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]",
+                )}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-[color:var(--color-text-primary)]">{method.label}</p>
+                  <p className="text-xs text-[color:var(--color-text-tertiary)]">{method.description}</p>
+                </div>
+                <div className={cn(
+                  "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all",
+                  selected ? "border-[color:var(--color-brand-primary)] bg-[color:var(--color-brand-primary)]" : "border-[color:var(--color-border)]",
+                )}>
+                  {selected && <div className="h-2 w-2 rounded-full bg-white" />}
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="mt-8 flex gap-3">
         <button type="button" onClick={() => setStep(2)} className="rounded-xl border border-[color:var(--color-border)] px-6 py-3.5 text-sm font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]">

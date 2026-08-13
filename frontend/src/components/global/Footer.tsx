@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
@@ -11,15 +12,43 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { footerLinks } from "@/lib/landing-data";
-
-const socialLinks = [
-  { icon: Instagram, label: "Instagram", href: "#" },
-  { icon: Facebook, label: "Facebook", href: "#" },
-  { icon: Youtube, label: "YouTube", href: "#" },
-  { icon: Twitter, label: "Twitter", href: "#" },
-];
+import axios from "@/lib/api/axios";
 
 export function Footer() {
+  const [contact, setContact] = useState({
+    phone: "+92 300 1234567",
+    email: "hello@khattakeye.com",
+    address: "57-E, Gulberg III, Lahore, Pakistan"
+  });
+
+  const [socialItems, setSocialItems] = useState([
+    { icon: Instagram, label: "Instagram", href: "https://instagram.com/khattakeyewear" },
+    { icon: Facebook, label: "Facebook", href: "https://facebook.com/khattakeyewear" },
+    { icon: Youtube, label: "YouTube", href: "https://youtube.com/@khattakeyewear" },
+    { icon: Twitter, label: "Twitter", href: "https://twitter.com/khattak_eye" },
+  ]);
+
+  useEffect(() => {
+    axios.get("/settings").then((res) => {
+      if (res.data) {
+        if (res.data.contact) {
+          setContact({
+            phone: res.data.contact.phone || "+92 300 1234567",
+            email: res.data.contact.email || "hello@khattakeye.com",
+            address: res.data.contact.address || "57-E, Gulberg III, Lahore, Pakistan"
+          });
+        }
+        const s = res.data.socialLinks || res.data.social || {};
+        setSocialItems([
+          { icon: Instagram, label: "Instagram", href: s.instagram || "https://instagram.com/khattakeyewear" },
+          { icon: Facebook, label: "Facebook", href: s.facebook || "https://facebook.com/khattakeyewear" },
+          { icon: Youtube, label: "YouTube", href: s.youtube || "https://youtube.com/@khattakeyewear" },
+          { icon: Twitter, label: "Twitter", href: s.twitter || "https://twitter.com/khattak_eye" },
+        ]);
+      }
+    }).catch(() => {});
+  }, []);
+
   return (
     <footer className="relative overflow-hidden bg-[color:var(--color-panel)]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[color:var(--color-brand-soft)] to-transparent" />
@@ -46,7 +75,7 @@ export function Footer() {
             </p>
 
             <div className="mt-7 flex gap-3">
-              {socialLinks.map((social) => (
+              {socialItems.map((social) => (
                 <motion.a
                   key={social.label}
                   href={social.href}
@@ -96,8 +125,8 @@ export function Footer() {
             <Phone className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--color-brand-primary)]" />
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-tertiary)]">Call us</p>
-              <a href={`tel:${footerLinks.contact.phone}`} className="mt-1 block text-sm font-medium text-[color:var(--color-text-primary)] hover:text-[color:var(--color-brand-primary)]">
-                {footerLinks.contact.phone}
+              <a href={`tel:${contact.phone}`} className="mt-1 block text-sm font-medium text-[color:var(--color-text-primary)] hover:text-[color:var(--color-brand-primary)]">
+                {contact.phone}
               </a>
             </div>
           </div>
@@ -105,8 +134,8 @@ export function Footer() {
             <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--color-brand-primary)]" />
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-tertiary)]">Write to us</p>
-              <a href={`mailto:${footerLinks.contact.email}`} className="mt-1 block text-sm font-medium text-[color:var(--color-text-primary)] hover:text-[color:var(--color-brand-primary)]">
-                {footerLinks.contact.email}
+              <a href={`mailto:${contact.email}`} className="mt-1 block text-sm font-medium text-[color:var(--color-text-primary)] hover:text-[color:var(--color-brand-primary)]">
+                {contact.email}
               </a>
             </div>
           </div>
@@ -115,7 +144,7 @@ export function Footer() {
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-[color:var(--color-text-tertiary)]">Visit the atelier</p>
               <p className="mt-1 text-sm font-medium text-[color:var(--color-text-primary)]">
-                {footerLinks.contact.address}
+                {contact.address}
               </p>
             </div>
           </div>

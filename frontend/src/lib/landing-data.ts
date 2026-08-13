@@ -218,10 +218,9 @@ export const brands: Brand[] = [
 ];
 
 export const stats: Stat[] = [
-  { value: 50, suffix: "+", label: "Premium Styles" },
-  { value: 15, suffix: "K+", label: "Happy Customers" },
-  { value: 4.9, suffix: "", label: "Average Rating" },
-  { value: 100, suffix: "%", label: "Authentic Products" },
+  { value: 50, suffix: "+", label: "Active Designs" },
+  { value: 14, suffix: " Days", label: "Return Guarantee" },
+  { value: 2, suffix: " Years", label: "Frame Warranty" },
 ];
 
 export const trustFeatures = [

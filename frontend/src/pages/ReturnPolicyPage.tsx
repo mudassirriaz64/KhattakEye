@@ -1,26 +1,10 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { RotateCcw, ShieldCheck, RefreshCw, CheckCircle2, AlertCircle, MessageCircle } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
 import { ProductAccordion } from "@/components/product/ProductAccordion";
-
-const steps = [
-  {
-    step: "01",
-    title: "Initiate Request",
-    desc: "Contact our concierge team via WhatsApp (+92 300 1234567) or email with your Order Number and preferred action (Return or Exchange)."
-  },
-  {
-    step: "02",
-    title: "Complimentary Doorstep Pickup",
-    desc: "We schedule a free courier pickup from your address. Place the unworn frames inside their original hard leather case and box."
-  },
-  {
-    step: "03",
-    title: "Swift Inspection & Refund",
-    desc: "Once received at our atelier, our artisans inspect the item within 24 hours. Your refund or replacement is dispatched immediately."
-  }
-];
+import axios from "@/lib/api/axios";
 
 const returnFaqs = [
   {
@@ -29,7 +13,7 @@ const returnFaqs = [
   },
   {
     title: "Are prescription custom lenses eligible for returns?",
-    content: "Frames can be exchanged or returned for a 100% refund. For custom prescription lenses crafted specifically to your optical optical formula, a standard 20% lens lab processing fee applies if returning for a cash refund, or 100% store credit towards a replacement frame."
+    content: "Frames can be exchanged or returned for a 100% refund. For custom prescription lenses crafted specifically to your optical formula, a standard 20% lens lab processing fee applies if returning for a cash refund, or 100% store credit towards a replacement frame."
   },
   {
     title: "How long does a bank or mobile wallet refund take?",
@@ -42,6 +26,37 @@ const returnFaqs = [
 ];
 
 export function ReturnPolicyPage() {
+  const [whatsapp, setWhatsapp] = useState("+92 300 1234567");
+  const [cleanWa, setCleanWa] = useState("923001234567");
+
+  useEffect(() => {
+    axios.get("/settings").then((res) => {
+      if (res.data?.contact) {
+        const raw = res.data.contact.whatsapp || res.data.contact.phone || "+92 300 1234567";
+        setWhatsapp(raw);
+        setCleanWa(raw.replace(/[^0-9]/g, ""));
+      }
+    }).catch(() => {});
+  }, []);
+
+  const steps = [
+    {
+      step: "01",
+      title: "Initiate Request",
+      desc: `Contact our concierge team via WhatsApp (${whatsapp}) or email with your Order Number and preferred action (Return or Exchange).`
+    },
+    {
+      step: "02",
+      title: "Complimentary Doorstep Pickup",
+      desc: "We schedule a free courier pickup from your address. Place the unworn frames inside their original hard leather case and box."
+    },
+    {
+      step: "03",
+      title: "Swift Inspection & Refund",
+      desc: "Once received at our atelier, our artisans inspect the item within 24 hours. Your refund or replacement is dispatched immediately."
+    }
+  ];
+
   return (
     <div className="bg-[color:var(--color-app-bg)] min-h-screen">
       {/* Hero Section */}
@@ -130,7 +145,7 @@ export function ReturnPolicyPage() {
               <div className="grid gap-8 md:grid-cols-3">
                 {steps.map((item, idx) => (
                   <div key={idx} className="relative rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] p-6">
-                    <span className="font-mono text-3xl font-bold text-[color:var(--color-accent-teal)]">{item.step}</span>
+                    <span className="font-mono text-3xl font-bold text-[color:var(--color-brand-primary)]">{item.step}</span>
                     <h4 className="mt-3 font-display text-xl text-[color:var(--color-text-primary)]">{item.title}</h4>
                     <p className="mt-2 text-xs leading-6 text-[color:var(--color-text-secondary)]">{item.desc}</p>
                   </div>
@@ -203,7 +218,7 @@ export function ReturnPolicyPage() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-3 shrink-0">
-                <a href="https://wa.me/923001234567?text=Hello%20Khattak%20Eyewear,%20I%20would%20like%20to%20request%20a%20return/exchange" target="_blank" rel="noopener noreferrer">
+                <a href={`https://wa.me/${cleanWa}?text=Hello%20Khattak%20Eyewear,%20I%20would%20like%20to%20request%20a%20return/exchange`} target="_blank" rel="noopener noreferrer">
                   <Button className="bg-white text-[color:var(--color-brand-primary)] hover:bg-white/90">
                     <MessageCircle className="h-4 w-4 mr-2" /> Start Return via WhatsApp
                   </Button>

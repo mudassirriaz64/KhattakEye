@@ -13,18 +13,18 @@ const formatAdminProfile = (admin) => ({
 });
 
 // Configure admin cookie options
-const cookieOptions = {
+const cookieOptions = (maxAge = 7 * 24 * 60 * 60 * 1000) => ({
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-};
+  maxAge
+});
 
 /**
  * Login admin
  */
 const login = async (req, res, next) => {
-  const { email, password } = req.body;
+  const { email, password, rememberMe } = req.body;
 
   try {
     if (!email || !password) {
@@ -52,11 +52,13 @@ const login = async (req, res, next) => {
     admin.lastLogin = new Date();
     await admin.save();
 
-    // Sign JWT token
-    const token = signToken({ id: admin._id }, 'admin');
+    // Sign JWT token (7 days if "keep me signed in", otherwise 1 hour)
+    const expiresIn = rememberMe ? '7d' : '1h';
+    const token = signToken({ id: admin._id }, 'admin', expiresIn);
 
     // Set cookie 'admin_token'
-    res.cookie('admin_token', token, cookieOptions);
+    const maxAge = rememberMe ? 7 * 24 * 60 * 60 * 1000 : 60 * 60 * 1000;
+    res.cookie('admin_token', token, cookieOptions(maxAge));
 
     res.status(200).json({
       message: 'Admin login successful',

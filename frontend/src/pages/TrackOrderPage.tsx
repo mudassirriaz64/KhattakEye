@@ -7,6 +7,7 @@ import { TrackOrderSearch } from "@/components/order/TrackOrderSearch";
 import { OrderTimeline } from "@/components/order/OrderTimeline";
 import { Button } from "@/components/primitives/Button";
 import { getOrderByIdApi, resubmitPaymentProofApi } from "@/lib/api/orders";
+import { getOrderStatusLabel } from "@/lib/utils/enum-labels";
 
 export function TrackOrderPage() {
   const [searchParams] = useSearchParams();
@@ -113,8 +114,9 @@ export function TrackOrderPage() {
               </div>
               <div className="hidden sm:block">
                 <div className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-6 py-3 text-center">
+
                   <p className="text-xs text-[color:var(--color-text-tertiary)]">Order Status</p>
-                  <p className="mt-0.5 text-sm font-semibold capitalize text-[color:var(--color-accent-teal)]">{order.status.replace(/-/g, " ")}</p>
+                  <p className="mt-0.5 text-sm font-semibold text-[color:var(--color-brand-primary)]">{getOrderStatusLabel(order.status)}</p>
                 </div>
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { Download, Printer, Glasses } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import type { Order } from "@/lib/order-data";
+import { getPaymentMethodLabel, getOrderStatusLabel } from "@/lib/utils/enum-labels";
 
 type InvoicePreviewProps = {
   order: Order;
@@ -36,8 +37,8 @@ export function InvoicePreview({ order }: InvoicePreviewProps) {
         <div className="text-right sm:text-left">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--color-text-tertiary)]">Order Info</p>
           <p className="mt-2 text-sm text-[color:var(--color-text-primary)]">Date: {order.date}</p>
-          <p className="text-xs text-[color:var(--color-text-secondary)]">Payment: {order.paymentMethod}</p>
-          <p className="text-xs text-[color:var(--color-text-secondary)]">Status: {order.status.replace("-", " ")}</p>
+          <p className="text-xs text-[color:var(--color-text-secondary)]">Payment: {getPaymentMethodLabel(order.paymentMethod)}</p>
+          <p className="text-xs text-[color:var(--color-text-secondary)]">Status: {getOrderStatusLabel(order.status)}</p>
         </div>
       </div>
 

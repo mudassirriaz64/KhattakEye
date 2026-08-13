@@ -37,21 +37,22 @@
   --color-brand-primary: #b6191b;
   --color-brand-hover: #8f1215;
   --color-brand-soft: #d3a095;
-  --color-app-bg: #f7dfc9;
-  --color-panel: #fff8f3;
-  --color-surface-muted: #f3e6d8;
-  --color-border: #ead4c4;
-  --color-border-strong: #d8bca8;
+  --color-brand-tint: rgba(182, 25, 27, 0.09);
+  --color-app-bg: #f6f3f0;
+  --color-panel: #ffffff;
+  --color-surface-muted: #f4f0eb;
+  --color-border: #e8e0d8;
+  --color-border-strong: #d6cbbd;
   --color-text-primary: #19130d;
-  --color-text-secondary: #886057;
-  --color-text-tertiary: #a98a7a;
-  --color-accent-teal: #b6191b;
-  --color-accent-blue: #8f1215;
+  --color-text-secondary: #5c463d;
+  --color-text-tertiary: #7a5c4f;
+  --color-accent-teal: #0f766e;
+  --color-accent-blue: #1d4ed8;
   --color-danger: #dc2626;
   --color-focus-ring: rgba(182, 25, 27, 0.28);
-  --color-disabled-bg: #ead4c4;
-  --color-disabled-text: #a98a7a;
-  --shadow-input: 0 2px 8px rgba(25, 19, 13, 0.05);
+  --color-disabled-bg: #e8e0d8;
+  --color-disabled-text: #7a5c4f;
+  --shadow-input: 0 1px 2px rgba(25, 19, 13, 0.04), 0 1px 3px rgba(25, 19, 13, 0.04);
   --shadow-soft: 0 18px 44px rgba(25, 19, 13, 0.1);
   --shadow-strong: 0 32px 90px rgba(25, 19, 13, 0.18);
   --glow-brand: 0 8px 32px rgba(182, 25, 27, 0.24);
@@ -137,7 +138,7 @@
 /* ─── Luxury Utility Layers ────────────────────────────────────────── */
 @layer components {
   .glass {
-    background: rgba(255, 248, 243, 0.82);
+    background: rgba(255, 255, 255, 0.82);
     backdrop-filter: blur(20px) saturate(140%);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
   }

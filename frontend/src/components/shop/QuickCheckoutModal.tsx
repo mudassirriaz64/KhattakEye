@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ShoppingBag, Lock, Truck, Shield, LoaderCircle } from "lucide-react";
+import { X, ShoppingBag, Lock, Truck, Shield, LoaderCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { createOrderApi } from "@/lib/api/orders";
 
@@ -17,21 +17,36 @@ export function QuickCheckoutModal({ open, onClose, product }: Props) {
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [phone, setPhone] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
+    setError(null);
+    if (!name.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
+    if (!email.trim() || !email.includes("@")) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+    if (!phone.trim()) {
+      setError("Please enter a valid phone number.");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       const res = await createOrderApi({
-        customerName: name || "Valued Customer",
-        customerPhone: phone || "03001234567",
-        customerEmail: email || "customer@khattakeye.com",
+        customerName: name.trim(),
+        customerPhone: phone.trim(),
+        customerEmail: email.trim(),
         shippingAddress: {
-          fullName: name || "Valued Customer",
-          phone: phone || "03001234567",
+          fullName: name.trim(),
+          phone: phone.trim(),
           street: "Gulberg III, Main Boulevard",
-          area: city || "Lahore",
-          city: city || "Lahore",
+          area: city.trim() || "Lahore",
+          city: city.trim() || "Lahore",
           province: "Punjab",
           postalCode: "54000"
         },
@@ -50,15 +65,14 @@ export function QuickCheckoutModal({ open, onClose, product }: Props) {
       });
 
       onClose();
-      if (res && res.orderNumber) {
-        navigate(`/order-details?id=${res.orderNumber}`);
+      if (res && (res._id || res.id || res.orderNumber)) {
+        navigate(`/account/orders/${res._id || res.id || res.orderNumber}`);
       } else {
-        navigate(`/order-details?id=KT-${Math.floor(100000 + Math.random() * 900000)}`);
+        navigate("/account/orders");
       }
     } catch (err) {
       console.error("Order submit error:", err);
-      onClose();
-      navigate(`/order-details?id=KT-${Math.floor(100000 + Math.random() * 900000)}`);
+      setError("Failed to place order. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -92,7 +106,7 @@ export function QuickCheckoutModal({ open, onClose, product }: Props) {
 
             <div className="p-6">
               <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-accent-teal)] text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-brand-primary)] text-white">
                   <ShoppingBag className="h-5 w-5" />
                 </div>
                 <div>
@@ -109,35 +123,42 @@ export function QuickCheckoutModal({ open, onClose, product }: Props) {
                 </div>
               </div>
 
+              {error && (
+                <div className="mt-4 flex items-center gap-2 rounded-xl bg-rose-50 p-3 text-xs font-medium text-rose-700 dark:bg-rose-950/30 dark:text-rose-300">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               <div className="mt-4 space-y-3">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email address"
-                  className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-accent-teal)] focus:outline-none focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
-                />
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Full name"
-                  className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-accent-teal)] focus:outline-none focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
+                  placeholder="Full Name *"
+                  className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-brand-primary)] focus:outline-none focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
+                />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email Address *"
+                  className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-brand-primary)] focus:outline-none focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
                 />
                 <div className="grid grid-cols-2 gap-3">
+                  <input
+                    type="text"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Phone Number *"
+                    className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-brand-primary)] focus:outline-none focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
+                  />
                   <input
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
                     placeholder="City"
-                    className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-accent-teal)] focus:outline-none focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
-                  />
-                  <input
-                    type="text"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Phone"
-                    className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-accent-teal)] focus:outline-none focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
+                    className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-3 text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-brand-primary)] focus:outline-none focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
                   />
                 </div>
               </div>

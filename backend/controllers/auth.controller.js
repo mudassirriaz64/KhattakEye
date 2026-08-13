@@ -19,12 +19,12 @@ const formatUserProfile = (user) => ({
 });
 
 // Configure cookie options
-const cookieOptions = {
+const cookieOptions = (maxAge = 7 * 24 * 60 * 60 * 1000) => ({
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-  maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-};
+  maxAge
+});
 
 /**
  * Register a new user
@@ -70,7 +70,7 @@ const register = async (req, res, next) => {
     const token = signToken({ id: user._id }, 'customer');
 
     // Set cookie
-    res.cookie('token', token, cookieOptions);
+    res.cookie('token', token, cookieOptions());
 
     res.status(201).json({
       message: 'Registration successful. Verification OTP sent to email.',
@@ -159,7 +159,7 @@ const sendOtp = async (req, res, next) => {
  * Login user
  */
 const login = async (req, res, next) => {
-  const { email, password } = req.body;
+  const { email, password, rememberMe } = req.body;
 
   try {
     if (!email || !password) {
@@ -179,11 +179,13 @@ const login = async (req, res, next) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    // Sign JWT token
-    const token = signToken({ id: user._id }, 'customer');
+    // Sign JWT token (7 days if "keep me signed in", otherwise 1 hour)
+    const expiresIn = rememberMe ? '7d' : '1h';
+    const token = signToken({ id: user._id }, 'customer', expiresIn);
 
     // Set cookie
-    res.cookie('token', token, cookieOptions);
+    const maxAge = rememberMe ? 7 * 24 * 60 * 60 * 1000 : 60 * 60 * 1000;
+    res.cookie('token', token, cookieOptions(maxAge));
 
     res.status(200).json({
       message: 'Login successful',

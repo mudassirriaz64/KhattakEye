@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
+import { getRoleLabel } from "@/lib/utils/enum-labels";
 
 export function AdminAdminUsersPage() {
   const [users, setUsers] = useState(adminUsers);
@@ -59,7 +60,7 @@ export function AdminAdminUsersPage() {
                   <p className="text-sm font-medium text-[color:var(--color-text-primary)]">{user.name}</p>
                   <p className="text-xs text-[color:var(--color-text-secondary)]">{user.email}</p>
                 </div>
-                <span className={cn("rounded-lg px-2.5 py-1 text-[10px] font-semibold", roleColors[user.role] || "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]")}>{user.role}</span>
+                <span className={cn("rounded-lg px-2.5 py-1 text-[10px] font-semibold", roleColors[user.role] || "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]")}>{getRoleLabel(user.role)}</span>
                 <StatusBadge status={user.status} />
                 <div className="text-right">
                   <p className="text-[10px] text-[color:var(--color-text-tertiary)]">Last login</p>

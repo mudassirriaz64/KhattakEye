@@ -13,22 +13,58 @@ const SiteSettingsSchema = new Schema({
   socialLinks: {
     facebook: { type: String, trim: true },
     instagram: { type: String, trim: true },
-    tiktok: { type: String, trim: true }
+    tiktok: { type: String, trim: true },
+    youtube: { type: String, trim: true },
+    twitter: { type: String, trim: true }
+  },
+  social: {
+    facebook: { type: String, trim: true },
+    instagram: { type: String, trim: true },
+    tiktok: { type: String, trim: true },
+    youtube: { type: String, trim: true },
+    twitter: { type: String, trim: true }
   },
   payment: {
+    cod: {
+      active: { type: Boolean, default: true },
+      label: { type: String, default: "Cash on Delivery" },
+      instructions: { type: String, default: "Pay cash upon delivery at your doorstep." }
+    },
     bankTransfer: {
+      active: { type: Boolean, default: true },
       bankName: { type: String, trim: true },
       accountTitle: { type: String, trim: true },
+      accountNumber: { type: String, trim: true },
       iban: { type: String, trim: true }
     },
-    jazzcash: { type: String, trim: true },
-    easypaisa: { type: String, trim: true }
+    jazzcash: {
+      active: { type: Boolean, default: true },
+      number: { type: String, trim: true },
+      accountTitle: { type: String, trim: true }
+    },
+    easypaisa: {
+      active: { type: Boolean, default: true },
+      number: { type: String, trim: true },
+      accountTitle: { type: String, trim: true }
+    },
+    customMethods: [
+      {
+        id: { type: String },
+        name: { type: String, trim: true },
+        instructions: { type: String, trim: true },
+        active: { type: Boolean, default: true }
+      }
+    ]
   },
   shipping: {
-    freeDeliveryThreshold: { type: Number, default: 0 },
-    flatRate: { type: Number, default: 0 },
+    freeDeliveryThreshold: { type: Number, default: 15000 },
+    freeThreshold: { type: Number, default: 15000 },
+    flatRate: { type: Number, default: 350 },
+    standardRate: { type: Number, default: 350 },
+    expressRate: { type: Number, default: 750 },
     estimatedDaysMin: { type: Number, default: 1 },
-    estimatedDaysMax: { type: Number, default: 7 }
+    estimatedDaysMax: { type: Number, default: 7 },
+    estimatedDays: { type: String, default: "3-5 business days" }
   },
   policies: {
     returnWindowDays: { type: Number, default: 0 },
@@ -47,7 +83,7 @@ const SiteSettingsSchema = new Schema({
   logo: { type: String }
 }, {
   timestamps: true,
-  _id: false // Disable auto-generation of _id, since we hardcode it to "site-settings"
+  _id: false
 });
 
 module.exports = mongoose.model('SiteSettings', SiteSettingsSchema);

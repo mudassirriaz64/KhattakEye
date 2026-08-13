@@ -204,11 +204,14 @@ function AppRoutes() {
         <Route path="/cart" element={<PageTransition><GlobalLayout><CartPage /></GlobalLayout></PageTransition>} />
         <Route path="/checkout" element={<PageTransition><GlobalLayout><CheckoutPage /></GlobalLayout></PageTransition>} />
         <Route path="/order-details" element={<PageTransition><GlobalLayout><OrderDetailsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/order-details/:id" element={<PageTransition><GlobalLayout><AccountOrderDetailsPage /></GlobalLayout></PageTransition>} />
         <Route path="/track-order" element={<PageTransition><GlobalLayout><TrackOrderPage /></GlobalLayout></PageTransition>} />
         <Route path="/invoice" element={<PageTransition><GlobalLayout><InvoicePage /></GlobalLayout></PageTransition>} />
         <Route path="/account" element={<PageTransition><GlobalLayout><DashboardPage /></GlobalLayout></PageTransition>} />
         <Route path="/account/orders" element={<PageTransition><GlobalLayout><MyOrdersPage /></GlobalLayout></PageTransition>} />
+        <Route path="/account/orders/:id" element={<PageTransition><GlobalLayout><AccountOrderDetailsPage /></GlobalLayout></PageTransition>} />
         <Route path="/account/order-details" element={<PageTransition><GlobalLayout><AccountOrderDetailsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/account/order-details/:id" element={<PageTransition><GlobalLayout><AccountOrderDetailsPage /></GlobalLayout></PageTransition>} />
         <Route path="/account/wishlist" element={<PageTransition><GlobalLayout><AccountWishlistPage /></GlobalLayout></PageTransition>} />
         <Route path="/account/addresses" element={<PageTransition><GlobalLayout><SavedAddressesPage /></GlobalLayout></PageTransition>} />
         <Route path="/account/reviews" element={<PageTransition><GlobalLayout><ReviewsPage /></GlobalLayout></PageTransition>} />

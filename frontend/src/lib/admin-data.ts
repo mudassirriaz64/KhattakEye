@@ -572,12 +572,20 @@ export const cmsWebsiteSettings = {
   theme: { primaryColor: "#111111", accentColor: "#B6191B", borderRadius: "16px" },
   contact: { email: "hello@khattak.com", phone: "+92 300 111 2222", address: "57-E, Gulberg III, Lahore, Pakistan" },
   social: { facebook: "https://facebook.com/khattakeyewear", instagram: "https://instagram.com/khattak_eyewear", twitter: "https://twitter.com/khattak_eye", youtube: "https://youtube.com/@khattakeyewear" },
+  socialLinks: { facebook: "https://facebook.com/khattakeyewear", instagram: "https://instagram.com/khattak_eyewear", twitter: "https://twitter.com/khattak_eye", youtube: "https://youtube.com/@khattakeyewear" },
   whatsapp: { number: "+923001112222", message: "Hi! I have a question about your products." },
   emails: { orderConfirmation: "orders@khattak.com", support: "support@khattak.com", noreply: "noreply@khattak.com" },
   shipping: { freeThreshold: 3000, standardRate: 350, expressRate: 750, estimatedDays: "3-5 business days" },
   bankDetails: { bankName: "HBL", accountTitle: "Khattak Eyewear Pvt Ltd", accountNumber: "1234-5678-9012-3456", iban: "PK36HBLB1234567890123456" },
   jazzcash: { number: "+92 300 111 2222", accountTitle: "Khattak Eyewear" },
   easypaisa: { number: "+92 300 111 2222", accountTitle: "Khattak Eyewear" },
+  payment: {
+    cod: { active: true, label: "Cash on Delivery", instructions: "Pay cash upon delivery at your doorstep." },
+    bankTransfer: { active: true, bankName: "Meezan Bank", accountTitle: "Khattak Eyewear Pvt Ltd", accountNumber: "01020304050607", iban: "PK36MEZN0001020304050607" },
+    jazzcash: { active: true, number: "03001234567", accountTitle: "Khattak Eyewear" },
+    easypaisa: { active: true, number: "03001234567", accountTitle: "Khattak Eyewear" },
+    customMethods: [] as Array<{ id: string; name: string; accountTitle: string; accountNumber: string; instructions: string; active: boolean }>
+  },
   seo: { metaTitle: "Khattak Eyewear — Premium Handcrafted Eyewear in Pakistan", metaDescription: "Discover premium handcrafted eyewear at Khattak Eyewear. Shop titanium, acetate, and luxury frames with free shipping across Pakistan.", metaKeywords: "eyewear, sunglasses, eyeglasses, premium frames, Pakistan, Khattak" },
   analytics: { googleAnalyticsId: "G-XXXXXXXXXX", facebookPixelId: "1234567890", googleTagManagerId: "GTM-XXXXXXX" },
 };

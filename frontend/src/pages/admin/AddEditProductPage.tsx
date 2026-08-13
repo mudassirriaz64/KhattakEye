@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Save, Eye, Plus, X, ImagePlus, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { BrandSelect } from "@/components/admin/BrandSelect";
 import { cn } from "@/lib/utils";
 import { createProductApi, getCategoriesApi, adminGetProductByIdApi } from "@/lib/api/admin";
 import { type ApiCategory } from "@/lib/admin-data";
@@ -17,7 +18,7 @@ export function AddEditProductPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [form, setForm] = useState({
-    name: "", brand: "louis-vuitton", category: "", subcategory: "", description: "", shortDescription: "",
+    name: "", brand: "Louis Vuitton", category: "", subcategory: "", description: "", shortDescription: "",
     price: "", oldPrice: "", cost: "", sku: "", stock: "", status: "draft", featured: false,
     isNewArrival: false, isBestSeller: false, gender: [] as string[],
     weight: "", frameMaterial: "", lensMaterial: "", lensType: "standard", frameShape: "", frameWidth: "",
@@ -31,7 +32,7 @@ export function AddEditProductPage() {
         if (product) {
           setForm({
             name: product.name || "",
-            brand: product.brand || "louis-vuitton",
+            brand: product.brand || "Louis Vuitton",
             category: product.category || "sunglasses",
             subcategory: product.subcategory || "",
             description: product.description || "",
@@ -223,15 +224,7 @@ export function AddEditProductPage() {
                 </div>
                 <div>
                   <label className={labelClass}>Brand</label>
-                  <select value={form.brand} onChange={(e) => set("brand", e.target.value)} className={inputClass}>
-                    <option value="louis-vuitton">Louis Vuitton</option>
-                    <option value="prada">Prada</option>
-                    <option value="gucci">Gucci</option>
-                    <option value="ray-ban">Ray-Ban</option>
-                    <option value="tom-ford">Tom Ford</option>
-                    <option value="cartier">Cartier</option>
-                    <option value="dior">Dior</option>
-                  </select>
+                  <BrandSelect value={form.brand} onChange={(brand) => set("brand", brand)} />
                 </div>
                 <div>
                   <label className={labelClass}>Parent Category</label>

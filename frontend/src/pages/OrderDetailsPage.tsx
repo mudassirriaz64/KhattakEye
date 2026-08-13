@@ -5,6 +5,7 @@ import { mockOrder, type Order } from "@/lib/order-data";
 import { OrderTimeline } from "@/components/order/OrderTimeline";
 import { Button } from "@/components/primitives/Button";
 import { getOrderByIdApi } from "@/lib/api/orders";
+import { getPaymentMethodLabel } from "@/lib/utils/enum-labels";
 
 export function OrderDetailsPage() {
   const [searchParams] = useSearchParams();
@@ -24,9 +25,9 @@ export function OrderDetailsPage() {
             shipping: data.shipping !== undefined ? data.shipping : 0,
             discount: data.discount || 0,
             total: data.total || 0,
-            paymentMethod: data.paymentMethod === 'cod' ? 'Cash on Delivery' : data.paymentMethod || 'Cash on Delivery',
+            paymentMethod: getPaymentMethodLabel(data.paymentMethod),
             customerName: data.customerName || 'Customer',
-            customerEmail: data.customerEmail || 'email@example.com',
+            customerEmail: data.customerEmail || '-',
             customerPhone: data.customerPhone || 'Phone',
             shippingAddress: data.shippingAddress ? `${data.shippingAddress.street || ''}, ${data.shippingAddress.area || ''}, ${data.shippingAddress.city || ''}` : 'Shipping Address',
             timeline: data.timeline && data.timeline.length > 0 ? data.timeline : mockOrder.timeline
@@ -38,7 +39,7 @@ export function OrderDetailsPage() {
 
   const details = [
     { icon: Package, label: "Products", value: order.items.map((i) => `${i.name} x${i.quantity}`).join(", ") },
-    { icon: CreditCard, label: "Payment", value: order.paymentMethod },
+    { icon: CreditCard, label: "Payment", value: getPaymentMethodLabel(order.paymentMethod) },
     { icon: User, label: "Customer", value: `${order.customerName}\n${order.customerEmail}\n${order.customerPhone}` },
     { icon: MapPin, label: "Shipping", value: order.shippingAddress },
     { icon: FileText, label: "Invoice", value: order.orderNumber },

@@ -6,8 +6,9 @@ import { adminOrders } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
 import { adminGetOrdersApi } from "@/lib/api/admin";
+import { getPaymentMethodLabel } from "@/lib/utils/enum-labels";
 
-const statusFilters = ["All", "Pending", "Payment Verification", "Confirmed", "Processing", "Shipped", "Delivered", "Cancelled"];
+const statusFilters = ["All", "Pending", "Pending Quote", "Payment Verification", "Confirmed", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered", "Cancelled"];
 const paymentFilters = ["All Methods", "Bank Transfer", "JazzCash", "EasyPaisa"];
 
 const paymentColors: Record<string, string> = {
@@ -45,7 +46,7 @@ export function AdminOrdersListPage() {
             orderNumber: o.orderNumber || "",
             customer: {
               name: o.customerName || "Customer",
-              email: o.customerEmail || "customer@example.com",
+              email: o.customerEmail || "-",
               phone: o.customerPhone || ""
             },
             items: o.items || [],
@@ -128,7 +129,7 @@ export function AdminOrdersListPage() {
                     <td className="px-4 py-3 text-sm font-semibold">Rs. {order.total.toLocaleString()}</td>
                     <td className="px-4 py-3">
                       <span className={cn("rounded-lg px-2.5 py-1 text-[10px] font-semibold", paymentColors[order.paymentMethod.toLowerCase().replace(/\s+/g, "-")] || "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]")}>
-                        {order.paymentMethod}
+                        {getPaymentMethodLabel(order.paymentMethod)}
                       </span>
                     </td>
                     <td className="px-4 py-3"><StatusBadge status={order.status} /></td>

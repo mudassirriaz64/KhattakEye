@@ -15,7 +15,7 @@ type AdminState = {
   isLoading: boolean;
   sidebarCollapsed: boolean;
   checkAuth: () => Promise<void>;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string, rememberMe: boolean) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   toggleSidebar: () => void;
 };
@@ -45,10 +45,10 @@ export const useAdminStore = create<AdminState>((set) => ({
     }
   },
 
-  login: async (email, password) => {
+  login: async (email, password, rememberMe) => {
     set({ isLoading: true });
     try {
-      const data = await adminLoginApi(email, password);
+      const data = await adminLoginApi(email, password, rememberMe);
       set({
         isAuthenticated: true,
         user: data.user

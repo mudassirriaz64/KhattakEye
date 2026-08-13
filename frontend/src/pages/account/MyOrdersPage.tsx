@@ -5,6 +5,7 @@ import { Package, Search, Download, Eye, MapPin } from "lucide-react";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { cn } from "@/lib/utils";
 import { getMyOrdersApi } from "@/lib/api/orders";
+import { getOrderStatusLabel } from "@/lib/utils/enum-labels";
 
 interface DbOrder {
   id?: string;
@@ -110,7 +111,7 @@ export function MyOrdersPage() {
                       <p className="text-xs text-[color:var(--color-text-tertiary)]">{order.date} · {order.itemCount} item{order.itemCount > 1 ? "s" : ""}</p>
                     </div>
                   </div>
-                  <span className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold capitalize ${statusColor[order.status] || "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]"}`}>{order.status}</span>
+                  <span className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold ${statusColor[order.status] || "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]"}`}>{getOrderStatusLabel(order.status)}</span>
                 </div>
                 <div className="mt-3 flex items-center justify-between border-t border-[color:var(--color-border)] pt-3">
                   <span className="text-sm font-bold text-[color:var(--color-text-primary)]">Rs. {order.total.toLocaleString()}</span>
@@ -118,10 +119,10 @@ export function MyOrdersPage() {
                     <Link to={`/track-order?id=${order.orderNumber}`} className="flex items-center gap-1 rounded-lg border border-[color:var(--color-border)] px-3 py-1.5 text-[11px] font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)]">
                       <MapPin className="h-3 w-3" /> Track
                     </Link>
-                    <Link to={`/invoice?id=${order.orderNumber}`} className="flex items-center gap-1 rounded-lg border border-[color:var(--color-border)] px-3 py-1.5 text-[11px] font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)]">
+                    <Link to={`/invoice?id=${order.id}`} className="flex items-center gap-1 rounded-lg border border-[color:var(--color-border)] px-3 py-1.5 text-[11px] font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)]">
                       <Download className="h-3 w-3" /> Invoice
                     </Link>
-                    <Link to={`/account/orders?id=${order.orderNumber}`} className="flex items-center gap-1 rounded-lg bg-[color:var(--color-brand-primary)] px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-black">
+                    <Link to={`/account/orders/${order.id}`} className="flex items-center gap-1 rounded-lg bg-[color:var(--color-brand-primary)] px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-black">
                       <Eye className="h-3 w-3" /> View
                     </Link>
                   </div>

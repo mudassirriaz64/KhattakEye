@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
 import { Lock, Eye, Database, UserCheck } from "lucide-react";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
+import axios from "@/lib/api/axios";
 
 const privacySections = [
   {
@@ -25,6 +27,16 @@ const privacySections = [
 ];
 
 export function PrivacyPolicyPage() {
+  const [email, setEmail] = useState("hello@khattakeyewear.com");
+
+  useEffect(() => {
+    axios.get("/settings").then((res) => {
+      if (res.data?.contact?.email) {
+        setEmail(res.data.contact.email);
+      }
+    }).catch(() => {});
+  }, []);
+
   return (
     <div className="bg-[color:var(--color-app-bg)] min-h-screen">
       {/* Hero Section */}
@@ -71,7 +83,7 @@ export function PrivacyPolicyPage() {
 
               <h3 className="mt-6 font-display text-xl text-[color:var(--color-text-primary)]">Contacting Our Privacy Officer</h3>
               <p className="mt-2 text-xs leading-6 text-[color:var(--color-text-secondary)]">
-                For questions or requests regarding your personal data under Pakistan data protection laws, please email <a href="mailto:privacy@khattak.com" className="underline text-[color:var(--color-accent-teal)]">privacy@khattak.com</a> or message our client concierge.
+                For questions or requests regarding your personal data under Pakistan data protection laws, please email <a href={`mailto:${email}`} className="underline text-[color:var(--color-brand-primary)]">{email}</a> or message our client concierge.
               </p>
             </div>
           </ScrollReveal>

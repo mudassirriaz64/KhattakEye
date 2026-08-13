@@ -111,10 +111,13 @@ export interface ProductsResponse {
 export interface ProductFilters {
   q?: string;
   category?: string;
+  subcategory?: string;
   minPrice?: number;
   maxPrice?: number;
   brand?: string;
   frameShape?: string;
+  frameMaterial?: string;
+  lensType?: string;
   colour?: string;
   sort?: string;
   page?: number;
@@ -148,7 +151,7 @@ export const getCategories = async (params?: { featured?: boolean | string; type
 // Map a backend Product document into the card shape used by storefront
 // components (ProductGrid, ProductCard, ProductRecommendations, etc.).
 // Returns the original object when it already looks like a card.
-const fallbackOpticsImages = [
+export const fallbackOpticsImages = [
   "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=800&auto=format&fit=crop&q=80",
   "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800&auto=format&fit=crop&q=80",
   "https://images.unsplash.com/photo-1577803645773-f96470509666?w=800&auto=format&fit=crop&q=80",

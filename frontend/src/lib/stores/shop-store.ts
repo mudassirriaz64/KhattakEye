@@ -69,19 +69,25 @@ export const useShopStore = create<ShopState>((set, get) => ({
 
       // Map selected filters to API params
       if (state.selectedFilters['category']?.length > 0) {
-        // If multiple categories are selected we might need to adjust the API,
-        // but for now we'll pick the first one or pass them if backend supports it.
-        // Assuming backend exact match for now.
-        filters.category = state.selectedFilters['category'][0];
+        filters.category = state.selectedFilters['category'].join(",");
       }
       if (state.selectedFilters['brand']?.length > 0) {
-        filters.brand = state.selectedFilters['brand'][0];
+        filters.brand = state.selectedFilters['brand'].join(",");
+      }
+      if (state.selectedFilters['gender']?.length > 0) {
+        filters.gender = state.selectedFilters['gender'].join(",");
       }
       if (state.selectedFilters['frame-shape']?.length > 0) {
-        filters.frameShape = state.selectedFilters['frame-shape'][0];
+        filters.frameShape = state.selectedFilters['frame-shape'].join(",");
+      }
+      if (state.selectedFilters['frame-material']?.length > 0) {
+        filters.frameMaterial = state.selectedFilters['frame-material'].join(",");
+      }
+      if (state.selectedFilters['lens-type']?.length > 0) {
+        filters.lensType = state.selectedFilters['lens-type'].join(",");
       }
       if (state.selectedFilters['frame-color']?.length > 0) {
-        filters.colour = state.selectedFilters['frame-color'][0];
+        filters.colour = state.selectedFilters['frame-color'].join(",");
       }
 
       const response = await getProducts(filters);

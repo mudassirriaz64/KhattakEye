@@ -16,7 +16,7 @@ import {
 } from "@/lib/api/admin";
 import type { ApiCategory } from "@/lib/admin-data";
 import { useToastStore } from "@/lib/stores/toast-store";
-import { resolveCloudinaryUrl } from "@/lib/api/products";
+import { resolveCloudinaryUrl, productImageFallback } from "@/lib/api/products";
 
 const statusFilters = ["All", "Active", "Draft", "Archived", "Trash"];
 
@@ -150,7 +150,7 @@ export function AdminProductsPage() {
           price: p.price,
           status: p.status || 'draft',
           featured: p.featured || false,
-          image: p.images && p.images.length > 0 ? resolveCloudinaryUrl(p.images[0]) : 'https://via.placeholder.com/150',
+          image: p.images && p.images.length > 0 ? resolveCloudinaryUrl(p.images[0]) : productImageFallback(p.name || 'eyewear'),
         }));
         setProducts(formatted);
         setTotal(res.total || 0);

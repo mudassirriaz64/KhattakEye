@@ -24,7 +24,8 @@ export type CreateOrderPayload = {
     color: string;
     customization?: any;
   }>;
-  paymentMethod: 'cod' | 'bank-transfer' | 'jazzcash' | 'easypaisa';
+  paymentMethod: 'cod' | 'bank-transfer' | 'jazzcash' | 'easypaisa' | (string & {});
+  shippingMethod?: 'standard' | 'express';
   transactionId?: string;
   paymentScreenshot?: string;
   paymentNotes?: string;

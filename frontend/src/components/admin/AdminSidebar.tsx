@@ -8,6 +8,7 @@ import {
 import { useAdminStore } from "@/lib/stores/admin-store";
 import { cn } from "@/lib/utils";
 import { adminGetOrdersApi } from "@/lib/api/admin";
+import { getRoleLabel } from "@/lib/utils/enum-labels";
 
 type NavItem = {
   to: string;
@@ -257,7 +258,7 @@ export function AdminSidebar({ onClose }: Props) {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-semibold text-[color:var(--color-text-primary)]">{user?.name || "Admin"}</p>
-                <p className="truncate text-[10px] text-[color:var(--color-text-tertiary)] capitalize">{user?.role?.replace("-", " ") || "Admin"}</p>
+                <p className="truncate text-[10px] text-[color:var(--color-text-tertiary)]">{getRoleLabel(user?.role)}</p>
               </div>
             </div>
             <button type="button" onClick={handleLogout} className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-medium text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-danger)]">

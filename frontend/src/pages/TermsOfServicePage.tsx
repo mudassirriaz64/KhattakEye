@@ -1,25 +1,34 @@
+import { useState, useEffect } from "react";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
 
-const terms = [
-  {
-    title: "1. Acceptance of Terms",
-    content: "By accessing or placing an order on Khattak Eyewear (khattakov.com), you agree to be bound by these Terms of Service, all applicable laws and regulations in Pakistan, and agree that you are responsible for compliance."
-  },
-  {
-    title: "2. Product Availability & Pricing",
-    content: "All frame prices are listed in Pakistani Rupees (PKR) and include applicable taxes. We reserve the right to update prices or discontinue products at any time without prior notice."
-  },
-  {
-    title: "3. Orders & Payment",
-    content: "Orders are subject to acceptance and verification. For online payments (Bank Transfer, JazzCash, EasyPaisa), orders are confirmed once payment verification is completed."
-  },
-  {
-    title: "4. Intellectual Property",
-    content: "All content on this website, including frame designs, imagery, brand marks, typography, and software, is the exclusive property of Khattak Eyewear."
-  }
-];
-
 export function TermsOfServicePage() {
+  const [domain, setDomain] = useState("khattakeye.com");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hostname) {
+      setDomain(window.location.hostname);
+    }
+  }, []);
+
+  const terms = [
+    {
+      title: "1. Acceptance of Terms",
+      content: `By accessing or placing an order on Khattak Eyewear (${domain}), you agree to be bound by these Terms of Service, all applicable laws and regulations in Pakistan, and agree that you are responsible for compliance.`
+    },
+    {
+      title: "2. Product Availability & Pricing",
+      content: "All frame prices are listed in Pakistani Rupees (PKR) and include applicable taxes. We reserve the right to update prices or discontinue products at any time without prior notice."
+    },
+    {
+      title: "3. Orders & Payment",
+      content: "Orders are subject to acceptance and verification. For online payments (Bank Transfer, JazzCash, EasyPaisa), orders are confirmed once payment verification is completed."
+    },
+    {
+      title: "4. Intellectual Property",
+      content: "All content on this website, including frame designs, imagery, brand marks, typography, and software, is the exclusive property of Khattak Eyewear."
+    }
+  ];
+
   return (
     <div className="bg-[color:var(--color-app-bg)] min-h-screen">
       <section className="relative overflow-hidden py-20 md:py-24">

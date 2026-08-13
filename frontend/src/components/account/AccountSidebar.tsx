@@ -48,15 +48,26 @@ export function AccountSidebar({ mobileOpen, onClose }: Props) {
             onClick={onClose}
             className={({ isActive }) =>
               cn(
-                "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-200",
+                "relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-brand-primary)]",
                 isActive
-                  ? "bg-[color:var(--color-brand-primary)] text-white shadow-[var(--shadow-soft)]"
+                  ? "font-semibold text-[color:var(--color-brand-primary)]"
                   : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]",
               )
             }
           >
-            <item.icon className="h-4.5 w-4.5" />
-            <span>{item.label}</span>
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <motion.span
+                    layoutId="activeNavPill"
+                    transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute inset-0 rounded-xl bg-[color:var(--color-brand-tint)]"
+                  />
+                )}
+                <item.icon className="relative z-10 h-4.5 w-4.5" />
+                <span className="relative z-10">{item.label}</span>
+              </>
+            )}
           </NavLink>
         ))}
       </nav>
@@ -65,7 +76,7 @@ export function AccountSidebar({ mobileOpen, onClose }: Props) {
         <button
           type="button"
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-danger)]"
+          className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-danger)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-danger)]"
         >
           <LogOut className="h-4.5 w-4.5" />
           <span>Logout</span>
@@ -97,7 +108,7 @@ export function AccountSidebar({ mobileOpen, onClose }: Props) {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 260 }}
-              className="fixed inset-y-0 left-0 z-50 w-[280px] bg-[color:var(--color-app-bg)] shadow-[var(--shadow-strong)] lg:hidden"
+              className="fixed inset-y-0 left-0 z-50 w-[280px] bg-[color:var(--color-panel)] shadow-[var(--shadow-strong)] lg:hidden"
             >
               <button
                 type="button"

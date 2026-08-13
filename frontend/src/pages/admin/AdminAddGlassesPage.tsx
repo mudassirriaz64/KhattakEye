@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save, X, ImagePlus, LoaderCircle, Glasses, Plus, Video } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
+import { BrandSelect } from "@/components/admin/BrandSelect";
 import { cn } from "@/lib/utils";
 import { createProductApi, updateProductApi, adminGetProductByIdApi, getCategoriesApi } from "@/lib/api/admin";
 import { type ApiCategory } from "@/lib/admin-data";
@@ -442,7 +443,7 @@ export function AdminAddGlassesPage() {
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Brand *</label>
-                <input type="text" value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} required placeholder="e.g. Ray-Ban" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]" />
+                <BrandSelect value={form.brand} onChange={(brand) => setForm({ ...form, brand })} required />
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Parent Category *</label>

@@ -17,9 +17,15 @@ export function OrderReviewContent() {
   const items = useCartStore((s) => s.items);
   const getSubtotal = useCartStore((s) => s.getSubtotal);
   const getDiscount = useCartStore((s) => s.getDiscount);
-  const getShipping = useCartStore((s) => s.getShipping);
-  const getTotal = useCartStore((s) => s.getTotal);
   const couponCode = useCartStore((s) => s.couponCode);
+
+  const getShippingFee = useCheckoutStore((s) => s.getShippingFee);
+  const shippingMethod = useCheckoutStore((s) => s.shippingMethod);
+
+  const subtotal = getSubtotal();
+  const discount = getDiscount();
+  const shippingFee = getShippingFee(subtotal);
+  const finalTotal = Math.max(0, subtotal - discount + shippingFee);
 
   const methodLabels: Record<string, string> = {
     "bank-transfer": "Bank Transfer",
@@ -83,21 +89,25 @@ export function OrderReviewContent() {
         <div className="mt-5 space-y-2 border-t border-[color:var(--color-border)] pt-5 text-sm">
           <div className="flex justify-between">
             <span className="text-[color:var(--color-text-secondary)]">Subtotal</span>
-            <span className="font-medium">Rs. {getSubtotal().toLocaleString()}</span>
+            <span className="font-medium">Rs. {subtotal.toLocaleString()}</span>
           </div>
-          {getDiscount() > 0 && (
+          {discount > 0 && (
             <div className="flex justify-between text-[color:var(--color-accent-teal)]">
               <span>Discount {couponCode && `(${couponCode})`}</span>
-              <span>-Rs. {getDiscount().toLocaleString()}</span>
+              <span>-Rs. {discount.toLocaleString()}</span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-[color:var(--color-text-secondary)]">Shipping</span>
-            <span>{getShipping() === 0 ? "Free" : `Rs. ${getShipping()}`}</span>
+            <span className="text-[color:var(--color-text-secondary)]">
+              Shipping ({shippingMethod === "express" ? "Express" : "Standard"})
+            </span>
+            <span className="font-medium">
+              {shippingFee === 0 ? <span className="text-emerald-600 font-bold uppercase">Free</span> : `Rs. ${shippingFee.toLocaleString()}`}
+            </span>
           </div>
           <div className="flex justify-between border-t border-[color:var(--color-border)] pt-2 text-base font-semibold">
             <span>Total</span>
-            <span>Rs. {getTotal().toLocaleString()}</span>
+            <span>Rs. {finalTotal.toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -143,7 +153,7 @@ export function OrderReviewContent() {
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-[color:var(--color-brand-primary)] px-8 py-3.5 text-sm font-semibold text-white transition-all hover:bg-black disabled:bg-[color:var(--color-disabled-bg)] disabled:text-[color:var(--color-disabled-text)]"
         >
           <CheckCircle2 className="h-4 w-4" />
-          {submitting ? "Placing Order…" : `Place Order — Rs. ${getTotal().toLocaleString()}`}
+          {submitting ? "Placing Order…" : `Place Order — Rs. ${finalTotal.toLocaleString()}`}
         </button>
       </div>
     </div>

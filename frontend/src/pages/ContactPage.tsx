@@ -1,43 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Phone, Mail, MapPin, Clock, MessageCircle, Send, CheckCircle2 } from "lucide-react";
+import { Phone, Mail, MapPin, Clock, Send, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { TextField, TextAreaField, SelectField } from "@/components/primitives/FormControls";
 import { ScrollReveal } from "@/components/shared/ScrollReveal";
-import { SectionHeading } from "@/components/shared/SectionHeading";
-import { footerLinks } from "@/lib/landing-data";
 import axios from "@/lib/api/axios";
-
-const contactChannels = [
-  {
-    icon: Phone,
-    title: "Call Us",
-    detail: footerLinks.contact.phone,
-    sub: "Mon–Sat, 10am–8pm PKT",
-    href: `tel:${footerLinks.contact.phone}`,
-  },
-  {
-    icon: Mail,
-    title: "Email Us",
-    detail: footerLinks.contact.email,
-    sub: "We reply within 24 hours",
-    href: `mailto:${footerLinks.contact.email}`,
-  },
-  {
-    icon: MapPin,
-    title: "Visit the Atelier",
-    detail: footerLinks.contact.address,
-    sub: "Walk-ins welcome",
-    href: undefined,
-  },
-  {
-    icon: Clock,
-    title: "Hours",
-    detail: "10:00 AM – 8:00 PM",
-    sub: "Open Mon–Sat, closed Sunday",
-    href: undefined,
-  },
-];
 
 const inquiryTypes = [
   "General Question",
@@ -51,6 +18,59 @@ const inquiryTypes = [
 
 export function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [contactInfo, setContactInfo] = useState({
+    phone: "+92 300 1234567",
+    email: "hello@khattakeye.com",
+    address: "57-E, Gulberg III, Lahore, Pakistan",
+    whatsapp: "923001234567",
+    hours: "10:00 AM – 8:00 PM (Mon–Sat)"
+  });
+
+  useEffect(() => {
+    axios.get("/settings").then((res) => {
+      if (res.data?.contact) {
+        const c = res.data.contact;
+        setContactInfo({
+          phone: c.phone || "+92 300 1234567",
+          email: c.email || "hello@khattakeye.com",
+          address: c.address || "57-E, Gulberg III, Lahore, Pakistan",
+          whatsapp: (c.whatsapp || c.phone || "923001234567").replace(/[^0-9]/g, ""),
+          hours: c.hours || "10:00 AM – 8:00 PM (Mon–Sat)"
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  const contactChannels = [
+    {
+      icon: Phone,
+      title: "Call Us",
+      detail: contactInfo.phone,
+      sub: "Mon–Sat, 10am–8pm PKT",
+      href: `tel:${contactInfo.phone}`,
+    },
+    {
+      icon: Mail,
+      title: "Email Us",
+      detail: contactInfo.email,
+      sub: "We reply within 24 hours",
+      href: `mailto:${contactInfo.email}`,
+    },
+    {
+      icon: MapPin,
+      title: "Visit the Atelier",
+      detail: contactInfo.address,
+      sub: "Walk-ins welcome",
+      href: undefined,
+    },
+    {
+      icon: Clock,
+      title: "Hours",
+      detail: contactInfo.hours,
+      sub: "Open Mon–Sat, closed Sunday",
+      href: undefined,
+    },
+  ];
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -98,24 +118,19 @@ export function ContactPage() {
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {contactChannels.map((channel, index) => (
               <ScrollReveal key={channel.title} delay={index * 0.08}>
-                <div className="flex h-full flex-col rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[color:var(--color-brand-primary)] hover:shadow-[var(--shadow-soft)]">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl brand-gradient-soft text-[color:var(--color-brand-primary)]">
-                    <channel.icon className="h-5 w-5" />
+                <div className="group relative h-full overflow-hidden rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-8 transition-all duration-300 hover:border-[color:var(--color-brand-soft)] hover:shadow-xl">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[color:var(--color-brand-soft)]/20 text-[color:var(--color-brand-primary)]">
+                    <channel.icon className="h-6 w-6" />
                   </div>
-                  <h3 className="mt-4 text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--color-text-tertiary)]">
-                    {channel.title}
-                  </h3>
+                  <h3 className="mt-6 font-display text-lg text-[color:var(--color-text-primary)]">{channel.title}</h3>
                   {channel.href ? (
-                    <a
-                      href={channel.href}
-                      className="mt-2 text-sm font-medium text-[color:var(--color-text-primary)] transition-colors hover:text-[color:var(--color-brand-primary)]"
-                    >
+                    <a href={channel.href} className="mt-2 block font-medium text-[color:var(--color-text-primary)] transition-colors hover:text-[color:var(--color-brand-primary)]">
                       {channel.detail}
                     </a>
                   ) : (
-                    <p className="mt-2 text-sm font-medium text-[color:var(--color-text-primary)]">{channel.detail}</p>
+                    <p className="mt-2 font-medium text-[color:var(--color-text-primary)]">{channel.detail}</p>
                   )}
-                  <p className="mt-1 text-xs text-[color:var(--color-text-secondary)]">{channel.sub}</p>
+                  <p className="mt-1 text-xs text-[color:var(--color-text-tertiary)]">{channel.sub}</p>
                 </div>
               </ScrollReveal>
             ))}
@@ -123,67 +138,44 @@ export function ContactPage() {
         </div>
       </section>
 
-      {/* Form + Sidebar */}
-      <section className="pb-20 md:pb-24">
+      {/* Form & Map Section */}
+      <section className="pb-24">
         <div className="mx-auto max-w-[1440px] px-4 md:px-8">
-          <div className="grid gap-10 lg:grid-cols-12 lg:gap-12">
+          <div className="grid gap-12 lg:grid-cols-12">
             <div className="lg:col-span-7">
               <ScrollReveal>
-                <div className="rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 md:p-10">
-                  <SectionHeading
-                    align="left"
-                    eyebrow="Send a Message"
-                    title="How can we help?"
-                    description="Fill in the form below and our team will get back to you within one business day."
-                  />
+                <div className="rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-8 md:p-12">
+                  <h2 className="font-display text-2xl text-[color:var(--color-text-primary)] md:text-3xl">Send us a message</h2>
+                  <p className="mt-2 text-sm text-[color:var(--color-text-secondary)]">Fill out the form below and our customer concierge team will respond within 24 hours.</p>
+
                   {submitted ? (
-                    <div className="mt-10 rounded-2xl border border-[color:var(--color-success)]/30 bg-[color:var(--color-success)]/5 p-10 text-center">
-                      <CheckCircle2 className="mx-auto h-12 w-12 text-[color:var(--color-success)]" />
-                      <h3 className="mt-4 font-display text-2xl text-[color:var(--color-text-primary)]">
-                        Message received!
-                      </h3>
-                      <p className="mt-2 text-sm leading-7 text-[color:var(--color-text-secondary)]">
-                        Thank you for reaching out. Our concierge team will reply to you within 24 hours.
-                      </p>
-                      <Button
-                        variant="outline"
-                        className="mt-6"
-                        onClick={() => setSubmitted(false)}
-                      >
-                        Send Another Message
-                      </Button>
+                    <div className="mt-8 rounded-2xl bg-emerald-500/10 p-8 text-center text-emerald-600">
+                      <CheckCircle2 className="mx-auto h-12 w-12" />
+                      <h3 className="mt-4 font-display text-xl font-semibold">Message Received</h3>
+                      <p className="mt-2 text-sm">Thank you for reaching out. We have received your inquiry and will get back to you shortly.</p>
+                      <Button variant="outline" className="mt-6" onClick={() => setSubmitted(false)}>Send Another Message</Button>
                     </div>
                   ) : (
-                    <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-                      <div className="grid gap-5 sm:grid-cols-2">
-                        <TextField label="Full Name" name="name" placeholder="Ahmed Khan" required />
-                        <TextField label="Email Address" name="email" type="email" placeholder="you@example.com" required />
+                    <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+                      <div className="grid gap-6 sm:grid-cols-2">
+                        <TextField label="Your Name" name="name" required placeholder="Ayesha Khan" />
+                        <TextField label="Email Address" name="email" type="email" required placeholder="ayesha@example.com" />
                       </div>
-                      <div className="grid gap-5 sm:grid-cols-2">
-                        <TextField label="Phone" name="phone" type="tel" placeholder="+92 300 0000000" />
-                        <SelectField label="Inquiry Type" name="subject" defaultValue="General Question">
-                          {inquiryTypes.map((type) => (
-                            <option key={type} value={type}>
-                              {type}
-                            </option>
+
+                      <div className="grid gap-6 sm:grid-cols-2">
+                        <TextField label="Phone Number" name="phone" placeholder="+92 300 1234567" />
+                        <SelectField label="Inquiry Type" name="subject">
+                          {inquiryTypes.map((t) => (
+                            <option key={t} value={t}>{t}</option>
                           ))}
                         </SelectField>
                       </div>
-                      <TextAreaField
-                        label="Message"
-                        name="message"
-                        placeholder="Tell us how we can help…"
-                        className="min-h-40"
-                        required
-                      />
-                      <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                        <p className="text-xs leading-5 text-[color:var(--color-text-secondary)]">
-                          By submitting, you agree to our privacy policy.
-                        </p>
-                        <Button type="submit" iconRight={<Send className="h-4 w-4" />}>
-                          Send Message
-                        </Button>
-                      </div>
+
+                      <TextAreaField label="Message" name="message" required rows={5} placeholder="How can we help you today?" />
+
+                      <Button type="submit" variant="primary" iconRight={<Send className="h-4 w-4" />} className="w-full sm:w-auto">
+                        Send Message
+                      </Button>
                     </form>
                   )}
                 </div>
@@ -191,36 +183,25 @@ export function ContactPage() {
             </div>
 
             <div className="lg:col-span-5">
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <ScrollReveal>
-                  <div className="rounded-3xl brand-gradient p-8">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 text-white">
-                      <MessageCircle className="h-5 w-5" />
-                    </div>
+                  <div className="rounded-3xl bg-[color:var(--color-brand-primary)] p-8 text-white">
                     <h3 className="mt-4 font-display text-2xl text-white">Prefer to chat?</h3>
-                    <p className="mt-2 text-sm leading-7 text-white/80">
-                      Our live chat and WhatsApp concierge are available during atelier hours for instant answers.
-                    </p>
-                    <a href="https://wa.me/923001234567" target="_blank" rel="noopener noreferrer">
-                      <Button className="mt-6 bg-white text-[color:var(--color-brand-primary)] hover:bg-white/90 hover:shadow-none">
-                        Start WhatsApp Chat
-                      </Button>
+                    <p className="mt-2 text-sm leading-7 text-white/80">Our live chat and WhatsApp concierge are available during atelier hours for instant answers.</p>
+                    <a href={`https://wa.me/${contactInfo.whatsapp}`} target="_blank" rel="noopener noreferrer">
+                      <Button className="mt-6 bg-white text-[color:var(--color-brand-primary)] hover:bg-white/90 hover:shadow-none">Start WhatsApp Chat</Button>
                     </a>
                   </div>
                 </ScrollReveal>
 
                 <ScrollReveal delay={0.08}>
                   <div className="rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-8">
-                    <h3 className="font-display text-xl text-[color:var(--color-text-primary)]">
-                      Visit the Atelier
-                    </h3>
-                    <p className="mt-3 text-sm leading-7 text-[color:var(--color-text-secondary)]">
-                      {footerLinks.contact.address}
-                    </p>
+                    <h3 className="font-display text-xl text-[color:var(--color-text-primary)]">Visit the Atelier</h3>
+                    <p className="mt-3 text-sm leading-7 text-[color:var(--color-text-secondary)]">{contactInfo.address}</p>
                     <div className="mt-6 overflow-hidden rounded-2xl border border-[color:var(--color-border)] aspect-[16/9] w-full">
                       <iframe
                         title="Khattak Eyewear Atelier Location"
-                        src="https://maps.google.com/maps?q=MM+Alam+Road+Gulberg+III+Lahore+Pakistan&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                        src={`https://maps.google.com/maps?q=${encodeURIComponent(contactInfo.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
                         className="h-full w-full border-0"
                         allowFullScreen
                         loading="lazy"
@@ -233,12 +214,8 @@ export function ContactPage() {
                 <ScrollReveal delay={0.16}>
                   <div className="rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-8">
                     <h3 className="font-display text-xl text-[color:var(--color-text-primary)]">Quick answers</h3>
-                    <p className="mt-2 text-sm leading-7 text-[color:var(--color-text-secondary)]">
-                      Most questions are answered in our help center — from shipping times to returns.
-                    </p>
-                    <Link to="/faqs" className="mt-4 inline-block">
-                      <Button variant="outline">Browse FAQs</Button>
-                    </Link>
+                    <p className="mt-2 text-sm leading-7 text-[color:var(--color-text-secondary)]">Most questions are answered in our help center — from shipping times to returns.</p>
+                    <Link to="/faqs" className="mt-4 inline-block"><Button variant="outline">Browse FAQs</Button></Link>
                   </div>
                 </ScrollReveal>
               </div>

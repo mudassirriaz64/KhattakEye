@@ -5,6 +5,7 @@ import { useShopStore } from "@/lib/stores/shop-store";
 import { getProducts, mapProductCard, type ProductCard } from "@/lib/api/products";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
+import { getAvailabilityLabel } from "@/lib/utils/enum-labels";
 
 const compareFields = [
   { label: "Price", key: "price" as const },
@@ -112,9 +113,9 @@ export function ComparePage() {
                       </span>
                     ) : field.key === "availability" ? (
                       <span className={cn(
-                        value === "in-stock" ? "text-green-600" : value === "limited" ? "text-amber-600" : "text-[color:var(--color-danger)]",
+                        value === "in-stock" ? "text-green-600" : value === "limited" || value === "low-stock" ? "text-amber-600" : "text-[color:var(--color-danger)]",
                       )}>
-                        {value === "in-stock" ? "In Stock" : value === "limited" ? "Limited" : "New Arrival"}
+                        {getAvailabilityLabel(String(value))}
                       </span>
                     ) : (
                       <span className="capitalize">{String(value).replace(/-/g, " ")}</span>

@@ -606,12 +606,35 @@ const updateOrderStatus = async (req, res, next) => {
     }
 
     order.status = status;
-    if (order.timeline && order.timeline.length > 0) {
-      order.timeline = order.timeline.map((entry) => {
-        if (entry.status === status) {
-          return { ...entry, completed: true, date: new Date() };
-        }
-        return entry;
+    if (!order.timeline) {
+      order.timeline = [];
+    }
+
+    const STATUS_METADATA = {
+      'pending': { label: 'Order Placed', description: 'Order placed by customer.' },
+      'pending-quote': { label: 'Awaiting Price Quote', description: 'Lens price pending admin confirmation.' },
+      'payment-verification': { label: 'Payment Verification Pending', description: 'Payment screenshot submitted. Awaiting admin verification.' },
+      'confirmed': { label: 'Confirmed', description: 'Order confirmed and payment verified.' },
+      'processing': { label: 'Processing', description: 'Frames and lenses are being prepared by our artisans.' },
+      'packed': { label: 'Packed', description: 'Order packed and ready for dispatch.' },
+      'shipped': { label: 'Shipped', description: 'Handed over to courier with tracking.' },
+      'out-for-delivery': { label: 'Out for Delivery', description: 'Dispatched with local courier for delivery.' },
+      'delivered': { label: 'Delivered', description: 'Order delivered to customer.' },
+      'cancelled': { label: 'Cancelled', description: 'Order has been cancelled.' }
+    };
+
+    const existingIndex = order.timeline.findIndex((entry) => entry.status === status);
+    if (existingIndex >= 0) {
+      order.timeline[existingIndex].completed = true;
+      order.timeline[existingIndex].date = new Date();
+    } else {
+      const meta = STATUS_METADATA[status] || { label: status, description: `Status updated to ${status}` };
+      order.timeline.push({
+        status,
+        label: meta.label,
+        description: meta.description,
+        date: new Date(),
+        completed: true
       });
     }
 
@@ -791,6 +814,71 @@ const deleteBrand = async (req, res, next) => {
     next(error);
   }
 };
+const setOrderItemPrice = async (req, res, next) => {
+  try {
+    const { id, itemIndex } = req.params;
+    const { price } = req.body;
+
+    const priceNum = Number(price);
+    if (!Number.isFinite(priceNum) || priceNum <= 0) {
+      return res.status(400).json({ message: 'Price must be a positive number' });
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    const idx = parseInt(itemIndex, 10);
+    if (isNaN(idx) || idx < 0 || idx >= order.items.length) {
+      return res.status(400).json({ message: 'Invalid item index' });
+    }
+
+    const targetItem = order.items[idx];
+    if (!targetItem.customization) {
+      return res.status(400).json({ message: 'Target item has no customization' });
+    }
+
+    targetItem.customization.priceAdded = priceNum;
+    targetItem.customization.priceOnRequest = false;
+
+    const Product = require('../models/Product');
+    const productDoc = await Product.findById(targetItem.product);
+    const basePrice = productDoc ? productDoc.price : targetItem.price;
+    targetItem.price = basePrice + priceNum;
+
+    let newSubtotal = 0;
+    for (const item of order.items) {
+      newSubtotal += item.price * item.quantity;
+    }
+    order.subtotal = newSubtotal;
+    order.shipping = newSubtotal >= 3000 ? 0 : 350;
+    order.total = Math.max(0, order.subtotal + order.shipping - (order.discount || 0));
+
+    const stillPending = order.items.some(
+      (item) => item.customization && (item.customization.priceOnRequest || item.customization.priceAdded === null)
+    );
+
+    if (!stillPending && order.status === 'pending-quote') {
+      const isPaymentVerificationNeeded = order.paymentMethod !== 'cod' && order.paymentProof && order.paymentProof.screenshotUrl;
+      order.status = isPaymentVerificationNeeded ? 'payment-verification' : 'pending';
+      
+      if (!order.timeline) order.timeline = [];
+      order.timeline.push({
+        status: order.status,
+        label: order.status === 'payment-verification' ? 'Payment Verification Pending' : 'Order Placed',
+        description: `Custom lens price confirmed (Rs. ${priceNum}). Order total updated to Rs. ${order.total}.`,
+        date: new Date(),
+        completed: true
+      });
+    }
+
+    await order.save();
+    res.status(200).json(order);
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   createProduct,
@@ -802,6 +890,7 @@ module.exports = {
   permanentDeleteProduct,
   getAdminOrders,
   updateOrderStatus,
+  setOrderItemPrice,
   verifyPayment,
   getDashboardStats,
   createCategory,

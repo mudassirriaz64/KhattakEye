@@ -23,25 +23,45 @@ export function ManualPaymentForm() {
     axios.get("/settings").then((res) => {
       if (res.data) {
         const s = res.data;
+        const p = s.payment || {};
+        const b = p.bankTransfer || s.bankDetails || {};
+        const j = p.jazzcash || s.jazzcash || {};
+        const e = p.easypaisa || s.easypaisa || {};
+
+        const customMap: Record<string, { holder: string; bank: string; iban: string; number: string }> = {};
+        if (Array.isArray(p.customMethods)) {
+          p.customMethods.forEach((cm: { id: string; name: string; accountTitle?: string; accountNumber?: string; instructions?: string }) => {
+            if (cm.id) {
+              customMap[cm.id] = {
+                holder: cm.accountTitle || "Khattak Eyewear",
+                bank: cm.name || "Payment Wallet",
+                iban: cm.instructions || "",
+                number: cm.accountNumber || "-"
+              };
+            }
+          });
+        }
+
         setDynamicBankDetails({
           "bank-transfer": {
-            holder: s.bankDetails?.accountTitle || defaultBankDetails["bank-transfer"].holder,
-            bank: s.bankDetails?.bankName || defaultBankDetails["bank-transfer"].bank,
-            iban: s.bankDetails?.iban || defaultBankDetails["bank-transfer"].iban,
-            number: s.bankDetails?.accountNumber || defaultBankDetails["bank-transfer"].number
+            holder: b.accountTitle || defaultBankDetails["bank-transfer"].holder,
+            bank: b.bankName || defaultBankDetails["bank-transfer"].bank,
+            iban: b.iban || defaultBankDetails["bank-transfer"].iban,
+            number: b.accountNumber || defaultBankDetails["bank-transfer"].number
           },
           jazzcash: {
-            holder: s.jazzcash?.accountTitle || defaultBankDetails.jazzcash.holder,
+            holder: typeof j === "object" ? j.accountTitle || defaultBankDetails.jazzcash.holder : defaultBankDetails.jazzcash.holder,
             bank: "JazzCash",
             iban: "",
-            number: s.jazzcash?.number || defaultBankDetails.jazzcash.number
+            number: typeof j === "object" ? j.number || defaultBankDetails.jazzcash.number : (typeof j === "string" ? j : defaultBankDetails.jazzcash.number)
           },
           easypaisa: {
-            holder: s.easypaisa?.accountTitle || defaultBankDetails.easypaisa.holder,
+            holder: typeof e === "object" ? e.accountTitle || defaultBankDetails.easypaisa.holder : defaultBankDetails.easypaisa.holder,
             bank: "EasyPaisa",
             iban: "",
-            number: s.easypaisa?.number || defaultBankDetails.easypaisa.number
-          }
+            number: typeof e === "object" ? e.number || defaultBankDetails.easypaisa.number : (typeof e === "string" ? e : defaultBankDetails.easypaisa.number)
+          },
+          ...customMap
         });
       }
     }).catch(() => {});

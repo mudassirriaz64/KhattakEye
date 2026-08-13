@@ -31,7 +31,7 @@ export function LoginPage() {
     setAuthError(null);
     if (!validate()) return;
     try {
-      const success = await login(email, password);
+      const success = await login(email, password, rememberMe);
       if (success) {
         navigate("/account");
       } else {

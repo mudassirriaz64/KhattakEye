@@ -10,12 +10,15 @@ type OrderTimelineProps = {
 
 const statusIndex: Record<OrderStatus, number> = {
   pending: 0,
+  "pending-quote": 0,
   "payment-verification": 1,
   confirmed: 2,
   processing: 3,
-  shipped: 4,
-  delivered: 5,
-  cancelled: 6,
+  packed: 4,
+  shipped: 5,
+  "out-for-delivery": 6,
+  delivered: 7,
+  cancelled: 8,
 };
 
 export function OrderTimeline({ entries, currentStatus }: OrderTimelineProps) {
@@ -65,7 +68,13 @@ export function OrderTimeline({ entries, currentStatus }: OrderTimelineProps) {
               )}>
                 {entry.label}
               </p>
-              <p className="mt-0.5 text-xs text-[color:var(--color-text-tertiary)]">{entry.date}</p>
+              {entry.date ? (
+                <p className="mt-0.5 text-xs text-[color:var(--color-text-tertiary)]">
+                  {typeof entry.date === 'string' && isNaN(Date.parse(entry.date))
+                    ? entry.date
+                    : new Date(entry.date).toLocaleString()}
+                </p>
+              ) : null}
               <p className="mt-1 text-xs leading-5 text-[color:var(--color-text-secondary)]">{entry.description}</p>
             </div>
           </motion.div>

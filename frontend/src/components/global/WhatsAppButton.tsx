@@ -1,10 +1,23 @@
+import { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
+import axios from "@/lib/api/axios";
 
 export function WhatsAppButton() {
+  const [waNumber, setWaNumber] = useState("923001234567");
+
+  useEffect(() => {
+    axios.get("/settings").then((res) => {
+      if (res.data?.contact) {
+        const raw = res.data.contact.whatsapp || res.data.contact.phone || "923001234567";
+        setWaNumber(raw.replace(/[^0-9]/g, ""));
+      }
+    }).catch(() => {});
+  }, []);
+
   return (
     <motion.a
-      href="https://wa.me/923001234567"
+      href={`https://wa.me/${waNumber}`}
       target="_blank"
       rel="noopener noreferrer"
       initial={{ scale: 0, rotate: -90 }}

@@ -43,7 +43,7 @@ export function AdminLoginPage() {
       return;
     }
     setError("");
-    const result = await login(email.trim(), password);
+    const result = await login(email.trim(), password, remember);
     if (result.success) {
       navigate("/admin");
     } else {
@@ -120,20 +120,22 @@ export function AdminLoginPage() {
               </p>
             </div>
 
-            {/* Quick Demo Helper Pill */}
-            <div className="mb-6 flex items-center justify-between rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)]/80 p-3 shadow-sm backdrop-blur-sm">
-              <div className="flex items-center gap-2 text-xs text-[color:var(--color-text-secondary)]">
-                <KeyRound className="h-4 w-4 text-[color:var(--color-brand-primary)]" />
-                <span>Demo Creds: <strong>admin@khattakeye.com</strong></span>
+            {/* Quick Demo Helper Pill (Local Development Only) */}
+            {import.meta.env.DEV && (
+              <div className="mb-6 flex items-center justify-between rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)]/80 p-3 shadow-sm backdrop-blur-sm">
+                <div className="flex items-center gap-2 text-xs text-[color:var(--color-text-secondary)]">
+                  <KeyRound className="h-4 w-4 text-[color:var(--color-brand-primary)]" />
+                  <span>Dev Demo: <strong>admin@khattakeye.com</strong></span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleQuickFillDemo}
+                  className="rounded-lg bg-[color:var(--color-brand-primary)]/10 px-2.5 py-1 text-xs font-semibold text-[color:var(--color-brand-primary)] transition-all hover:bg-[color:var(--color-brand-primary)] hover:text-white"
+                >
+                  Autofill
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleQuickFillDemo}
-                className="rounded-lg bg-[color:var(--color-brand-primary)]/10 px-2.5 py-1 text-xs font-semibold text-[color:var(--color-brand-primary)] transition-all hover:bg-[color:var(--color-brand-primary)] hover:text-white"
-              >
-                Autofill
-              </button>
-            </div>
+            )}
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -151,7 +153,7 @@ export function AdminLoginPage() {
                       setEmail(e.target.value);
                       if (error) setError("");
                     }}
-                    placeholder="admin@khattak.com"
+                    placeholder="Enter your admin email"
                     autoComplete="email"
                     className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] py-3.5 pl-11 pr-4 text-sm font-medium text-[color:var(--color-text-primary)] shadow-[var(--shadow-input)] transition-all duration-200 placeholder:text-[color:var(--color-text-tertiary)] hover:border-[color:var(--color-border-strong)] focus:border-[color:var(--color-brand-primary)] focus:bg-white focus:outline-none focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
                   />

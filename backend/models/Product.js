@@ -46,5 +46,11 @@ const ProductSchema = new Schema({
 // Text index for search
 ProductSchema.index({ name: 'text', brand: 'text', description: 'text' });
 ProductSchema.index({ kind: 1 });
+ProductSchema.index({ status: 1, isDeleted: 1, category: 1, createdAt: -1 });
+ProductSchema.index({ status: 1, isDeleted: 1, kind: 1, createdAt: -1 });
+ProductSchema.index({ status: 1, isDeleted: 1, price: 1 });
+ProductSchema.index({ status: 1, isDeleted: 1, featured: 1 });
+ProductSchema.index({ status: 1, isDeleted: 1, isBestSeller: 1 });
+ProductSchema.index({ status: 1, isDeleted: 1, isNewArrival: 1 });
 
 module.exports = mongoose.model('Product', ProductSchema);

@@ -101,7 +101,7 @@ export function ProductDetailsPage() {
             sku: data.sku || `KT-${data._id?.substring(0, 6) || "SPEC"}`,
             inStock: data.stock > 0,
             stock: data.stock !== undefined ? data.stock : 10,
-            category: data.category || "Sunglasses",
+            category: (typeof data.category === 'object' && data.category !== null ? (data.category as { name?: string }).name : String(data.category || 'Eyewear')) || 'Eyewear',
             subcategory: data.subcategory || "Fashion & Luxury",
             frameShape: data.frameShape || "Aviator",
             frameMaterial: data.frameMaterial || "Acetate",

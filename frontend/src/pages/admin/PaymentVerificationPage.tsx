@@ -4,6 +4,7 @@ import { ShieldCheck, Search, CheckCircle, XCircle, ExternalLink, ImageIcon, X, 
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { cn } from "@/lib/utils";
 import { adminGetOrdersApi, adminVerifyPaymentApi } from "@/lib/api/admin";
+import { getPaymentMethodLabel } from "@/lib/utils/enum-labels";
 
 const methodColors: Record<string, string> = {
   "bank-transfer": "bg-[color:var(--color-accent-blue)]/10 text-[color:var(--color-accent-blue)]",
@@ -185,7 +186,7 @@ export function AdminPaymentVerificationPage() {
                         <p className="text-xs text-[color:var(--color-text-tertiary)]">{pv.customer} · {pv.email} · {pv.phone}</p>
                         <p className="mt-1 text-xs text-[color:var(--color-text-secondary)]">
                           <span className="font-medium">Rs. {pv.amount.toLocaleString()}</span> via{" "}
-                          <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-medium uppercase", methodColors[pv.method] || "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]")}>{pv.method.replace("-", " ")}</span>
+                          <span className={cn("rounded px-1.5 py-0.5 text-[10px] font-semibold", methodColors[pv.method] || "bg-[color:var(--color-surface-muted)] text-[color:var(--color-text-tertiary)]")}>{getPaymentMethodLabel(pv.method)}</span>
                         </p>
                         <p className="mt-1 flex items-center gap-1.5 text-xs text-[color:var(--color-text-tertiary)]">
                           <ExternalLink className="h-3 w-3" /> TXN: <span className="font-mono text-[color:var(--color-text-primary)]">{pv.transactionId}</span>

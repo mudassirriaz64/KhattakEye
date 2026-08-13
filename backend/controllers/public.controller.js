@@ -3,9 +3,11 @@ const Category = require('../models/Category');
 const Brand = require('../models/Brand');
 const { resolveImageUrl } = require('../utils/cloudinary');
 
+const escapeRegex = (text) => text ? String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') : '';
+
 // Helper to format products with resolved image URLs
 const formatProduct = (product) => {
-  const p = product.toObject ? product.toObject() : product;
+  const p = product;
   
   if (p.images && p.images.length > 0) {
     p.images = p.images.map(img => resolveImageUrl(img) || img);
@@ -37,25 +39,35 @@ exports.getCategories = async (req, res, next) => {
     if (productKind) filter.productKind = productKind;
     if (featured !== undefined) filter.featured = featured === 'true';
 
-    const categories = await Category.find(filter).sort({ order: 1 });
-    
-    // Format image URLs and calculate product counts dynamically
-    const formattedCategories = await Promise.all(categories.map(async (c) => {
-      const cat = c.toObject();
+    const categories = await Category.find(filter).sort({ order: 1 }).lean();
+
+    // Fast single DB aggregation for product counts across categories & subcategories
+    const [catCounts, subCounts] = await Promise.all([
+      Product.aggregate([
+        { $match: { isDeleted: { $ne: true }, status: 'active' } },
+        { $group: { _id: '$category', count: { $sum: 1 } } }
+      ]),
+      Product.aggregate([
+        { $match: { isDeleted: { $ne: true }, status: 'active' } },
+        { $group: { _id: '$subcategory', count: { $sum: 1 } } }
+      ])
+    ]);
+
+    const catCountMap = new Map(catCounts.map(c => [String(c._id || '').toLowerCase(), c.count]));
+    const subCountMap = new Map(subCounts.map(s => [String(s._id || '').toLowerCase(), s.count]));
+
+    const formattedCategories = categories.map((cat) => {
       if (cat.image) cat.image = resolveImageUrl(cat.image) || cat.image;
+      cat.productCount = catCountMap.get(String(cat.slug || '').toLowerCase()) || catCountMap.get(String(cat.name || '').toLowerCase()) || 0;
       
-      // Dynamic count for parent category
-      cat.productCount = await Product.countDocuments({ category: cat.slug, isDeleted: { $ne: true } });
-      
-      // Dynamic count for each subcategory
       if (Array.isArray(cat.subcategories)) {
-        cat.subcategories = await Promise.all(cat.subcategories.map(async (sub) => {
-          sub.productCount = await Product.countDocuments({ subcategory: sub.slug, isDeleted: { $ne: true } });
+        cat.subcategories = cat.subcategories.map((sub) => {
+          sub.productCount = subCountMap.get(String(sub.slug || '').toLowerCase()) || subCountMap.get(String(sub.name || '').toLowerCase()) || 0;
           return sub;
-        }));
+        });
       }
       return cat;
-    }));
+    });
 
     res.status(200).json(formattedCategories);
   } catch (error) {
@@ -65,11 +77,10 @@ exports.getCategories = async (req, res, next) => {
 
 exports.getBrands = async (req, res, next) => {
   try {
-    const brands = await Brand.find().sort({ name: 1 });
+    const brands = await Brand.find().sort({ name: 1 }).lean();
     const formattedBrands = brands.map(b => {
-      const brand = b.toObject();
-      if (brand.logo) brand.logo = resolveImageUrl(brand.logo) || brand.logo;
-      return brand;
+      if (b.logo) b.logo = resolveImageUrl(b.logo) || b.logo;
+      return b;
     });
     res.status(200).json(formattedBrands);
   } catch (error) {
@@ -83,10 +94,13 @@ exports.getProducts = async (req, res, next) => {
       q,
       kind,
       category, 
+      subcategory,
       minPrice, 
       maxPrice, 
       brand, 
       frameShape, 
+      frameMaterial,
+      lensType,
       colour, 
       sort, 
       featured,
@@ -97,29 +111,49 @@ exports.getProducts = async (req, res, next) => {
       limit = 50 
     } = req.query;
 
-    const filter = { isDeleted: { $ne: true } };
+    const filter = { status: { $ne: 'archived' }, isDeleted: { $ne: true } };
 
     if (kind) filter.kind = kind;
     if (featured !== undefined) filter.featured = featured === 'true';
     if (isBestSeller !== undefined) filter.isBestSeller = isBestSeller === 'true';
     if (isNewArrival !== undefined) filter.isNewArrival = isNewArrival === 'true';
-    if (gender) filter.gender = gender;
 
-    if (q) {
-      const regex = new RegExp(q.trim(), 'i');
-      filter.$or = [
-        { name: regex },
-        { brand: regex },
-        { category: regex },
-        { subcategory: regex },
-        { description: regex }
-      ];
+    const buildRegexContains = (paramStr) => {
+      const items = String(paramStr).split(',').map(s => s.trim()).filter(Boolean);
+      if (items.length === 0) return null;
+      if (items.length === 1) return new RegExp(escapeRegex(items[0]), 'i');
+      return { $in: items.map(i => new RegExp(escapeRegex(i), 'i')) };
+    };
+
+    if (category) {
+      const resFilter = buildRegexContains(category);
+      if (resFilter) filter.category = resFilter;
     }
-    
-    if (category) filter.category = new RegExp(category, 'i');
-    if (brand) filter.brand = new RegExp(brand, 'i');
-    if (frameShape) filter.frameShape = new RegExp(frameShape, 'i');
-    
+    if (subcategory) {
+      const resFilter = buildRegexContains(subcategory);
+      if (resFilter) filter.subcategory = resFilter;
+    }
+    if (brand) {
+      const resFilter = buildRegexContains(brand);
+      if (resFilter) filter.brand = resFilter;
+    }
+    if (gender) {
+      const resFilter = buildRegexContains(gender);
+      if (resFilter) filter.gender = resFilter;
+    }
+    if (frameShape) {
+      const resFilter = buildRegexContains(frameShape);
+      if (resFilter) filter.frameShape = resFilter;
+    }
+    if (frameMaterial) {
+      const resFilter = buildRegexContains(frameMaterial);
+      if (resFilter) filter.frameMaterial = resFilter;
+    }
+    if (lensType) {
+      const resFilter = buildRegexContains(lensType);
+      if (resFilter) filter.lensType = resFilter;
+    }
+
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = Number(minPrice);
@@ -127,9 +161,23 @@ exports.getProducts = async (req, res, next) => {
     }
     
     if (colour) {
+      const colRegex = buildRegexContains(colour);
+      if (colRegex) {
+        filter.$or = [
+          { frameColor: colRegex },
+          { 'variants.colorName': colRegex }
+        ];
+      }
+    }
+
+    if (q) {
+      const qRegex = new RegExp(escapeRegex(q.trim()), 'i');
       filter.$or = [
-        { frameColor: new RegExp(colour, 'i') },
-        { 'variants.colorName': new RegExp(colour, 'i') }
+        { name: qRegex },
+        { brand: qRegex },
+        { category: qRegex },
+        { subcategory: qRegex },
+        { description: qRegex }
       ];
     }
 
@@ -141,7 +189,12 @@ exports.getProducts = async (req, res, next) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const [products, total] = await Promise.all([
-      Product.find(filter).sort(sortObj).skip(skip).limit(Number(limit)),
+      Product.find(filter)
+        .select('name brand slug price oldPrice images hoverImage badges category subcategory rating reviewCount stock availability discount kind featured isNewArrival isBestSeller gender frameShape frameMaterial lensType variants')
+        .sort(sortObj)
+        .skip(skip)
+        .limit(Number(limit))
+        .lean(),
       Product.countDocuments(filter)
     ]);
 
@@ -161,9 +214,9 @@ exports.getProducts = async (req, res, next) => {
 exports.getProductBySlug = async (req, res, next) => {
   try {
     const { slug } = req.params;
-    let product = await Product.findOne({ slug, isDeleted: { $ne: true } });
+    let product = await Product.findOne({ slug, isDeleted: { $ne: true } }).lean();
     if (!product && slug.match(/^[0-9a-fA-F]{24}$/)) {
-      product = await Product.findById(slug).where('isDeleted').ne(true);
+      product = await Product.findById(slug).where('isDeleted').ne(true).lean();
     }
     
     if (!product) {

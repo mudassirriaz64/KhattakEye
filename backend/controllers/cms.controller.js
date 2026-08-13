@@ -48,19 +48,39 @@ const defaultSettings = {
     tiktok: 'https://tiktok.com/@khattakeyewear'
   },
   payment: {
+    cod: {
+      active: true,
+      label: 'Cash on Delivery',
+      instructions: 'Pay cash upon delivery at your doorstep.'
+    },
     bankTransfer: {
+      active: true,
       bankName: 'Meezan Bank',
       accountTitle: 'Khattak Eyewear (Pvt) Ltd',
+      accountNumber: '01020304050607',
       iban: 'PK36MEZN0001020304050607'
     },
-    jazzcash: '03001234567',
-    easypaisa: '03001234567'
+    jazzcash: {
+      active: true,
+      number: '03001234567',
+      accountTitle: 'Khattak Eyewear'
+    },
+    easypaisa: {
+      active: true,
+      number: '03001234567',
+      accountTitle: 'Khattak Eyewear'
+    },
+    customMethods: []
   },
   shipping: {
-    freeDeliveryThreshold: 0,
-    flatRate: 0,
+    freeDeliveryThreshold: 15000,
+    freeThreshold: 15000,
+    flatRate: 350,
+    standardRate: 350,
+    expressRate: 750,
     estimatedDaysMin: 3,
-    estimatedDaysMax: 5
+    estimatedDaysMax: 5,
+    estimatedDays: '3-5 business days'
   },
   policies: {
     returnWindowDays: 14,
@@ -224,9 +244,15 @@ const getSettings = async (req, res, next) => {
 // PUT /api/admin/settings
 const updateSettings = async (req, res, next) => {
   try {
+    const payload = { ...req.body };
+    if (payload.social && !payload.socialLinks) {
+      payload.socialLinks = payload.social;
+    } else if (payload.socialLinks && !payload.social) {
+      payload.social = payload.socialLinks;
+    }
     const settings = await SiteSettings.findByIdAndUpdate(
       'site-settings',
-      { $set: req.body },
+      { $set: payload },
       { returnDocument: 'after', upsert: true, runValidators: true }
     );
     res.status(200).json(settings);

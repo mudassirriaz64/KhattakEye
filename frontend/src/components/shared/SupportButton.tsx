@@ -1,16 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, Phone, Mail, X, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const supportOptions = [
-  { icon: MessageCircle, label: "WhatsApp", href: "https://wa.me/923001234567", color: "text-[#25D366]" },
-  { icon: Phone, label: "Call Us", href: "tel:+923001234567", color: "text-[color:var(--color-accent-blue)]" },
-  { icon: Mail, label: "Email", href: "mailto:hello@khattakeyewear.com", color: "text-[color:var(--color-accent-teal)]" },
-];
+import axios from "@/lib/api/axios";
 
 export function SupportButton() {
   const [open, setOpen] = useState(false);
+  const [contactInfo, setContactInfo] = useState({
+    phone: "+923001234567",
+    whatsapp: "923001234567",
+    email: "hello@khattakeyewear.com",
+  });
+
+  useEffect(() => {
+    axios.get("/settings").then((res) => {
+      if (res.data?.contact) {
+        const c = res.data.contact;
+        setContactInfo({
+          phone: c.phone || "+923001234567",
+          whatsapp: (c.whatsapp || c.phone || "923001234567").replace(/[^0-9]/g, ""),
+          email: c.email || "hello@khattakeyewear.com",
+        });
+      }
+    }).catch(() => {});
+  }, []);
+
+  const options = [
+    { icon: MessageCircle, label: "WhatsApp", href: `https://wa.me/${contactInfo.whatsapp}`, color: "text-[#25D366]" },
+    { icon: Phone, label: "Call Us", href: `tel:${contactInfo.phone}`, color: "text-[color:var(--color-brand-primary)]" },
+    { icon: Mail, label: "Email", href: `mailto:${contactInfo.email}`, color: "text-[color:var(--color-brand-primary)]" },
+  ];
 
   return (
     <div className="fixed bottom-24 right-6 z-40 md:bottom-6">
@@ -24,7 +43,7 @@ export function SupportButton() {
             className="absolute bottom-16 right-0 w-56 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-2 shadow-[var(--shadow-strong)] backdrop-blur-2xl"
           >
             <p className="px-3 py-2 text-xs font-semibold text-[color:var(--color-text-primary)]">Get Support</p>
-            {supportOptions.map((option) => (
+            {options.map((option) => (
               <a
                 key={option.label}
                 href={option.href}
@@ -46,7 +65,7 @@ export function SupportButton() {
         onClick={() => setOpen(!open)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="flex h-12 w-12 items-center justify-center rounded-full bg-[#8F1215] text-white shadow-lg transition-all hover:bg-[#6D1F22]"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--color-brand-primary)] text-white shadow-lg transition-all hover:bg-black"
         aria-label="Customer support"
       >
         {open ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}

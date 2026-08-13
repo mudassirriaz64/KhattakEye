@@ -65,7 +65,7 @@ export function AboutPage() {
       {/* Stats */}
       <section className="border-y border-[color:var(--color-border)] bg-[color:var(--color-panel)]">
         <div className="mx-auto max-w-[1440px] px-4 md:px-8">
-          <div className="grid grid-cols-2 divide-x divide-[color:var(--color-border)] lg:grid-cols-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[color:var(--color-border)]">
             {stats.map((stat) => (
               <ScrollReveal key={stat.label} className="py-10 text-center md:py-14">
                 <p className="font-display text-4xl font-semibold text-gradient-brand md:text-5xl">

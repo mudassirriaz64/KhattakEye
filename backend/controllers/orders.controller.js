@@ -8,6 +8,7 @@ const LensOption = require('../models/LensOption');
 const { sendOrderConfirmationEmail } = require('../utils/email');
 const { sendWhatsAppPriceOnRequestNotification } = require('../utils/whatsapp');
 const Coupon = require('../models/Coupon');
+const SiteSettings = require('../models/SiteSettings');
 const { resolveImageUrl } = require('../utils/cloudinary');
 
 // Helper to write buffer to temp file
@@ -167,6 +168,7 @@ exports.createOrder = async (req, res, next) => {
         screenshotUrl,
         fileHash,
         notes: req.body.paymentNotes || undefined,
+        amountPaid: req.body.amountPaid ? Number(req.body.amountPaid) : undefined,
         status: 'pending'
       };
     }
@@ -232,39 +234,51 @@ exports.createOrder = async (req, res, next) => {
       let customization = null;
       let priceAdded = 0;
       let priceOnRequest = false;
+      let lensCoatingName = undefined;
+      let lensOptionCollectionName = undefined;
+      let lensOptionBrandName = undefined;
+      let lensOptionTypeName = undefined;
 
       if (raw.customization) {
         hasLensCustomization = true;
         const cust = raw.customization;
 
-        // Server-authoritative lens price: resolve from the LensOption collection.
-        // A client-sent priceAdded is only trusted when no lens option slug is provided
-        // (legacy carts created before the slug fields existed).
         const primarySlug = cust.lensCoating || cust.lensOptionSlug;
         const mainOption = primarySlug ? lensOptionMap.get(primarySlug) : undefined;
 
         if (mainOption) {
+          lensCoatingName = mainOption.name;
           if (mainOption.delegatesToAppliesTo) {
             const delegatedOption = cust.lensOptionSlug ? lensOptionMap.get(cust.lensOptionSlug) : undefined;
             if (!delegatedOption || delegatedOption.appliesTo !== mainOption.delegatesToAppliesTo) {
               return res.status(400).json({ message: `Invalid delegated lens option "${cust.lensOptionSlug}" for coating "${primarySlug}"` });
             }
             priceAdded = delegatedOption.price;
+            lensOptionTypeName = delegatedOption.name;
           } else if (mainOption.collections && mainOption.collections.length > 0) {
-            // collections → (brands) → lensTypes hierarchy (ERP.md §14)
             const collection = mainOption.collections.find((c) => c.slug === cust.lensOptionCollectionSlug);
             if (!collection) {
               return res.status(400).json({ message: `A valid collection is required for lens option "${primarySlug}"` });
             }
-            const type = collection.brands && collection.brands.length > 0
-              ? (() => {
-                  const brand = collection.brands.find((b) => b.slug === cust.lensOptionBrandSlug);
-                  return brand && brand.lensTypes.find((lt) => lt.slug === cust.lensOptionTypeSlug);
-                })()
-              : collection.lensTypes.find((lt) => lt.slug === cust.lensOptionTypeSlug);
+            lensOptionCollectionName = collection.name;
+            let brandObj = undefined;
+            let type = undefined;
+
+            if (collection.brands && collection.brands.length > 0) {
+              brandObj = collection.brands.find((b) => b.slug === cust.lensOptionBrandSlug);
+              if (brandObj) {
+                lensOptionBrandName = brandObj.name;
+                type = brandObj.lensTypes.find((lt) => lt.slug === cust.lensOptionTypeSlug);
+              }
+            } else {
+              type = collection.lensTypes.find((lt) => lt.slug === cust.lensOptionTypeSlug);
+            }
+
             if (!type) {
               return res.status(400).json({ message: `A valid lens type is required for collection "${collection.slug}"` });
             }
+            lensOptionTypeName = type.name;
+
             if (type.priceOnRequest || type.price === undefined || type.price === null) {
               priceOnRequest = true;
               priceAdded = null;
@@ -273,6 +287,7 @@ exports.createOrder = async (req, res, next) => {
             }
           } else {
             priceAdded = mainOption.price;
+            lensOptionTypeName = mainOption.name;
           }
         } else if (cust.lensOptionSlug || cust.lensCoating) {
           return res.status(400).json({ message: `Invalid or unavailable lens option "${cust.lensOptionSlug || cust.lensCoating}"` });
@@ -280,7 +295,6 @@ exports.createOrder = async (req, res, next) => {
           priceAdded = Number(cust.priceAdded) || 0;
         }
 
-        // Resolve prescription file ID: use server-uploaded file ID if type is file
         let fileId = cust.prescriptionFilePublicId || null;
         if (cust.prescriptionType === 'file' && prescriptionFilePublicId) {
           fileId = prescriptionFilePublicId;
@@ -298,6 +312,10 @@ exports.createOrder = async (req, res, next) => {
           lensType: cust.lensType || undefined,
           usageType: cust.usageType || undefined,
           lensCoating: cust.lensCoating || undefined,
+          lensCoatingName,
+          lensOptionCollectionName,
+          lensOptionBrandName,
+          lensOptionTypeName,
           tintColor: cust.tintColor || undefined,
           tintStrength: cust.tintStrength || undefined,
           priceOnRequest,
@@ -362,7 +380,19 @@ exports.createOrder = async (req, res, next) => {
       decremented.push({ id: item.product, qty: item.quantity });
     }
 
-    const shipping = subtotal >= 3000 ? 0 : 350;
+    let shippingMethodOption = req.body.shippingMethod || 'standard';
+    const siteSettingsDoc = await SiteSettings.findById('site-settings');
+    const sConf = siteSettingsDoc?.shipping || {};
+    const freeThreshold = Number(sConf.freeThreshold ?? sConf.freeDeliveryThreshold ?? 15000);
+    const standardRate = Number(sConf.standardRate ?? sConf.flatRate ?? 350);
+    const expressRate = Number(sConf.expressRate ?? 750);
+
+    let shipping = 0;
+    if (shippingMethodOption === 'express') {
+      shipping = expressRate;
+    } else {
+      shipping = subtotal >= freeThreshold ? 0 : standardRate;
+    }
     const total = Math.max(0, subtotal + shipping - discount);
 
     const isPendingQuote = hasPriceOnRequest;
@@ -380,11 +410,7 @@ exports.createOrder = async (req, res, next) => {
           ? 'Payment screenshot submitted. Awaiting admin verification.'
           : 'Your order has been received and confirmed.',
         completed: true
-      },
-      { status: 'processing', label: 'Lab Processing', date: new Date(), description: 'Lenses are being cut and fitted into frames.', completed: false },
-      { status: 'processing', label: 'Quality Control', date: new Date(), description: 'Frame inspection and prescription alignment check.', completed: false },
-      { status: 'shipped', label: 'Out for Delivery', date: new Date(), description: 'Dispatched with courier tracking.', completed: false },
-      { status: 'delivered', label: 'Delivered', date: new Date(), description: 'Delivered to customer.', completed: false }
+      }
     ];
 
     const paymentType = hasLensCustomization ? 'advance' : 'full';

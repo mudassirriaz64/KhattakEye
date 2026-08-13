@@ -29,7 +29,7 @@ type AuthState = {
   isLoading: boolean;
   isEmailVerified: boolean;
   checkAuth: () => Promise<void>;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string, rememberMe: boolean) => Promise<boolean>;
   register: (data: { fullName: string; email: string; phone: string; password: string }) => Promise<boolean>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<boolean>;
@@ -68,10 +68,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  login: async (email, password) => {
+  login: async (email, password, rememberMe) => {
     set({ isLoading: true });
     try {
-      const data = await loginApi(email, password);
+      const data = await loginApi(email, password, rememberMe);
       set({
         isAuthenticated: true,
         user: data.user,

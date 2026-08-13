@@ -92,6 +92,14 @@ router.patch(
   adminController.updateOrderStatus
 );
 
+// PATCH /api/admin/orders/:id/items/:itemIndex/set-price
+router.patch(
+  '/orders/:id/items/:itemIndex/set-price',
+  auth.protectAdmin,
+  requireRole(['admin', 'manager', 'super-admin']),
+  adminController.setOrderItemPrice
+);
+
 // PATCH /api/admin/orders/:id/verify-payment
 router.patch(
   '/orders/:id/verify-payment',
