@@ -20,14 +20,22 @@ export const ProductCard = React.forwardRef(
   const targetId = String((product as any)._id || product.id || "");
   const isWishlisted = wishlistItems.some((i) => String(i._id || i.id || "") === targetId);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
 
   const addToRecentlyViewed = useShopStore((s) => s.addToRecentlyViewed);
   const addItem = useCartStore((s) => s.addItem);
 
   const isList = viewMode === "list";
-  const images = (product.images && product.images.length > 0)
+  const activeVariant = product.variants && product.variants[selectedVariantIndex];
+  const variantImage = activeVariant?.image || (activeVariant?.images && activeVariant.images[0]);
+
+  const baseImages = (product.images && product.images.length > 0)
     ? product.images
     : ["https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&h=600&fit=crop"];
+
+  const images = variantImage
+    ? [variantImage, ...baseImages.filter((img) => img !== variantImage)]
+    : baseImages;
 
   const handleClick = () => addToRecentlyViewed(product.id);
 
@@ -63,8 +71,8 @@ export const ProductCard = React.forwardRef(
       image: images[0],
       price: product.price,
       quantity: 1,
-      color: product.variants[0]?.color || "#000",
-      colorName: product.variants[0]?.colorName || "Standard",
+      color: activeVariant?.color || product.variants[0]?.color || "#000",
+      colorName: activeVariant?.colorName || product.variants[0]?.colorName || "Standard",
       size: product.frameSize || "Medium",
       lensType: product.lensType || "Standard",
       sku: product.sku || product.id,
@@ -114,8 +122,19 @@ export const ProductCard = React.forwardRef(
           </button>
         </div>
 
-        {/* Top Left Overlay: Dynamic Active Promotion Badge */}
+        {/* Top Left Overlay: Dynamic Discount or Active Promotion Badge */}
         {(() => {
+          if (product.oldPrice && product.oldPrice > product.price) {
+            const pct = (product as any).discount || Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100);
+            return (
+              <div className="absolute left-3 top-3 z-10">
+                <span className="rounded-full bg-[color:var(--color-brand-primary)] px-2.5 py-1 text-[10px] font-bold text-white uppercase tracking-wider shadow-sm">
+                  {pct}% OFF
+                </span>
+              </div>
+            );
+          }
+
           const activePromos = useCartStore.getState().activePromotions;
           if (!activePromos || activePromos.length === 0) return null;
           const now = new Date();
@@ -215,12 +234,39 @@ export const ProductCard = React.forwardRef(
           <span className="text-base font-bold text-[color:var(--color-text-primary)]">
             Rs. {product.price.toLocaleString()}
           </span>
-          {product.oldPrice && (
+          {product.oldPrice && product.oldPrice > product.price && (
             <span className="text-xs font-medium text-[color:var(--color-text-tertiary)] line-through">
               Rs. {product.oldPrice.toLocaleString()}
             </span>
           )}
         </div>
+
+        {/* Color Variant Swatches */}
+        {product.variants && product.variants.length > 1 && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5 z-10" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+            {product.variants.map((v, idx) => {
+              const isSelected = selectedVariantIndex === idx;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  title={v.colorName || `Color Variant ${idx + 1}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedVariantIndex(idx);
+                    setCurrentImageIndex(0);
+                  }}
+                  className={cn(
+                    "h-4 w-4 rounded-full border border-[color:var(--color-border)] shadow-xs transition-all hover:scale-110",
+                    isSelected ? "ring-2 ring-[color:var(--color-brand-primary)] ring-offset-1 scale-110" : "opacity-80 hover:opacity-100"
+                  )}
+                  style={{ backgroundColor: v.color || "#000" }}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
     </motion.div>
   );

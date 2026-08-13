@@ -15,6 +15,7 @@ export type ProductVariant = {
   color: string;
   colorName: string;
   image: string;
+  images?: string[];
   hoverImage?: string;
   stock: number;
 };

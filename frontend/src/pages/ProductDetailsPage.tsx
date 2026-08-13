@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { Heart, Truck, Shield, RefreshCw, BadgeCheck, Star, GitCompare, Minus, Plus, Glasses } from "lucide-react";
+import { Heart, Truck, Shield, RefreshCw, BadgeCheck, Star, GitCompare, Minus, Plus, Glasses, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Breadcrumb } from "@/components/shop/Breadcrumb";
 import { ProductGallery } from "@/components/product/ProductGallery";
@@ -12,6 +12,8 @@ import { Button } from "@/components/primitives/Button";
 import { getProductBySlug as getApiProductBySlug, getProducts, mapProductCard, sanitizeProductImages, productImageFallback } from "@/lib/api/products";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useShopStore } from "@/lib/stores/shop-store";
+import { useWishlistStore } from "@/lib/stores/wishlist-store";
+import { useToastStore } from "@/lib/stores/toast-store";
 
 import { cn, formatCurrency } from "@/lib/utils";
 import { type Product } from "@/lib/shop-data";
@@ -69,13 +71,15 @@ export function ProductDetailsPage() {
   const [product, setProduct] = useState<ProductDetailsData | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
 
-  const [wishlisted, setWishlisted] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState(0);
   const addToRecentlyViewed = useShopStore((s) => s.addToRecentlyViewed);
   const toggleCompare = useShopStore((s) => s.toggleCompare);
   const compareList = useShopStore((s) => s.compareList);
   const addItem = useCartStore((s) => s.addItem);
+  const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
+  const wishlistItems = useWishlistStore((s) => s.items);
+  const addToast = useToastStore((s) => s.addToast);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -148,9 +152,60 @@ export function ProductDetailsPage() {
       ? [activeVariant.image]
       : [];
 
-  const rawGalleryImages = variantImages.length > 0 ? variantImages : product.images;
-  const galleryImages = sanitizeProductImages(rawGalleryImages);
+  // Combine variant images first, then append main feature media images at the end (without duplicates)
+  const combinedRawImages = [...variantImages];
+  for (const mainImg of product.images || []) {
+    if (!combinedRawImages.includes(mainImg)) {
+      combinedRawImages.push(mainImg);
+    }
+  }
+
+  const galleryImages = sanitizeProductImages(combinedRawImages);
   const displayImages = galleryImages.length > 0 ? galleryImages : [productImageFallback(product.slug || product.name || "eyewear")];
+
+  const isWishlisted = wishlistItems.some(
+    (i) => String(i._id || i.id || "") === String(product.id || product._id || "")
+  );
+
+  const handleWishlistToggle = () => {
+    toggleWishlist(product as any);
+    if (!isWishlisted) {
+      addToast({ title: "Saved to Wishlist", description: `${product.name} has been added to your wishlist.`, type: "success" });
+    } else {
+      addToast({ title: "Removed", description: `${product.name} was removed from your wishlist.`, type: "info" });
+    }
+  };
+
+  const handleShareProduct = async () => {
+    const currentUrl = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: `Check out ${product.name} on Khattak Eyewear`,
+          url: currentUrl,
+        });
+        return;
+      } catch {
+        // User canceled or fallback to copy
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(currentUrl);
+      addToast({
+        title: "Link Copied!",
+        description: "Product link copied to clipboard.",
+        type: "success",
+      });
+    } catch {
+      addToast({
+        title: "Product Link",
+        description: currentUrl,
+        type: "info",
+      });
+    }
+  };
 
   const accordionItems = [
     {
@@ -282,13 +337,20 @@ export function ProductDetailsPage() {
                 </ul>
               </div>
               <div className="text-right">
-                <span className="text-2xl font-bold text-[color:var(--color-text-primary)]">
-                  {formatCurrency(product.price)}
-                </span>
-                {(product.oldPrice || product.originalPrice) && (
-                  <p className="text-xs text-[color:var(--color-text-tertiary)] line-through">
-                    {formatCurrency(product.oldPrice || product.originalPrice)}
-                  </p>
+                <div className="flex items-baseline justify-end gap-2">
+                  <span className="text-2xl font-bold text-[color:var(--color-text-primary)]">
+                    {formatCurrency(product.price)}
+                  </span>
+                </div>
+                {((product.oldPrice && product.oldPrice > product.price) || (product.originalPrice && product.originalPrice > product.price)) && (
+                  <div className="mt-1 flex items-center justify-end gap-2">
+                    <span className="rounded-md bg-rose-500/10 text-rose-600 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider border border-rose-500/20">
+                      {(product as any).discount || Math.round((((product.oldPrice || product.originalPrice) - product.price) / (product.oldPrice || product.originalPrice)) * 100)}% OFF
+                    </span>
+                    <p className="text-xs font-medium text-[color:var(--color-text-tertiary)] line-through">
+                      {formatCurrency(product.oldPrice || product.originalPrice)}
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -365,13 +427,30 @@ export function ProductDetailsPage() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setWishlisted(!wishlisted)}
-                  className={cn("flex h-12 w-12 items-center justify-center rounded-2xl border transition-all", wishlisted ? "border-[color:var(--color-danger)] text-[color:var(--color-danger)]" : "border-[color:var(--color-border)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]")}
+                  title={isWishlisted ? "Remove from Wishlist" : "Add to Wishlist"}
+                  onClick={handleWishlistToggle}
+                  className={cn(
+                    "flex h-12 w-12 items-center justify-center rounded-2xl border transition-all",
+                    isWishlisted ? "border-[color:var(--color-danger)] text-[color:var(--color-danger)] bg-red-50" : "border-[color:var(--color-border)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)] hover:border-[color:var(--color-brand-primary)]"
+                  )}
                 >
-                  <Heart className={cn("h-5 w-5", wishlisted && "fill-current")} />
+                  <Heart className={cn("h-5 w-5", isWishlisted && "fill-current")} />
                 </button>
-                <button type="button" onClick={() => toggleCompare(product.id)} className={cn("flex h-12 w-12 items-center justify-center rounded-2xl border transition-colors", compareList.includes(product.id) ? "border-[color:var(--color-accent-teal)] text-[color:var(--color-accent-teal)]" : "border-[color:var(--color-border)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]")}>
+                <button
+                  type="button"
+                  title="Compare Product"
+                  onClick={() => toggleCompare(product.id)}
+                  className={cn("flex h-12 w-12 items-center justify-center rounded-2xl border transition-colors", compareList.includes(product.id) ? "border-[color:var(--color-accent-teal)] text-[color:var(--color-accent-teal)]" : "border-[color:var(--color-border)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]")}
+                >
                   <GitCompare className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  title="Share Product Link"
+                  onClick={handleShareProduct}
+                  className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[color:var(--color-border)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-brand-primary)] hover:border-[color:var(--color-brand-primary)]"
+                >
+                  <Share2 className="h-5 w-5" />
                 </button>
               </div>
             </div>

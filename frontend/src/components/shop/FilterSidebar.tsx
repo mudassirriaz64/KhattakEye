@@ -9,6 +9,7 @@ import { PriceSlider } from "./PriceSlider";
 import { FilterDropdownPopover } from "./FilterDropdownPopover";
 import { ActiveFilterChips } from "./ActiveFilterChips";
 import { getProducts, getBrands, type ApiProduct } from "@/lib/api/products";
+import { getCategories, type Category } from "@/lib/api/categories";
 
 type FilterSidebarProps = {
   open: boolean;
@@ -24,6 +25,7 @@ export function FilterSidebar({ open, onClose }: FilterSidebarProps) {
 
   const [dbProducts, setDbProducts] = useState<ApiProduct[]>([]);
   const [dbBrands, setDbBrands] = useState<{ name: string; logo?: string }[]>([]);
+  const [dbCategories, setDbCategories] = useState<Category[]>([]);
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -36,6 +38,12 @@ export function FilterSidebar({ open, onClose }: FilterSidebarProps) {
     getBrands().then((brands) => {
       if (Array.isArray(brands) && brands.length > 0) {
         setDbBrands(brands);
+      }
+    }).catch(() => {});
+
+    getCategories().then((cats) => {
+      if (Array.isArray(cats) && cats.length > 0) {
+        setDbCategories(cats);
       }
     }).catch(() => {});
   }, []);
@@ -64,23 +72,36 @@ export function FilterSidebar({ open, onClose }: FilterSidebarProps) {
       const path = window.location.pathname.toLowerCase();
       const isSunglasses = path.includes("sunglasses");
       const isEyeglasses = path.includes("eyeglasses");
-      const isLenses = path.includes("lenses") || path.includes("blue-light") || path.includes("blue-cut");
+      const isContactLenses = path.includes("contact-lenses");
+      const isLenses = path.includes("lenses") && !isContactLenses;
 
-      if (isSunglasses) {
-        displayOptions = group.options.filter((opt) =>
-          ["polarized-shades", "driving-sunglasses", "fashion-luxury", "sports-performance"].includes(opt.value)
-        );
-      } else if (isEyeglasses) {
-        displayOptions = group.options.filter((opt) =>
-          ["prescription-glasses", "blue-light", "reading-glasses", "rimless-frames"].includes(opt.value)
-        );
-      } else if (isLenses) {
-        displayOptions = [
-          { label: "Blue Light Blocking", value: "blue-light", count: 0 },
-          { label: "Anti-Reflective", value: "anti-reflective", count: 0 },
-          { label: "Photochromic", value: "photochromic", count: 0 },
-          { label: "High Index / Thin", value: "high-index", count: 0 },
-        ];
+      let targetCat: Category | undefined;
+      if (isSunglasses) targetCat = dbCategories.find((c) => c.slug === "sunglasses" || c.name.toLowerCase().includes("sun"));
+      else if (isEyeglasses) targetCat = dbCategories.find((c) => c.slug === "eyeglasses" || c.name.toLowerCase().includes("eye"));
+      else if (isContactLenses) targetCat = dbCategories.find((c) => c.slug === "contact-lenses" || c.name.toLowerCase().includes("contact"));
+      else if (isLenses) targetCat = dbCategories.find((c) => c.slug === "lenses");
+
+      if (targetCat && Array.isArray(targetCat.subcategories) && targetCat.subcategories.length > 0) {
+        displayOptions = targetCat.subcategories.map((sub) => ({
+          label: sub.name,
+          value: sub.slug || sub.name.toLowerCase().replace(/\s+/g, "-"),
+          count: 0
+        }));
+      } else if (dbCategories.length > 0) {
+        const dynamicSubs: { label: string; value: string; count: number }[] = [];
+        dbCategories.forEach((cat) => {
+          if (Array.isArray(cat.subcategories)) {
+            cat.subcategories.forEach((sub) => {
+              const val = sub.slug || sub.name.toLowerCase().replace(/\s+/g, "-");
+              if (!dynamicSubs.some((s) => s.value === val)) {
+                dynamicSubs.push({ label: sub.name, value: val, count: 0 });
+              }
+            });
+          }
+        });
+        if (dynamicSubs.length > 0) {
+          displayOptions = dynamicSubs;
+        }
       }
     }
 

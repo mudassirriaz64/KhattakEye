@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Search, Heart, UserRound, ShoppingBag, Menu, ChevronDown, X,
-  ArrowRight,
+  ArrowRight, ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -219,37 +219,50 @@ function MegaPanel({ columns, images, imageLabel, imageLink, onEnter, onLeave }:
         initial="hidden"
         animate="visible"
       >
-        <div className={cn("grid gap-12", columns.length === 2 ? "grid-cols-2 min-w-[420px]" : "grid-cols-3 flex-1")}>
-          {columns.map((col) => (
-            <motion.div
-              key={col.title}
-              variants={{
-                hidden: { opacity: 0, y: 12 },
-                visible: { opacity: 1, y: 0 },
-              }}
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.26em] text-[color:var(--color-brand-primary)]">
-                {col.title}
-              </p>
-              <ul className="space-y-3">
-                {col.links.map((item) => (
-                  <li key={item.label}>
-                    <Link
-                      to={item.path}
-                      className="group inline-flex items-center gap-2 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-                    >
-                      <span className="h-1 w-1 rounded-full bg-transparent transition-colors group-hover:bg-[color:var(--color-brand-primary)]" />
-                      <span className="relative">
-                        {item.label}
-                        <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-[color:var(--color-brand-primary)] transition-all duration-300 group-hover:w-full" />
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          ))}
+        <div className="flex flex-wrap items-start justify-start gap-12 flex-1">
+          {columns.map((col) => {
+            const isSplit = col.links.length > 8;
+            const rowCount = Math.ceil(col.links.length / 2);
+
+            return (
+              <motion.div
+                key={col.title}
+                className={cn("min-w-[180px]", isSplit && "min-w-[360px]")}
+                variants={{
+                  hidden: { opacity: 0, y: 12 },
+                  visible: { opacity: 1, y: 0 },
+                }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.26em] text-[color:var(--color-brand-primary)]">
+                  {col.title}
+                </p>
+
+                <ul
+                  className={cn(
+                    "space-y-3",
+                    isSplit && "grid grid-flow-col gap-x-8 gap-y-3 space-y-0"
+                  )}
+                  style={isSplit ? { gridTemplateRows: `repeat(${rowCount}, minmax(0, 1fr))` } : undefined}
+                >
+                  {col.links.map((item) => (
+                    <li key={item.label}>
+                      <Link
+                        to={item.path}
+                        className="group inline-flex items-center gap-2 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                      >
+                        <span className="h-1 w-1 rounded-full bg-transparent transition-colors group-hover:bg-[color:var(--color-brand-primary)]" />
+                        <span className="relative">
+                          {item.label}
+                          <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-[color:var(--color-brand-primary)] transition-all duration-300 group-hover:w-full" />
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            );
+          })}
         </div>
 
         {images && images.length > 0 && (
@@ -295,10 +308,19 @@ function BrandsMegaPanel({
   onEnter,
   onLeave
 }: {
-  brands: { name: string; initials?: string; color?: string; logo?: string }[];
+  brands: { name: string; slug?: string; tagline?: string; logo?: string; featured?: boolean }[];
   onEnter: () => void;
   onLeave: () => void;
 }) {
+  // Group brands dynamically from MongoDB
+  const houseBrands = brands.filter((b) => b.name.includes("Khattak") || b.featured);
+  const otherBrands = brands.filter((b) => !b.name.includes("Khattak") && !b.featured);
+  
+  const col1 = houseBrands.length > 0 ? houseBrands : brands.slice(0, Math.ceil(brands.length / 2));
+  const col2 = houseBrands.length > 0 ? otherBrands : brands.slice(Math.ceil(brands.length / 2));
+
+  const featuredSpotlight = brands.find((b) => b.logo || b.featured) || brands[0];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}
@@ -307,52 +329,131 @@ function BrandsMegaPanel({
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
-      className="absolute left-0 right-0 glass border-b border-[color:var(--color-border)] shadow-[var(--shadow-strong)]"
+      className="absolute left-0 right-0 glass border-b border-[color:var(--color-border)] shadow-[var(--shadow-strong)] backdrop-blur-xl"
     >
       <motion.div
-        className="mx-auto max-w-[1440px] px-8 py-12"
-        variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.04 } } }}
+        className="mx-auto max-w-[1440px] px-8 py-10 grid grid-cols-12 gap-12 items-start"
+        variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.05 } } }}
         initial="hidden"
         animate="visible"
       >
-        <p className="mb-6 text-[11px] font-semibold uppercase tracking-[0.26em] text-[color:var(--color-brand-primary)]">
-          Premium Brands
-        </p>
-        <div className="grid grid-cols-4 gap-4 md:grid-cols-8">
-          {brands.map((brand) => (
-            <motion.div
-              key={brand.name}
-              variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
-              transition={{ duration: 0.28 }}
-            >
-              <Link
-                to={`/shop?brand=${encodeURIComponent(brand.name)}`}
-                onClick={onLeave}
-                className="group flex flex-col items-center gap-3 rounded-[18px] p-4 transition-all hover:bg-[color:var(--color-surface-muted)] hover:shadow-[var(--shadow-soft)]"
-              >
-                {brand.logo ? (
-                  <img
-                    src={brand.logo}
-                    alt={brand.name}
-                    className="h-10 w-10 rounded-xl object-cover ring-1 ring-[color:var(--color-border)] transition-transform group-hover:scale-105"
-                  />
-                ) : (
-                  <BrandLogoSvg initials={brand.initials || brand.name.substring(0, 2).toUpperCase()} color={brand.color || "#19130D"} />
-                )}
-                <span className="text-center text-[10px] font-medium text-[color:var(--color-text-tertiary)] transition-colors group-hover:text-[color:var(--color-text-primary)]">
-                  {brand.name}
-                </span>
-              </Link>
-            </motion.div>
-          ))}
+        {/* Left Column 1: Featured House Brands */}
+        <div className="col-span-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-brand-primary)]" />
+            <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-[color:var(--color-brand-primary)]">
+              Khattak Atelier & Featured
+            </p>
+          </div>
+          <ul className="space-y-2">
+            {col1.map((b) => (
+              <li key={b.name}>
+                <Link
+                  to={`/shop?brand=${encodeURIComponent(b.name)}`}
+                  onClick={onLeave}
+                  className="group flex items-center justify-between gap-3 rounded-xl p-2.5 transition-all hover:bg-[color:var(--color-panel)] border border-transparent hover:border-[color:var(--color-border)]"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {b.logo ? (
+                      <img src={b.logo} alt={b.name} className="h-7 w-7 rounded-lg object-contain bg-white p-0.5 border border-[color:var(--color-border)] shrink-0" />
+                    ) : (
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[color:var(--color-brand-primary)]/10 text-[10px] font-bold text-[color:var(--color-brand-primary)] shrink-0">
+                        {b.name.substring(0, 2).toUpperCase()}
+                      </span>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[color:var(--color-text-primary)] group-hover:text-[color:var(--color-brand-primary)] transition-colors truncate">
+                        {b.name}
+                      </p>
+                      {b.tagline && (
+                        <p className="text-[10px] font-medium text-[color:var(--color-text-tertiary)] truncate">
+                          {b.tagline}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronRight className="h-3.5 w-3.5 text-[color:var(--color-text-tertiary)] opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-0.5" />
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
+
+        {/* Left Column 2: Designer & International Houses */}
+        <div className="col-span-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-text-tertiary)]" />
+            <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-[color:var(--color-text-secondary)]">
+              Designer Collections
+            </p>
+          </div>
+          <ul className="grid grid-cols-2 gap-2">
+            {col2.map((b) => (
+              <li key={b.name}>
+                <Link
+                  to={`/shop?brand=${encodeURIComponent(b.name)}`}
+                  onClick={onLeave}
+                  className="group flex items-center gap-2.5 rounded-xl p-2 transition-all hover:bg-[color:var(--color-panel)]"
+                >
+                  <span className="h-1 w-1 rounded-full bg-transparent group-hover:bg-[color:var(--color-brand-primary)] transition-colors" />
+                  <span className="text-sm font-medium text-[color:var(--color-text-secondary)] group-hover:text-[color:var(--color-text-primary)] transition-colors truncate">
+                    {b.name}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          
+          <div className="pt-2 border-t border-[color:var(--color-border)]">
+            <Link
+              to="/shop"
+              onClick={onLeave}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[color:var(--color-brand-primary)] hover:underline"
+            >
+              <span>Explore All {brands.length} Brands</span>
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Right Section: Luxury Brand Showcase Spotlight Card */}
+        <div className="col-span-4 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[240px]">
+          <div className="absolute top-0 right-0 -mr-10 -mt-10 h-32 w-32 rounded-full bg-[color:var(--color-brand-primary)]/10 blur-2xl pointer-events-none" />
+          
+          <div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-[color:var(--color-brand-primary)]/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[color:var(--color-brand-primary)] mb-3">
+              ✦ Featured Spotlight
+            </span>
+            <h4 className="font-display text-xl font-bold text-[color:var(--color-text-primary)]">
+              {featuredSpotlight?.name || "Luxury Brands"}
+            </h4>
+            <p className="mt-1 text-xs leading-relaxed text-[color:var(--color-text-secondary)]">
+              {featuredSpotlight?.tagline || "Discover handcrafted luxury frames, Italian acetates, and iconic optics."}
+            </p>
+          </div>
+
+          <div className="mt-6 pt-4 border-t border-[color:var(--color-border)] flex items-center justify-between">
+            <span className="text-[10px] font-semibold text-[color:var(--color-text-tertiary)] uppercase tracking-wider">
+              100% Authentic Guarantee
+            </span>
+            <Link
+              to={`/shop?brand=${encodeURIComponent(featuredSpotlight?.name || "")}`}
+              onClick={onLeave}
+              className="inline-flex items-center gap-1 rounded-full bg-[color:var(--color-text-primary)] px-4 py-1.5 text-xs font-bold text-white transition-all hover:bg-[color:var(--color-brand-primary)] shadow-xs"
+            >
+              <span>Shop Brand</span>
+              <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+
       </motion.div>
     </motion.div>
   );
 }
 
 import { getCategories, type Category } from "@/lib/api/categories";
-import { getBrands } from "@/lib/api/products";
+import { getBrands, resolveCloudinaryUrl } from "@/lib/api/products";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useWishlistStore } from "@/lib/stores/wishlist-store";
 import axios from "@/lib/api/axios";
@@ -389,7 +490,7 @@ export function Navbar() {
   const navRef = useRef<HTMLElement>(null);
   
   const [navData, setNavData] = useState<NavLink[]>(navLinks);
-  const [dynamicBrands, setDynamicBrands] = useState<{ name: string; initials: string; color: string; logo?: string }[]>([]);
+  const [dynamicBrands, setDynamicBrands] = useState<{ name: string; slug?: string; tagline?: string; logo?: string; featured?: boolean }[]>([]);
 
   useEffect(() => {
     async function fetchNavData() {
@@ -466,11 +567,13 @@ export function Navbar() {
           }));
         }
 
-        if (brands && brands.length > 0) {
-          setDynamicBrands(brands.map((b) => ({
+        if (brands && Array.isArray(brands) && brands.length > 0) {
+          setDynamicBrands(brands.map((b: { name: string; slug?: string; tagline?: string; logo?: string; featured?: boolean }) => ({
             name: b.name,
-            initials: b.name.substring(0, 2).toUpperCase(),
-            color: "#19130D"
+            slug: b.slug || b.name.toLowerCase().replace(/\s+/g, '-'),
+            tagline: b.tagline,
+            logo: b.logo ? resolveCloudinaryUrl(b.logo) : undefined,
+            featured: Boolean(b.featured)
           })));
         }
       } catch (err) {

@@ -96,7 +96,7 @@ const defaultSettings = {
     { id: "sec-4", section: "face-shape-guide", title: "Face Shape Guide", subtitle: "Interactive fit and geometry guide", visible: true, order: 4 },
     { id: "sec-5", section: "gender-collections", title: "Gender Collections", subtitle: "Men's and Women's collections", visible: true, order: 5 },
     { id: "sec-6", section: "tryon-promo", title: "Virtual Try-On Promo", subtitle: "Interactive AR try-on spotlight", visible: true, order: 6 },
-    { id: "sec-7", section: "why-choose-us", title: "Why Choose Us", subtitle: "The Khattak difference", visible: true, order: 7 },
+    { id: "sec-7", section: "why-choose-us", title: "Why Choose Us", subtitle: "The Khattak difference", visible: false, order: 7 },
     { id: "sec-8", section: "premium-brands", title: "Brand Logotypes", subtitle: "Luxury brand partner showcase", visible: true, order: 8 },
     { id: "sec-9", section: "testimonials", title: "Customer Reviews Wall", subtitle: "Star ratings and verified testimonials", visible: true, order: 9 },
     { id: "sec-10", section: "newsletter", title: "Newsletter Signup Box", subtitle: "Email subscription section", visible: true, order: 10 }

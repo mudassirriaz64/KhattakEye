@@ -53,6 +53,10 @@ export default {
           from: { transform: "translateX(0)" },
           to: { transform: "translateX(-50%)" },
         },
+        "infinite-scroll": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-33.333%)" },
+        },
         "progress-fill": {
           "0%": { width: "0%" },
           "100%": { width: "100%" },
@@ -71,6 +75,7 @@ export default {
         "ken-burns": "ken-burns 10s ease-in-out forwards",
         float: "float 5s ease-in-out infinite",
         marquee: "marquee 32s linear infinite",
+        "infinite-scroll": "infinite-scroll 25s linear infinite",
         "progress-fill": "progress-fill 5s linear forwards",
         "fade-in-up": "fade-in-up 0.6s ease-out forwards",
         "scale-in": "scale-in 0.4s ease-out forwards",

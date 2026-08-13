@@ -121,8 +121,15 @@ export function FilterDropdownPopover({
                   return (
                     <label
                       key={opt.value}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const next = isChecked
+                          ? selectedValues.filter((v) => v !== opt.value)
+                          : [...selectedValues, opt.value];
+                        onChange(id, next);
+                      }}
                       className={cn(
-                        "flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium cursor-pointer transition-colors",
+                        "flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium cursor-pointer transition-colors select-none",
                         isChecked
                           ? "bg-[color:var(--color-brand-soft)]/20 text-[color:var(--color-brand-primary)]"
                           : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]"

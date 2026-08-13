@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const { resolveImageUrl } = require('../utils/cloudinary');
 
 const formatProduct = (product) => {
+  if (!product) return null;
   const p = product.toObject ? product.toObject() : product;
   if (p.images && p.images.length > 0) {
     p.images = p.images.map(img => resolveImageUrl(img) || img);
@@ -21,7 +22,7 @@ const getWishlist = async (req, res, next) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const items = (user.wishlist || []).map(formatProduct);
+    const items = (user.wishlist || []).filter(Boolean).map(formatProduct);
     res.status(200).json({ items });
   } catch (error) {
     next(error);
@@ -37,14 +38,20 @@ const addToWishlist = async (req, res, next) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const user = await User.findById(req.user._id);
-    if (!user.wishlist.some(id => id.toString() === productId)) {
-      user.wishlist.push(productId);
-      await user.save();
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $addToSet: { wishlist: productId } },
+      { new: true }
+    ).populate({
+      path: 'wishlist',
+      match: { isDeleted: { $ne: true } }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    await user.populate('wishlist');
-    const items = (user.wishlist || []).map(formatProduct);
+    const items = (user.wishlist || []).filter(Boolean).map(formatProduct);
     res.status(200).json({ message: 'Product added to wishlist', items });
   } catch (error) {
     next(error);
@@ -55,12 +62,20 @@ const addToWishlist = async (req, res, next) => {
 const removeFromWishlist = async (req, res, next) => {
   try {
     const { productId } = req.params;
-    const user = await User.findById(req.user._id);
-    user.wishlist = user.wishlist.filter(id => id.toString() !== productId);
-    await user.save();
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { $pull: { wishlist: productId } },
+      { new: true }
+    ).populate({
+      path: 'wishlist',
+      match: { isDeleted: { $ne: true } }
+    });
 
-    await user.populate('wishlist');
-    const items = (user.wishlist || []).map(formatProduct);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const items = (user.wishlist || []).filter(Boolean).map(formatProduct);
     res.status(200).json({ message: 'Product removed from wishlist', items });
   } catch (error) {
     next(error);

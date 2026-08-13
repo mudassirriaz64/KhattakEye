@@ -85,10 +85,26 @@ export function AdminAddGlassesPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
+  const [originalPrice, setOriginalPrice] = useState("");
+  const [hasDiscount, setHasDiscount] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState("");
+
   useEffect(() => {
     if (id) {
       adminGetProductByIdApi(id).then((product) => {
         if (product) {
+          const baseOrig = product.oldPrice && Number(product.oldPrice) > Number(product.price)
+            ? String(product.oldPrice)
+            : product.price ? String(product.price) : "";
+          const hasDisc = Boolean(product.oldPrice && Number(product.oldPrice) > Number(product.price));
+          const discPct = hasDisc
+            ? String(product.discount || Math.round(((Number(product.oldPrice) - Number(product.price)) / Number(product.oldPrice)) * 100))
+            : "";
+
+          setOriginalPrice(baseOrig);
+          setHasDiscount(hasDisc);
+          setDiscountPercent(discPct);
+
           setForm({
             kind: "glasses",
             name: product.name || "",
@@ -317,6 +333,8 @@ export function AdminAddGlassesPage() {
     if (!form.name.trim()) missingFields.push("Product Title");
     if (!form.brand.trim()) missingFields.push("Brand");
     if (!form.category.trim()) missingFields.push("Parent Category");
+    if (!form.shortDescription.trim()) missingFields.push("Short Description");
+    if (!form.description.trim()) missingFields.push("Detailed Description");
     if (!form.price.trim() || isNaN(Number(form.price)) || Number(form.price) <= 0) missingFields.push("Price");
     if (form.stock === "" || form.stock === null || form.stock === undefined || isNaN(Number(form.stock)) || Number(form.stock) < 0) missingFields.push("Stock");
 
@@ -349,6 +367,11 @@ export function AdminAddGlassesPage() {
 
     try {
       setIsSubmitting(true);
+      const origNum = Number(originalPrice) || 0;
+      const discNum = Number(discountPercent) || 0;
+      const isDiscApplied = hasDiscount && discNum > 0 && origNum > 0;
+      const finalPriceNum = isDiscApplied ? Math.round(origNum * (1 - discNum / 100)) : origNum;
+
       const formData = new FormData();
       formData.append("kind", "glasses");
       formData.append("name", form.name);
@@ -357,8 +380,14 @@ export function AdminAddGlassesPage() {
       formData.append("subcategory", form.subcategory);
       formData.append("description", form.description);
       formData.append("shortDescription", form.shortDescription);
-      formData.append("price", form.price);
-      if (form.oldPrice) formData.append("oldPrice", form.oldPrice);
+      formData.append("price", String(finalPriceNum));
+      if (isDiscApplied) {
+        formData.append("oldPrice", String(origNum));
+        formData.append("discount", String(discNum));
+      } else {
+        formData.append("oldPrice", "");
+        formData.append("discount", "0");
+      }
       if (form.cost) formData.append("cost", form.cost);
       formData.append("sku", form.sku || `GLS-${Date.now()}`);
       formData.append("stock", form.stock || "10");
@@ -429,6 +458,7 @@ export function AdminAddGlassesPage() {
         message = err.response?.data?.message || message;
       }
       console.error(err);
+      setFormError(message);
       addToast({ title: "Error", description: message, type: "error" });
     } finally {
       setIsSubmitting(false);
@@ -518,12 +548,12 @@ export function AdminAddGlassesPage() {
               </div>
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Short Description</label>
-              <input type="text" value={form.shortDescription} onChange={(e) => setForm({ ...form, shortDescription: e.target.value })} placeholder="One-line summary for cards" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]" />
+              <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Short Description *</label>
+              <input type="text" value={form.shortDescription} onChange={(e) => setForm({ ...form, shortDescription: e.target.value })} required placeholder="One-line summary for cards" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]" />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Full Description</label>
-              <textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detailed product description..." className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]" />
+              <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Full Description *</label>
+              <textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required placeholder="Detailed product description..." className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]" />
             </div>
           </div>
 
@@ -728,14 +758,71 @@ export function AdminAddGlassesPage() {
         <div className="space-y-6">
           <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 space-y-4">
             <h2 className="font-display text-base font-bold text-[color:var(--color-text-primary)] border-b border-[color:var(--color-border)] pb-3">Pricing & Stock</h2>
+            
             <div>
-              <label className="mb-1 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Price (PKR) *</label>
-              <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required placeholder="18500" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3.5 py-2 text-sm text-[color:var(--color-text-primary)]" />
+              <label className="mb-1 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Original Base Price (PKR) *</label>
+              <input
+                type="number"
+                value={originalPrice}
+                onChange={(e) => setOriginalPrice(e.target.value)}
+                required
+                placeholder="10000"
+                className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3.5 py-2 text-sm font-semibold text-[color:var(--color-text-primary)]"
+              />
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Original Price (PKR)</label>
-              <input type="number" value={form.oldPrice} onChange={(e) => setForm({ ...form, oldPrice: e.target.value })} placeholder="22000" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3.5 py-2 text-sm text-[color:var(--color-text-primary)]" />
+
+            {/* Apply Discount Checkbox */}
+            <div className="pt-2 border-t border-[color:var(--color-border)]">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={hasDiscount}
+                  onChange={(e) => {
+                    setHasDiscount(e.target.checked);
+                    if (!e.target.checked) setDiscountPercent("");
+                  }}
+                  className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-brand-primary)] focus:ring-[color:var(--color-brand-primary)]"
+                />
+                <span className="text-xs font-semibold text-[color:var(--color-text-primary)]">Apply Discount Percentage (% OFF)</span>
+              </label>
             </div>
+
+            {/* Discount Percentage Input Field (Shown ONLY if Checkbox is Checked) */}
+            {hasDiscount && (
+              <div className="space-y-2 rounded-xl bg-amber-500/10 p-3 border border-amber-500/30">
+                <label className="block text-xs font-semibold text-[color:var(--color-text-primary)]">Discount Percentage (%) *</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={discountPercent}
+                    onChange={(e) => setDiscountPercent(e.target.value)}
+                    placeholder="e.g. 5 or 10"
+                    className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-sm font-bold text-[color:var(--color-text-primary)] pr-8"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[color:var(--color-brand-primary)]">%</span>
+                </div>
+
+                {/* Auto-Calculated Summary Breakdown */}
+                {Number(originalPrice) > 0 && Number(discountPercent) > 0 && (
+                  <div className="mt-2 text-xs space-y-1 pt-2 border-t border-amber-500/20">
+                    <div className="flex justify-between text-[color:var(--color-text-secondary)]">
+                      <span>Original Price:</span>
+                      <span className="line-through">Rs. {Number(originalPrice).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-amber-700 dark:text-amber-300 font-semibold">
+                      <span>Discount ({discountPercent}% OFF):</span>
+                      <span>-Rs. {Math.round((Number(originalPrice) * Number(discountPercent)) / 100).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-bold text-sm pt-1 border-t border-amber-500/20">
+                      <span>Final Selling Price:</span>
+                      <span>Rs. {Math.round(Number(originalPrice) * (1 - Number(discountPercent) / 100)).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Stock *</label>

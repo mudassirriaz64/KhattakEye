@@ -57,7 +57,7 @@ export function LandingPage() {
   }, []);
 
   const activeSections = [...sections]
-    .filter((s) => s.visible !== false)
+    .filter((s) => s.visible !== false && s.section !== "why-choose-us")
     .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   return (

@@ -170,6 +170,8 @@ export function AdminAddLensesPage() {
     const missingFields: string[] = [];
     if (!form.name.trim()) missingFields.push("Product Title");
     if (!form.brand.trim()) missingFields.push("Brand");
+    if (!form.shortDescription.trim()) missingFields.push("Short Description");
+    if (!form.description.trim()) missingFields.push("Detailed Description");
     if (!form.price.trim() || isNaN(Number(form.price)) || Number(form.price) <= 0) missingFields.push("Price");
     if (form.stock === "" || form.stock === null || form.stock === undefined || isNaN(Number(form.stock)) || Number(form.stock) < 0) missingFields.push("Stock");
 
@@ -245,6 +247,7 @@ export function AdminAddLensesPage() {
         message = err.response?.data?.message || message;
       }
       console.error(err);
+      setFormError(message);
       addToast({ title: "Error", description: message, type: "error" });
     } finally {
       setIsSubmitting(false);
@@ -303,12 +306,12 @@ export function AdminAddLensesPage() {
               </div>
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Short Description</label>
-              <input type="text" value={form.shortDescription} onChange={(e) => setForm({ ...form, shortDescription: e.target.value })} placeholder="One-line summary" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]" />
+              <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Short Description *</label>
+              <input type="text" value={form.shortDescription} onChange={(e) => setForm({ ...form, shortDescription: e.target.value })} required placeholder="One-line summary" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]" />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Full Description</label>
-              <textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detailed product description..." className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]" />
+              <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Full Description *</label>
+              <textarea rows={4} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required placeholder="Detailed product description..." className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]" />
             </div>
           </div>
 

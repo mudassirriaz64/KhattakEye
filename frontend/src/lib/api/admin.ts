@@ -155,12 +155,22 @@ export const adminGetBrandsApi = async () => {
   return response.data;
 };
 
-export const adminCreateBrandApi = async (data: { name: string; logo?: string; tagline?: string }) => {
+export interface BrandDataPayload {
+  name?: string;
+  logo?: string;
+  tagline?: string;
+  description?: string;
+  website?: string;
+  featured?: boolean;
+  status?: string;
+}
+
+export const adminCreateBrandApi = async (data: BrandDataPayload) => {
   const response = await api.post('/admin/brands', data);
   return response.data;
 };
 
-export const adminUpdateBrandApi = async (id: string, data: { name?: string; logo?: string; tagline?: string }) => {
+export const adminUpdateBrandApi = async (id: string, data: BrandDataPayload) => {
   const response = await api.put(`/admin/brands/${id}`, data);
   return response.data;
 };

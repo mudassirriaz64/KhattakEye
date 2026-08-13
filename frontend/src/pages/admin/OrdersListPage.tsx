@@ -136,12 +136,12 @@ export function AdminOrdersListPage() {
                     <td className="px-4 py-3 text-xs text-[color:var(--color-text-tertiary)]">{order.date}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <Link to={`/admin/orders/${order.id}`} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-blue)]">
+                        <Link to={`/admin/orders/${order.id}`} title="View Order Details" className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-blue)]">
                           <Eye className="h-3.5 w-3.5" />
                         </Link>
-                        <button type="button" className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-accent-teal)]">
+                        <Link to={`/invoice?id=${order.id}&from=admin`} target="_blank" title="Generate Invoice" className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-brand-primary)]">
                           <Download className="h-3.5 w-3.5" />
-                        </button>
+                        </Link>
                       </div>
                     </td>
                   </motion.tr>

@@ -34,14 +34,19 @@ export function ShopPage() {
   const setFilter = useShopStore((s) => s.setFilter);
 
   useEffect(() => {
-    const category = searchParams.get("category");
-    const brand = searchParams.get("brand");
+    const categoryParam = searchParams.get("category");
+    const brandParam = searchParams.get("brand");
 
-    if (brand && (!selectedFilters['brand'] || !selectedFilters['brand'].includes(brand))) {
-      setFilter("brand", [brand]);
-    } else {
-      fetchProducts(category);
+    if (brandParam && (!selectedFilters['brand'] || !selectedFilters['brand'].includes(brandParam))) {
+      setFilter("brand", [brandParam]);
+      return;
     }
+    if (categoryParam && (!selectedFilters['category'] || !selectedFilters['category'].includes(categoryParam))) {
+      setFilter("category", [categoryParam]);
+      return;
+    }
+
+    fetchProducts(categoryParam);
   }, [selectedFilters, priceRange, sortBy, currentPage, searchParams, fetchProducts, setFilter]);
 
   useEffect(() => {

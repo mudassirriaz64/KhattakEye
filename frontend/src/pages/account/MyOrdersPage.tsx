@@ -119,7 +119,7 @@ export function MyOrdersPage() {
                     <Link to={`/track-order?id=${order.orderNumber}`} className="flex items-center gap-1 rounded-lg border border-[color:var(--color-border)] px-3 py-1.5 text-[11px] font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)]">
                       <MapPin className="h-3 w-3" /> Track
                     </Link>
-                    <Link to={`/invoice?id=${order.id}`} className="flex items-center gap-1 rounded-lg border border-[color:var(--color-border)] px-3 py-1.5 text-[11px] font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)]">
+                    <Link to={`/invoice?id=${order.id || order.orderNumber}`} target="_blank" className="flex items-center gap-1 rounded-lg border border-[color:var(--color-border)] px-3 py-1.5 text-[11px] font-medium text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)]">
                       <Download className="h-3 w-3" /> Invoice
                     </Link>
                     <Link to={`/account/orders/${order.id}`} className="flex items-center gap-1 rounded-lg bg-[color:var(--color-brand-primary)] px-3 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-black">

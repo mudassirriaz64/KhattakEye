@@ -139,8 +139,8 @@ export const getProductBySlug = async (slug: string): Promise<ApiProduct> => {
   return response.data;
 };
 
-export const getBrands = async (): Promise<{ name: string; logo?: string; tagline?: string }[]> => {
-  const response = await axios.get('/brands');
+export const getBrands = async (params?: { featured?: boolean | string }): Promise<{ name: string; logo?: string; tagline?: string; featured?: boolean }[]> => {
+  const response = await axios.get('/brands', { params });
   return response.data;
 };
 

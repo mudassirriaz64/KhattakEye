@@ -9,6 +9,7 @@ export interface Category {
   type?: 'category' | 'style' | 'collection';
   badges?: string[];
   discountLabel?: string;
+  subcategories?: { name: string; slug?: string; image?: string }[];
   featured: boolean;
 }
 

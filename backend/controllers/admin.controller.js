@@ -794,10 +794,19 @@ const getAdminBrands = async (req, res, next) => {
 
 const createBrand = async (req, res, next) => {
   try {
-    const { name, logo, tagline } = req.body;
+    const { name, logo, tagline, description, website, featured, status } = req.body;
     if (!name) return res.status(400).json({ message: 'Brand name is required' });
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    const brand = new Brand({ name, slug, logo: logo || '', tagline: tagline || '' });
+    const brand = new Brand({
+      name,
+      slug,
+      logo: logo || '',
+      tagline: tagline || '',
+      description: description || '',
+      website: website || '',
+      featured: featured !== undefined ? Boolean(featured) : false,
+      status: status === 'inactive' ? 'inactive' : 'active'
+    });
     await brand.save();
     res.status(201).json(brand);
   } catch (error) {
@@ -808,7 +817,7 @@ const createBrand = async (req, res, next) => {
 const updateBrand = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, logo, tagline } = req.body;
+    const { name, logo, tagline, description, website, featured, status } = req.body;
     const updateData = {};
     if (name) {
       updateData.name = name;
@@ -816,6 +825,10 @@ const updateBrand = async (req, res, next) => {
     }
     if (logo !== undefined) updateData.logo = logo;
     if (tagline !== undefined) updateData.tagline = tagline;
+    if (description !== undefined) updateData.description = description;
+    if (website !== undefined) updateData.website = website;
+    if (featured !== undefined) updateData.featured = Boolean(featured);
+    if (status !== undefined) updateData.status = status === 'inactive' ? 'inactive' : 'active';
 
     const brand = await Brand.findByIdAndUpdate(id, updateData, { new: true });
     if (!brand) return res.status(404).json({ message: 'Brand not found' });

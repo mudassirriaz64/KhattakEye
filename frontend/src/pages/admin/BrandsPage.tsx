@@ -69,7 +69,7 @@ export function AdminBrandsPage() {
     if (editing) {
       setBrands((prev) => prev.map((b) => b.id === editing.id ? { ...b, ...form } : b));
       try {
-        await adminUpdateBrandApi(editing.id, { name: form.name, tagline: form.tagline });
+        await adminUpdateBrandApi(editing.id, { name: form.name, tagline: form.tagline, description: form.description, website: form.website, featured: form.featured, status: form.status });
       } catch (err) {
         console.error("Failed to update brand:", err);
       }
@@ -77,7 +77,7 @@ export function AdminBrandsPage() {
       const newBrand: AdminBrand = { id: `brd-${Date.now()}`, ...form, logo: "", productCount: 0, createdAt: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) };
       setBrands((prev) => [newBrand, ...prev]);
       try {
-        await adminCreateBrandApi({ name: form.name, tagline: form.tagline });
+        await adminCreateBrandApi({ name: form.name, tagline: form.tagline, description: form.description, website: form.website, featured: form.featured, status: form.status });
       } catch (err) {
         console.error("Failed to create brand:", err);
       }

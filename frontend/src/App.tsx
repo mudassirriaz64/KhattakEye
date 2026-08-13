@@ -150,6 +150,8 @@ function AppRoutes() {
           <Route path="brands" element={<AdminBrandsPage />} />
           <Route path="orders" element={<AdminOrdersListPage />} />
           <Route path="orders/:id" element={<AdminOrderDetailsPage />} />
+          <Route path="orders/:id/invoice" element={<InvoicePage />} />
+          <Route path="invoice" element={<InvoicePage />} />
           <Route path="payments" element={<AdminPaymentVerificationPage />} />
           <Route path="inventory" element={<AdminInventoryPage />} />
           <Route path="customers" element={<AdminCustomersListPage />} />
@@ -209,7 +211,7 @@ function AppRoutes() {
         <Route path="/order-details" element={<PageTransition><GlobalLayout><OrderDetailsPage /></GlobalLayout></PageTransition>} />
         <Route path="/order-details/:id" element={<PageTransition><GlobalLayout><AccountOrderDetailsPage /></GlobalLayout></PageTransition>} />
         <Route path="/track-order" element={<PageTransition><GlobalLayout><TrackOrderPage /></GlobalLayout></PageTransition>} />
-        <Route path="/invoice" element={<PageTransition><GlobalLayout><InvoicePage /></GlobalLayout></PageTransition>} />
+        <Route path="/invoice" element={<PageTransition><InvoicePage /></PageTransition>} />
         <Route path="/account" element={<PageTransition><GlobalLayout><DashboardPage /></GlobalLayout></PageTransition>} />
         <Route path="/account/orders" element={<PageTransition><GlobalLayout><MyOrdersPage /></GlobalLayout></PageTransition>} />
         <Route path="/account/orders/:id" element={<PageTransition><GlobalLayout><AccountOrderDetailsPage /></GlobalLayout></PageTransition>} />

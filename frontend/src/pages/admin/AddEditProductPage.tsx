@@ -26,10 +26,26 @@ export function AddEditProductPage() {
     metaTitle: "", metaDescription: "", metaKeywords: "",
   });
 
+  const [originalPrice, setOriginalPrice] = useState("");
+  const [hasDiscount, setHasDiscount] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState("");
+
   useEffect(() => {
     if (id) {
       adminGetProductByIdApi(id).then((product) => {
         if (product) {
+          const baseOrig = product.oldPrice && Number(product.oldPrice) > Number(product.price)
+            ? String(product.oldPrice)
+            : product.price ? String(product.price) : "";
+          const hasDisc = Boolean(product.oldPrice && Number(product.oldPrice) > Number(product.price));
+          const discPct = hasDisc
+            ? String(product.discount || Math.round(((Number(product.oldPrice) - Number(product.price)) / Number(product.oldPrice)) * 100))
+            : "";
+
+          setOriginalPrice(baseOrig);
+          setHasDiscount(hasDisc);
+          setDiscountPercent(discPct);
+
           setForm({
             name: product.name || "",
             brand: product.brand || "Louis Vuitton",
@@ -144,16 +160,48 @@ export function AddEditProductPage() {
   };
 
   const handleSave = async () => {
+    const origNum = Number(originalPrice) || 0;
+    const discNum = Number(discountPercent) || 0;
+    const isDiscApplied = hasDiscount && discNum > 0 && origNum > 0;
+    const finalPriceNum = isDiscApplied ? Math.round(origNum * (1 - discNum / 100)) : origNum;
+
+    const missingFields: string[] = [];
+    if (!form.name.trim()) missingFields.push("Product Name");
+    if (!form.brand.trim()) missingFields.push("Brand");
+    if (!form.category.trim()) missingFields.push("Category");
+    if (!form.shortDescription.trim()) missingFields.push("Short Description");
+    if (!form.description.trim()) missingFields.push("Detailed Description");
+    if (!originalPrice.trim() || origNum <= 0) missingFields.push("Original Base Price");
+
+    if (missingFields.length > 0) {
+      const msg = `Please fill required fields: ${missingFields.join(", ")}`;
+      addToast({
+        title: "Missing Required Fields",
+        description: msg,
+        type: "error",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       const formData = new FormData();
       Object.entries(form).forEach(([key, val]) => {
+        if (key === "price" || key === "oldPrice" || key === "discount") return;
         if (key === "gender") {
           if ((val as string[]).length > 0) formData.append(key, JSON.stringify(val));
         } else if (val !== "") {
           formData.append(key, String(val));
         }
       });
+      formData.append("price", String(finalPriceNum));
+      if (isDiscApplied) {
+        formData.append("oldPrice", String(origNum));
+        formData.append("discount", String(discNum));
+      } else {
+        formData.append("oldPrice", "");
+        formData.append("discount", "0");
+      }
       formData.append("variants", JSON.stringify(variants));
       
       images.forEach(img => formData.append("images", img.file));
@@ -387,17 +435,78 @@ export function AddEditProductPage() {
           )}
 
           {activeSection === "pricing" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid gap-5 sm:grid-cols-3">
-              <div><label className={labelClass}>Price (Rs.)</label><input type="text" value={form.price} onChange={(e) => set("price", e.target.value)} placeholder="e.g. 28500" className={inputClass} /></div>
-              <div><label className={labelClass}>Old Price (Rs.)</label><input type="text" value={form.oldPrice} onChange={(e) => set("oldPrice", e.target.value)} placeholder="e.g. 34000" className={inputClass} /></div>
-              <div><label className={labelClass}>Cost (Rs.)</label><input type="text" value={form.cost} onChange={(e) => set("cost", e.target.value)} placeholder="e.g. 12000" className={inputClass} /></div>
-              <div><label className={labelClass}>SKU</label><input type="text" value={form.sku} onChange={(e) => set("sku", e.target.value)} placeholder="e.g. KT-AT-001" className={inputClass} /></div>
-              <div><label className={labelClass}>Stock</label><input type="number" value={form.stock} onChange={(e) => set("stock", e.target.value)} placeholder="e.g. 15" className={inputClass} /></div>
-              <div><label className={labelClass}>Status</label><select value={form.status} onChange={(e) => set("status", e.target.value)} className={inputClass}>
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-                <option value="archived">Archived</option>
-              </select></div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <label className={labelClass}>Original Base Price (Rs.) *</label>
+                  <input type="text" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} placeholder="e.g. 28500" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Cost (Rs.)</label>
+                  <input type="text" value={form.cost} onChange={(e) => set("cost", e.target.value)} placeholder="e.g. 12000" className={inputClass} />
+                </div>
+              </div>
+
+              {/* Discount Percentage Checkbox */}
+              <div className="pt-2 border-t border-[color:var(--color-border)]">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={hasDiscount}
+                    onChange={(e) => {
+                      setHasDiscount(e.target.checked);
+                      if (!e.target.checked) setDiscountPercent("");
+                    }}
+                    className="h-4 w-4 rounded border-[color:var(--color-border)] text-[color:var(--color-brand-primary)]"
+                  />
+                  <span className="text-sm font-semibold text-[color:var(--color-text-primary)]">Apply Discount Percentage (% OFF)</span>
+                </label>
+              </div>
+
+              {hasDiscount && (
+                <div className="space-y-2 rounded-xl bg-amber-500/10 p-4 border border-amber-500/30">
+                  <label className={labelClass}>Discount Percentage (%) *</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={discountPercent}
+                      onChange={(e) => setDiscountPercent(e.target.value)}
+                      placeholder="e.g. 5 or 10"
+                      className={inputClass}
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[color:var(--color-brand-primary)]">%</span>
+                  </div>
+
+                  {Number(originalPrice) > 0 && Number(discountPercent) > 0 && (
+                    <div className="mt-2 text-xs space-y-1 pt-2 border-t border-amber-500/20">
+                      <div className="flex justify-between text-[color:var(--color-text-secondary)]">
+                        <span>Original Price:</span>
+                        <span className="line-through">Rs. {Number(originalPrice).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-amber-700 dark:text-amber-300 font-semibold">
+                        <span>Discount ({discountPercent}% OFF):</span>
+                        <span>-Rs. {Math.round((Number(originalPrice) * Number(discountPercent)) / 100).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-bold text-sm pt-1 border-t border-amber-500/20">
+                        <span>Final Selling Price:</span>
+                        <span>Rs. {Math.round(Number(originalPrice) * (1 - Number(discountPercent) / 100)).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="grid gap-5 sm:grid-cols-3 pt-2 border-t border-[color:var(--color-border)]">
+                <div><label className={labelClass}>SKU</label><input type="text" value={form.sku} onChange={(e) => set("sku", e.target.value)} placeholder="e.g. KT-AT-001" className={inputClass} /></div>
+                <div><label className={labelClass}>Stock</label><input type="number" value={form.stock} onChange={(e) => set("stock", e.target.value)} placeholder="e.g. 15" className={inputClass} /></div>
+                <div><label className={labelClass}>Status</label><select value={form.status} onChange={(e) => set("status", e.target.value)} className={inputClass}>
+                  <option value="draft">Draft</option>
+                  <option value="active">Active</option>
+                  <option value="archived">Archived</option>
+                </select></div>
+              </div>
             </motion.div>
           )}
 

@@ -77,20 +77,28 @@ exports.getCategories = async (req, res, next) => {
 
 exports.getBrands = async (req, res, next) => {
   try {
-    let brands = await Brand.find({ status: { $ne: 'inactive' } }).sort({ name: 1 }).lean();
+    const { featured } = req.query;
+    const filter = { status: { $ne: 'inactive' } };
+    if (featured !== undefined) {
+      filter.featured = featured === 'true';
+    }
+
+    let brands = await Brand.find(filter).sort({ name: 1 }).lean();
     if (!brands || brands.length === 0) {
-      const defaultBrands = [
-        { name: "Khattak Atelier", slug: "khattak-atelier", tagline: "Sculptural", status: "active" },
-        { name: "Khattak Signature", slug: "khattak-signature", tagline: "Distinctive", status: "active" },
-        { name: "Khattak Heritage", slug: "khattak-heritage", tagline: "Timeless", status: "active" },
-        { name: "Khattak Performance", slug: "khattak-performance", tagline: "Engineered", status: "active" },
-        { name: "Ray-Ban", slug: "ray-ban", tagline: "Iconic", status: "active" },
-        { name: "Oakley", slug: "oakley", tagline: "Performance", status: "active" },
-        { name: "Persol", slug: "persol", tagline: "Heritage", status: "active" },
-        { name: "Tom Ford", slug: "tom-ford", tagline: "Glamorous", status: "active" }
-      ];
-      await Brand.insertMany(defaultBrands);
-      brands = await Brand.find({ status: { $ne: 'inactive' } }).sort({ name: 1 }).lean();
+      if (featured === undefined) {
+        const defaultBrands = [
+          { name: "Khattak Atelier", slug: "khattak-atelier", tagline: "Sculptural", featured: true, status: "active" },
+          { name: "Khattak Signature", slug: "khattak-signature", tagline: "Distinctive", featured: true, status: "active" },
+          { name: "Khattak Heritage", slug: "khattak-heritage", tagline: "Timeless", featured: true, status: "active" },
+          { name: "Khattak Performance", slug: "khattak-performance", tagline: "Engineered", featured: true, status: "active" },
+          { name: "Ray-Ban", slug: "ray-ban", tagline: "Iconic", featured: false, status: "active" },
+          { name: "Oakley", slug: "oakley", tagline: "Performance", featured: false, status: "active" },
+          { name: "Persol", slug: "persol", tagline: "Heritage", featured: false, status: "active" },
+          { name: "Tom Ford", slug: "tom-ford", tagline: "Glamorous", featured: false, status: "active" }
+        ];
+        await Brand.insertMany(defaultBrands);
+        brands = await Brand.find(filter).sort({ name: 1 }).lean();
+      }
     }
     const formattedBrands = brands.map(b => {
       if (b.logo) b.logo = resolveImageUrl(b.logo) || b.logo;

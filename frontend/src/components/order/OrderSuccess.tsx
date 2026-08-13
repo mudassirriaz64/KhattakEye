@@ -61,7 +61,9 @@ export function OrderSuccess({ orderNumber, estimatedDelivery }: OrderSuccessPro
         <Link to={`/track-order?id=${orderNumber}`}>
           <Button variant="primary" iconLeft={<Package className="h-4 w-4" />}>Track Order</Button>
         </Link>
-        <Button variant="outline" iconLeft={<Download className="h-4 w-4" />}>Download Invoice</Button>
+        <Link to={`/invoice?id=${orderNumber}`} target="_blank">
+          <Button variant="outline" iconLeft={<Download className="h-4 w-4" />}>Download Invoice</Button>
+        </Link>
       </motion.div>
 
       <motion.div

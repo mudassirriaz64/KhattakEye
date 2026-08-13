@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Package, CreditCard, MapPin, Printer, CheckCircle, MessageSquare, ExternalLink, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Package, CreditCard, MapPin, Printer, CheckCircle, MessageSquare, ExternalLink, ShieldAlert, FileText } from "lucide-react";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
@@ -137,8 +137,12 @@ export function AdminOrderDetailsPage() {
             {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : order.date} · {order.customerName}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" iconLeft={<Printer className="h-4 w-4" />} className="text-xs" onClick={() => window.print()}>Print</Button>
+        <div className="flex items-center gap-2">
+          <Link to={`/invoice?id=${order._id || order.id}&from=admin`} target="_blank">
+            <Button variant="outline" iconLeft={<FileText className="h-4 w-4" />} className="text-xs">
+              Generate Invoice
+            </Button>
+          </Link>
           <div className="relative">
             <Button variant="primary" iconLeft={<CheckCircle className="h-4 w-4" />} onClick={() => setShowStatusMenu(!showStatusMenu)} className="text-xs">
               Update Status
