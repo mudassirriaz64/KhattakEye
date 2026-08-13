@@ -22,6 +22,12 @@ export function CategoryPage() {
 
   const navigate = useNavigate();
 
+  const resetFilters = useShopStore((s) => s.resetFilters);
+
+  useEffect(() => {
+    resetFilters();
+  }, [category, subcategory, resetFilters]);
+
   useEffect(() => {
     const cat = category?.toLowerCase();
     const sub = subcategory?.toLowerCase();
@@ -38,7 +44,7 @@ export function CategoryPage() {
       return;
     }
 
-    getProducts({ category: category || undefined, limit: 100 }).then((data) => {
+    getProducts({ limit: 100 }).then((data) => {
       if (data && data.items) {
         setDbProducts(data.items.map(mapProductCard) as unknown as Product[]);
       } else {
@@ -58,17 +64,22 @@ export function CategoryPage() {
       result = result.filter((p) => {
         const pCat = p.category?.toLowerCase();
         const pSub = p.subcategory?.toLowerCase();
+        const pKind = (p as any).kind?.toLowerCase();
         
         // Match parent category
-        const parentMatches = pCat === target || 
-                              (target === 'sunglasses' && pCat === 'sunglasses') || 
-                              (target === 'eyeglasses' && pCat === 'eyeglasses');
+        const parentMatches =
+          pCat === target ||
+          (pCat || "").replace(/\s+/g, "-") === target ||
+          (target === "lenses" && (pCat === "lenses" || pCat === "contact-lenses" || pKind === "lenses" || pKind === "lens")) ||
+          (target === "contact-lenses" && (pCat === "contact-lenses" || pCat === "contact lenses" || pSub === "contact-lenses" || pKind === "lenses")) ||
+          (target === "sunglasses" && (pCat === "sunglasses" || pKind === "glasses")) ||
+          (target === "eyeglasses" && (pCat === "eyeglasses" || pKind === "glasses"));
         
         if (!parentMatches) return false;
         
         // Match subcategory if path param is present
         if (targetSub) {
-          return pSub === targetSub;
+          return pSub === targetSub || (pSub || "").replace(/\s+/g, "-") === targetSub;
         }
         return true;
       });

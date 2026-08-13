@@ -80,12 +80,13 @@ export function AntiGlarePage() {
         sub.includes("anti") ||
         sub.includes("reflective") ||
         sub.includes("glare") ||
-        cat.includes("lens") ||
-        cat.includes("eyeglass") ||
+        cat.includes("anti") ||
         lensType.includes("anti") ||
+        lensType.includes("glare") ||
         name.includes("anti") ||
+        name.includes("glare") ||
         desc.includes("anti-reflective") ||
-        desc.includes("glare")
+        desc.includes("anti glare")
       );
     });
 

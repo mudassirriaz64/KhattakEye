@@ -486,6 +486,7 @@ export function Navbar() {
   const logout = useAuthStore((s) => s.logout);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [megaLabel, setMegaLabel] = useState<string | null>(null);
+  const [openMobileSubmenu, setOpenMobileSubmenu] = useState<string | null>(null);
   const megaTimeout = useRef<ReturnType<typeof setTimeout>>();
   const navRef = useRef<HTMLElement>(null);
   
@@ -809,22 +810,119 @@ export function Navbar() {
 
             <div className="flex-1 overflow-y-auto px-3 py-4">
               <div className="space-y-1">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.label}
-                    to={link.path}
-                    onClick={() => setMobileNavOpen(false)}
-                    className={cn(
-                      "flex items-center justify-between rounded-[14px] px-4 py-3 text-sm transition-colors",
-                      isActive(link)
-                        ? "bg-[color:var(--color-surface-muted)] font-semibold text-[color:var(--color-brand-primary)]"
-                        : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]",
-                    )}
-                  >
-                    {link.label}
-                    <ArrowRight className="h-3.5 w-3.5 opacity-40" />
-                  </Link>
-                ))}
+                {navData.map((link) => {
+                  const hasMegaContent = (link.mega && link.mega.length > 0) || link.label === "Brands";
+                  const isExpanded = openMobileSubmenu === link.label;
+
+                  if (!hasMegaContent) {
+                    return (
+                      <Link
+                        key={link.label}
+                        to={link.path}
+                        onClick={() => setMobileNavOpen(false)}
+                        className={cn(
+                          "flex items-center justify-between rounded-[14px] px-4 py-3 text-sm font-medium transition-colors",
+                          isActive(link)
+                            ? "bg-[color:var(--color-surface-muted)] font-semibold text-[color:var(--color-brand-primary)]"
+                            : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]"
+                        )}
+                      >
+                        <span>{link.label}</span>
+                        <ArrowRight className="h-3.5 w-3.5 opacity-40" />
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <div key={link.label} className="rounded-[14px] overflow-hidden border border-transparent transition-colors">
+                      <button
+                        type="button"
+                        onClick={() => setOpenMobileSubmenu(isExpanded ? null : link.label)}
+                        className={cn(
+                          "flex w-full items-center justify-between rounded-[14px] px-4 py-3 text-sm font-medium transition-colors",
+                          isExpanded || isActive(link)
+                            ? "bg-[color:var(--color-surface-muted)] font-semibold text-[color:var(--color-brand-primary)]"
+                            : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)] hover:text-[color:var(--color-text-primary)]"
+                        )}
+                      >
+                        <span>{link.label}</span>
+                        <ChevronDown
+                          className={cn(
+                            "h-4 w-4 transition-transform duration-200 text-[color:var(--color-text-tertiary)]",
+                            isExpanded && "rotate-180 text-[color:var(--color-brand-primary)]"
+                          )}
+                        />
+                      </button>
+
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25, ease: "easeInOut" }}
+                            className="overflow-hidden bg-[color:var(--color-app-bg)]/60 px-4 py-3 space-y-4 rounded-b-[14px] border-t border-[color:var(--color-border)]/50"
+                          >
+                            {/* Explicit "Shop All" Link */}
+                            <Link
+                              to={link.path}
+                              onClick={() => setMobileNavOpen(false)}
+                              className="flex items-center justify-between rounded-xl bg-[color:var(--color-brand-primary)]/10 px-3.5 py-2.5 text-xs font-bold text-[color:var(--color-brand-primary)] transition-all hover:bg-[color:var(--color-brand-primary)] hover:text-white"
+                            >
+                              <span>Shop All {link.label}</span>
+                              <ArrowRight className="h-3.5 w-3.5" />
+                            </Link>
+
+                            {/* Standard Mega Menu Columns */}
+                            {link.mega && link.mega.map((col) => (
+                              <div key={col.title} className="space-y-2">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[color:var(--color-text-tertiary)] border-b border-[color:var(--color-border)]/40 pb-1">
+                                  {col.title}
+                                </p>
+                                <ul className="space-y-1.5 pl-1">
+                                  {col.links.map((subItem) => (
+                                    <li key={subItem.label}>
+                                      <Link
+                                        to={subItem.path}
+                                        onClick={() => setMobileNavOpen(false)}
+                                        className="flex items-center gap-2 text-xs font-medium text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-brand-primary)]"
+                                      >
+                                        <span className="h-1 w-1 rounded-full bg-[color:var(--color-brand-primary)]/50" />
+                                        <span>{subItem.label}</span>
+                                      </Link>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ))}
+
+                            {/* Brands Mega Menu */}
+                            {link.label === "Brands" && (
+                              <div className="space-y-2">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[color:var(--color-text-tertiary)] border-b border-[color:var(--color-border)]/40 pb-1">
+                                  All Brands
+                                </p>
+                                <div className="grid grid-cols-2 gap-2 pt-1">
+                                  {dynamicBrands.map((b) => (
+                                    <Link
+                                      key={b.name}
+                                      to={`/shop?brand=${encodeURIComponent(b.name)}`}
+                                      onClick={() => setMobileNavOpen(false)}
+                                      className="flex items-center gap-2 rounded-lg p-1.5 text-xs font-medium text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-panel)] hover:text-[color:var(--color-brand-primary)] truncate"
+                                    >
+                                      <span className="h-1 w-1 rounded-full bg-[color:var(--color-brand-primary)] shrink-0" />
+                                      <span className="truncate">{b.name}</span>
+                                    </Link>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="mt-6 border-t border-[color:var(--color-border)] pt-6">

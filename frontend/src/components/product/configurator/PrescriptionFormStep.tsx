@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ShieldAlert, Info, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { GenericDragDropUpload } from "./GenericDragDropUpload";
@@ -28,6 +28,11 @@ export function PrescriptionFormStep({
 }: PrescriptionFormStepProps) {
   const [openSection, setOpenSection] = useState<"none" | "manual" | "file" | "written">(selectedType);
   const [twoPdNumbers, setTwoPdNumbers] = useState(false);
+  const [showCylInfoModal, setShowCylInfoModal] = useState(false);
+
+  const odCylVal = Math.abs(parseFloat(data.od?.cyl || "0"));
+  const osCylVal = Math.abs(parseFloat(data.os?.cyl || "0"));
+  const isHighCyl = odCylVal >= 2.00 || osCylVal >= 2.00;
 
   useEffect(() => {
     setOpenSection(selectedType);
@@ -95,6 +100,35 @@ export function PrescriptionFormStep({
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Permanent High CYL (>= 2.00) Price Warning Banner */}
+      <div className={cn(
+        "rounded-2xl border p-4 text-xs transition-all",
+        isHighCyl
+          ? "border-amber-500/60 bg-amber-500/15 text-amber-900 shadow-md ring-2 ring-amber-500/30"
+          : "border-amber-500/30 bg-amber-500/10 text-amber-900"
+      )}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2.5">
+            <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+            <div>
+              <p className="font-bold text-amber-900 text-xs sm:text-sm">
+                {isHighCyl ? "⚠️ High Cylinder Power (±2.00+) Selected" : "Notice: Cylinder (CYL) Power & Pricing"}
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-amber-900/90">
+                Cylinder (CYL) sizes of 2.00 or higher can have varying prices because glasses with a cylinder power of 2.00 or greater require specialized high-index custom optical surfacing.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowCylInfoModal(true)}
+            className="shrink-0 flex items-center gap-1.5 text-[11px] font-bold text-amber-900 hover:underline bg-amber-500/25 px-3 py-1.5 rounded-xl border border-amber-500/40 transition-all hover:bg-amber-500/40 shadow-xs"
+          >
+            <Info className="h-3.5 w-3.5 text-amber-700" /> Why is that?
+          </button>
+        </div>
+      </div>
+
       {/* 1. MANUAL ENTRY ACCORDION */}
       <div className={cn(
         "rounded-2xl border transition-all overflow-hidden",
@@ -373,6 +407,45 @@ export function PrescriptionFormStep({
           )}
         </AnimatePresence>
       </div>
+
+      {/* High CYL Information Modal */}
+      {showCylInfoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-md rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[color:var(--color-border)] pb-3">
+              <div className="flex items-center gap-2 text-amber-600">
+                <Info className="h-5 w-5" />
+                <h3 className="font-display text-base font-bold text-[color:var(--color-text-primary)]">Why High CYL Lenses Vary in Price?</h3>
+              </div>
+              <button type="button" onClick={() => setShowCylInfoModal(false)}>
+                <X className="h-4 w-4 text-[color:var(--color-text-tertiary)]" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs leading-relaxed text-[color:var(--color-text-secondary)]">
+              <p>
+                <strong>Astigmatism Correction:</strong> A Cylinder (CYL) value of <strong>2.00 or higher</strong> indicates significant astigmatism, meaning your eyes require asymmetrical light bending across perpendicular axes.
+              </p>
+              <p>
+                <strong>Lens Thickness & Edge Surfacing:</strong> Standard stock optical lenses become <em>very thick at the edges</em> when cut to a high cylinder power of 2.00+.
+              </p>
+              <p>
+                <strong>High-Index Custom Manufacturing:</strong> To prevent heavy, thick "coca-cola bottle" lenses and ensure lightweight comfort, high-cylinder glasses require specialized 1.61, 1.67, or 1.74 high-index custom optical surfacing and edge-thinning processes. Our opticians will verify your frame and select the optimal thin lens option.
+              </p>
+            </div>
+
+            <div className="pt-2 text-right">
+              <button
+                type="button"
+                onClick={() => setShowCylInfoModal(false)}
+                className="rounded-xl bg-[color:var(--color-brand-primary)] px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition-opacity"
+              >
+                Understood
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

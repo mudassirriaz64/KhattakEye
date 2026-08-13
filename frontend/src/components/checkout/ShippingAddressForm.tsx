@@ -3,9 +3,7 @@ import { MapPin, Building2, Home, Globe, Hash, Truck, Zap, Check } from "lucide-
 import { useCheckoutStore } from "@/lib/stores/checkout-store";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { cn } from "@/lib/utils";
-
-const provinces = ["Punjab", "Sindh", "Khyber Pakhtunkhwa", "Balochistan", "Gilgit-Baltistan", "Azad Jammu & Kashmir"];
-const cities = ["Lahore", "Karachi", "Islamabad", "Rawalpindi", "Faisalabad", "Multan", "Peshawar", "Quetta", "Sialkot", "Gujranwala"];
+import { PAKISTAN_PROVINCES, getCitiesForProvince, getProvinceForCity } from "@/lib/pakistan-locations";
 
 export function ShippingAddressForm() {
   const address = useCheckoutStore((s) => s.address);
@@ -21,6 +19,27 @@ export function ShippingAddressForm() {
   useEffect(() => {
     fetchShippingConfig();
   }, [fetchShippingConfig]);
+
+  const availableCities = getCitiesForProvince(address.province);
+
+  const handleProvinceChange = (newProvince: string) => {
+    const validCities = getCitiesForProvince(newProvince);
+    const keepsCity = validCities.includes(address.city);
+    setAddress({
+      ...address,
+      province: newProvince,
+      city: keepsCity ? address.city : ""
+    });
+  };
+
+  const handleCityChange = (newCity: string) => {
+    const detectedProvince = getProvinceForCity(newCity);
+    setAddress({
+      ...address,
+      city: newCity,
+      province: address.province || detectedProvince || ""
+    });
+  };
 
   const isComplete = address.province && address.city && address.area && address.street;
 
@@ -45,11 +64,11 @@ export function ShippingAddressForm() {
                 <Globe className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-text-tertiary)]" />
                 <select
                   value={address.province}
-                  onChange={(e) => setAddress({ ...address, province: e.target.value })}
+                  onChange={(e) => handleProvinceChange(e.target.value)}
                   className="w-full appearance-none rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-app-bg)] py-3.5 pl-11 pr-4 text-sm text-[color:var(--color-text-primary)] outline-none transition-all focus:border-[color:var(--color-accent-blue)] focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
                 >
                   <option value="">Select province</option>
-                  {provinces.map((p) => <option key={p} value={p}>{p}</option>)}
+                  {PAKISTAN_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
             </label>
@@ -60,11 +79,11 @@ export function ShippingAddressForm() {
                 <Building2 className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-text-tertiary)]" />
                 <select
                   value={address.city}
-                  onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                  onChange={(e) => handleCityChange(e.target.value)}
                   className="w-full appearance-none rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-app-bg)] py-3.5 pl-11 pr-4 text-sm text-[color:var(--color-text-primary)] outline-none transition-all focus:border-[color:var(--color-accent-blue)] focus:ring-4 focus:ring-[color:var(--color-focus-ring)]"
                 >
                   <option value="">Select city</option>
-                  {cities.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {availableCities.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
             </label>

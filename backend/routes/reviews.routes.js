@@ -6,6 +6,9 @@ const reviewsController = require('../controllers/reviews.controller');
 // Public route to get published reviews for a product
 router.get('/product/:productId', reviewsController.getProductReviews);
 
+// Protected route to get user's submitted reviews
+router.get('/my-reviews', protect, reviewsController.getUserReviews);
+
 // Protected route to submit a new review
 router.post('/', protect, reviewsController.createReview);
 

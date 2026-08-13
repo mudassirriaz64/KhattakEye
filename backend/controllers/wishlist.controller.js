@@ -41,7 +41,7 @@ const addToWishlist = async (req, res, next) => {
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { $addToSet: { wishlist: productId } },
-      { new: true }
+      { returnDocument: 'after' }
     ).populate({
       path: 'wishlist',
       match: { isDeleted: { $ne: true } }
@@ -65,7 +65,7 @@ const removeFromWishlist = async (req, res, next) => {
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { $pull: { wishlist: productId } },
-      { new: true }
+      { returnDocument: 'after' }
     ).populate({
       path: 'wishlist',
       match: { isDeleted: { $ne: true } }

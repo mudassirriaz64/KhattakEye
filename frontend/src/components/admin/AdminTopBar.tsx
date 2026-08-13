@@ -1,10 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Bell, Menu, LogOut, Settings, Trash2 } from "lucide-react";
 import { useAdminStore } from "@/lib/stores/admin-store";
+import { cn } from "@/lib/utils";
+import axios from "@/lib/api/axios";
 
 type Props = { onMenuClick: () => void };
+
+type TopBarNotification = {
+  _id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+};
 
 export function AdminTopBar({ onMenuClick }: Props) {
   const { user, toggleSidebar } = useAdminStore();
@@ -12,6 +22,49 @@ export function AdminTopBar({ onMenuClick }: Props) {
   const [search, setSearch] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [notifications, setNotifications] = useState<TopBarNotification[]>([]);
+
+  const fetchTopNotifications = async () => {
+    try {
+      const res = await axios.get("/admin/notifications", { params: { limit: 5 } });
+      if (res.data && Array.isArray(res.data.notifications)) {
+        setNotifications(res.data.notifications);
+      }
+    } catch (err) {
+      console.error("Failed to fetch top notifications:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTopNotifications();
+  }, []);
+
+  const markAllRead = async () => {
+    try {
+      await axios.put("/admin/notifications/mark-read");
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (err) {
+      console.error("Failed to mark all read:", err);
+    }
+  };
+
+  const markSingleRead = async (id: string) => {
+    try {
+      await axios.put(`/admin/notifications/${id}/read`);
+      setNotifications((prev) => prev.map((n) => (n._id === id ? { ...n, read: true } : n)));
+    } catch (err) {
+      console.error("Failed to mark single read:", err);
+    }
+  };
+
+  const formatTimeAgo = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (diff < 60) return "Just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return d.toLocaleDateString();
+  };
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[color:var(--color-border)] bg-[color:var(--color-panel)]/80 px-4 backdrop-blur-2xl lg:px-6">
@@ -50,24 +103,99 @@ export function AdminTopBar({ onMenuClick }: Props) {
         </Link>
 
         <div className="relative">
-          <button type="button" onClick={() => setShowNotifications(!showNotifications)} className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)]">
+          <button
+            type="button"
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="relative flex h-9 w-9 items-center justify-center rounded-xl text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:var(--color-surface-muted)]"
+            aria-label="Notifications"
+          >
             <Bell className="h-4.5 w-4.5" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[color:var(--color-danger)]" />
+            {notifications.some((n) => !n.read) && (
+              <span className="absolute right-2 top-2 flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+              </span>
+            )}
           </button>
           <AnimatePresence>
             {showNotifications && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} className="absolute right-0 top-12 w-80 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-strong)]">
-                <p className="text-xs font-semibold text-[color:var(--color-text-primary)]">Notifications</p>
-                <div className="mt-3 space-y-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-start gap-3 rounded-xl bg-[color:var(--color-surface-muted)] p-3">
-                      <div className="h-2 w-2 mt-1 rounded-full bg-[color:var(--color-accent-teal)]" />
-                      <div>
-                        <p className="text-xs font-medium text-[color:var(--color-text-primary)]">New order received</p>
-                        <p className="text-[10px] text-[color:var(--color-text-tertiary)]">Order KT-{i}A3F9C placed</p>
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                className="absolute right-0 top-12 w-80 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-strong)] backdrop-blur-xl"
+              >
+                <div className="mb-3 flex items-center justify-between border-b border-[color:var(--color-border)] pb-2">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-bold text-[color:var(--color-text-primary)]">Notifications</p>
+                    {notifications.filter((n) => !n.read).length > 0 && (
+                      <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-500">
+                        {notifications.filter((n) => !n.read).length} new
+                      </span>
+                    )}
+                  </div>
+                  {notifications.some((n) => !n.read) && (
+                    <button
+                      type="button"
+                      onClick={markAllRead}
+                      className="text-[10px] font-semibold text-[color:var(--color-brand-primary)] hover:underline"
+                    >
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+                  {notifications.map((item) => (
+                    <div
+                      key={item._id}
+                      onClick={() => markSingleRead(item._id)}
+                      className={cn(
+                        "group flex cursor-pointer items-start justify-between gap-3 rounded-xl p-2.5 transition-all border",
+                        item.read
+                          ? "border-transparent bg-transparent opacity-70 hover:bg-[color:var(--color-surface-muted)]"
+                          : "border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] shadow-xs"
+                      )}
+                    >
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <span
+                          className={cn(
+                            "mt-1.5 h-2 w-2 rounded-full shrink-0 transition-colors",
+                            item.read ? "bg-transparent" : "bg-[color:var(--color-brand-primary)]"
+                          )}
+                        />
+                        <div className="min-w-0">
+                          <p className={cn("text-xs font-semibold truncate", item.read ? "text-[color:var(--color-text-secondary)] font-normal" : "text-[color:var(--color-text-primary)]")}>
+                            {item.title}
+                          </p>
+                          <p className="text-[10px] text-[color:var(--color-text-tertiary)] truncate">{item.message}</p>
+                          <p className="mt-0.5 text-[9px] text-[color:var(--color-text-tertiary)]">{formatTimeAgo(item.createdAt)}</p>
+                        </div>
                       </div>
+                      {!item.read && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markSingleRead(item._id);
+                          }}
+                          className="shrink-0 text-[10px] font-bold text-[color:var(--color-brand-primary)] hover:underline"
+                        >
+                          Mark read
+                        </button>
+                      )}
                     </div>
                   ))}
+                </div>
+
+                <div className="mt-3 border-t border-[color:var(--color-border)] pt-2 text-center">
+                  <Link
+                    to="/admin/notifications"
+                    onClick={() => setShowNotifications(false)}
+                    className="text-[11px] font-bold text-[color:var(--color-brand-primary)] hover:underline"
+                  >
+                    View All System Notifications →
+                  </Link>
                 </div>
               </motion.div>
             )}

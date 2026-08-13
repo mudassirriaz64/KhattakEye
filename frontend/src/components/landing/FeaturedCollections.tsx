@@ -6,18 +6,24 @@ import { cn } from "@/lib/utils";
 import { getCategories } from "@/lib/api/products";
 import { categories as fallbackCategories, type Category } from "@/lib/landing-data";
 
-const tiles = [
-  { colClass: "lg:col-span-7 lg:row-span-2", itemClass: "aspect-[16/10] lg:aspect-auto lg:h-full", wrapClass: "lg:h-full" },
-  { colClass: "lg:col-span-5", itemClass: "aspect-[16/10]", wrapClass: "" },
-  { colClass: "lg:col-span-5", itemClass: "aspect-[16/10]", wrapClass: "" },
+const tileConfigs = [
+  { colClass: "lg:col-span-8", itemClass: "h-[280px] sm:h-[340px] lg:h-[380px]" },
+  { colClass: "lg:col-span-4", itemClass: "h-[280px] sm:h-[340px] lg:h-[380px]" },
+  { colClass: "lg:col-span-4", itemClass: "h-[240px] sm:h-[280px] lg:h-[300px]" },
+  { colClass: "lg:col-span-4", itemClass: "h-[240px] sm:h-[280px] lg:h-[300px]" },
+  { colClass: "lg:col-span-4", itemClass: "h-[240px] sm:h-[280px] lg:h-[300px]" },
+  { colClass: "lg:col-span-12", itemClass: "h-[200px] sm:h-[240px] lg:h-[260px]" },
 ];
 
 function CategoryGridSkeleton() {
   return (
     <div className="mt-12 grid gap-6 lg:grid-cols-12">
-      <div className="lg:col-span-7 lg:row-span-2 lg:h-[480px] animate-pulse rounded-[36px] bg-[color:var(--color-surface-muted)]" />
-      <div className="lg:col-span-5 h-[230px] animate-pulse rounded-[36px] bg-[color:var(--color-surface-muted)]" />
-      <div className="lg:col-span-5 h-[230px] animate-pulse rounded-[36px] bg-[color:var(--color-surface-muted)]" />
+      <div className="lg:col-span-8 h-[380px] animate-pulse rounded-[36px] bg-[color:var(--color-surface-muted)]" />
+      <div className="lg:col-span-4 h-[380px] animate-pulse rounded-[36px] bg-[color:var(--color-surface-muted)]" />
+      <div className="lg:col-span-4 h-[300px] animate-pulse rounded-[36px] bg-[color:var(--color-surface-muted)]" />
+      <div className="lg:col-span-4 h-[300px] animate-pulse rounded-[36px] bg-[color:var(--color-surface-muted)]" />
+      <div className="lg:col-span-4 h-[300px] animate-pulse rounded-[36px] bg-[color:var(--color-surface-muted)]" />
+      <div className="lg:col-span-12 h-[260px] animate-pulse rounded-[36px] bg-[color:var(--color-surface-muted)]" />
     </div>
   );
 }
@@ -30,15 +36,23 @@ export function FeaturedCollections() {
     getCategories({ featured: true })
       .then((data) => {
         if (data && Array.isArray(data) && data.length > 0) {
-          setCategories(data.map((c) => ({
+          const dbMapped = data.map((c) => ({
             title: c.name,
             image: c.image || "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=800",
             description: c.description || "Premium designer frames",
             count: `${c.productCount || 0} products`,
             path: `/shop/${c.slug}`
-          })));
+          }));
+
+          const merged = [...dbMapped];
+          for (const fb of fallbackCategories) {
+            if (merged.length >= 6) break;
+            if (!merged.some(item => item.title.toLowerCase() === fb.title.toLowerCase())) {
+              merged.push(fb);
+            }
+          }
+          setCategories(merged.slice(0, 6));
         } else {
-          // Fallback to landing-data categories if none found in DB
           setCategories(fallbackCategories);
         }
       })
@@ -78,7 +92,7 @@ export function FeaturedCollections() {
                 Curated for the <span className="italic text-gradient-brand">connoisseur</span>
               </h2>
               <p className="text-base leading-7 text-[color:var(--color-text-secondary)]">
-                Four distinct ateliers of design — each a study in material, proportion, and restraint.
+                Six distinct ateliers of design & precision optical engineering — each a study in material, proportion, and restraint.
               </p>
             </div>
             <Link
@@ -92,42 +106,45 @@ export function FeaturedCollections() {
         </ScrollReveal>
 
         <div className="mt-12 grid gap-6 lg:grid-cols-12">
-          {categories.map((category, index) => (
-            <ScrollReveal
-              key={category.title}
-              delay={index * 0.1}
-              direction={index % 2 === 0 ? "up" : "down"}
-              className={cn(tiles[Math.min(index, 2)].colClass, tiles[Math.min(index, 2)].wrapClass)}
-            >
-              <Link
-                to={category.path}
-                className="group relative block h-full overflow-hidden rounded-[36px] shadow-[var(--shadow-soft)]"
+          {categories.map((category, index) => {
+            const config = tileConfigs[index % tileConfigs.length];
+            return (
+              <ScrollReveal
+                key={category.title}
+                delay={index * 0.08}
+                direction="up"
+                className={cn(config.colClass, "w-full")}
               >
-                <div className={cn("overflow-hidden", tiles[Math.min(index, 2)].itemClass)}>
-                  <img
-                    src={category.image}
-                    alt={category.title}
-                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                  />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--color-text-primary)]/70 via-[color:var(--color-text-primary)]/10 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-7 md:p-9">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/70">
-                      {category.count}
-                    </p>
-                    <h3 className="mt-2 font-display text-2xl text-white md:text-3xl">{category.title}</h3>
-                    <p className="mt-2 max-w-xs text-sm leading-6 text-white/80 md:block">
-                      {category.description}
-                    </p>
+                <Link
+                  to={category.path}
+                  className="group relative block h-full w-full overflow-hidden rounded-[36px] shadow-[var(--shadow-soft)]"
+                >
+                  <div className={cn("w-full overflow-hidden", config.itemClass)}>
+                    <img
+                      src={category.image}
+                      alt={category.title}
+                      className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    />
                   </div>
-                  <span className="mb-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur transition-all duration-300 group-hover:bg-[color:var(--color-brand-primary)] group-hover:border-[color:var(--color-brand-primary)]">
-                     <ArrowUpRight className="h-5 w-5" />
-                  </span>
-                </div>
-              </Link>
-            </ScrollReveal>
-          ))}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-6 md:p-8">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/70">
+                        {category.count}
+                      </p>
+                      <h3 className="mt-1 font-display text-2xl text-white md:text-3xl font-bold">{category.title}</h3>
+                      <p className="mt-1.5 max-w-sm text-xs leading-5 text-white/80 line-clamp-2 md:block">
+                        {category.description}
+                      </p>
+                    </div>
+                    <span className="mb-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/10 text-white backdrop-blur transition-all duration-300 group-hover:bg-[color:var(--color-brand-primary)] group-hover:border-[color:var(--color-brand-primary)]">
+                       <ArrowUpRight className="h-5 w-5" />
+                    </span>
+                  </div>
+                </Link>
+              </ScrollReveal>
+            );
+          })}
         </div>
       </div>
     </section>

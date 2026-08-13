@@ -5,7 +5,7 @@ const Order = require('../models/Order');
 // POST /api/reviews
 const createReview = async (req, res, next) => {
   try {
-    const { productId, rating, title, text, images } = req.body;
+    const { productId, rating, title, text, images, videos } = req.body;
 
     if (!productId || !rating || !text) {
       return res.status(400).json({ message: 'Product ID, rating, and review text are required' });
@@ -20,19 +20,27 @@ const createReview = async (req, res, next) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    // Verify verified purchaser status: user must have a delivered order containing this product
-    const verifiedOrder = await Order.findOne({
+    const { orderId } = req.body;
+
+    // Verify verified purchaser status: user must have a delivered or closed order containing this product
+    const orderQuery = {
       $or: [
         { user: req.user._id },
         { customerEmail: req.user.email ? req.user.email.toLowerCase() : '' }
       ],
-      status: 'delivered',
+      status: { $in: ['delivered', 'closed'] },
       'items.product': product._id
-    });
+    };
+
+    if (orderId && orderId.match(/^[0-9a-fA-F]{24}$/)) {
+      orderQuery._id = orderId;
+    }
+
+    const verifiedOrder = await Order.findOne(orderQuery);
 
     if (!verifiedOrder) {
       return res.status(403).json({
-        message: 'Only verified buyers who have received a delivered order of this item can leave a review.'
+        message: 'Only verified buyers with a delivered or closed order for this item can submit a review.'
       });
     }
 
@@ -43,12 +51,13 @@ const createReview = async (req, res, next) => {
     });
 
     if (existingReview) {
-      return res.status(400).json({ message: 'You have already reviewed this product.' });
+      return res.status(400).json({ message: 'You have already submitted a review for this product.' });
     }
 
     const review = new Review({
       product: product._id,
       user: req.user._id,
+      order: verifiedOrder._id,
       productName: product.name,
       productImage: (product.images && product.images[0]) || '',
       productBrand: product.brand || 'Khattak Atelier',
@@ -56,6 +65,7 @@ const createReview = async (req, res, next) => {
       title: title || '',
       text,
       images: Array.isArray(images) ? images : [],
+      videos: Array.isArray(videos) ? videos : [],
       status: 'published', // Auto-publish for verified purchasers
       verifiedPurchase: true
     });
@@ -73,7 +83,7 @@ const createReview = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: 'Thank you! Your verified review has been published.',
+      message: 'Thank you! Your review has been published.',
       review
     });
   } catch (error) {
@@ -95,7 +105,25 @@ const getProductReviews = async (req, res, next) => {
   }
 };
 
+// GET /api/reviews/my-reviews
+const getUserReviews = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({ message: 'Login required' });
+    }
+
+    const reviews = await Review.find({ user: req.user._id })
+      .populate('product', 'name slug images brand price')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({ items: reviews });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createReview,
-  getProductReviews
+  getProductReviews,
+  getUserReviews
 };

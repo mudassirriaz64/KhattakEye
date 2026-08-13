@@ -20,6 +20,8 @@ export function AdminOrderDetailsPage() {
   const [itemPrices, setItemPrices] = useState<Record<number, string>>({});
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectInput, setShowRejectInput] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [closing, setClosing] = useState(false);
 
   const fetchOrder = () => {
     if (id) {
@@ -104,6 +106,23 @@ export function AdminOrderDetailsPage() {
     }
   };
 
+  const handleCloseOrder = async () => {
+    if (!id) return;
+    setClosing(true);
+    try {
+      const updated = await adminUpdateOrderStatusApi(id, "closed");
+      if (updated) {
+        setOrder(updated);
+        setCurrentStatus("closed");
+      }
+    } catch (err) {
+      console.error("Failed to close order:", err);
+    } finally {
+      setClosing(false);
+      setShowCloseModal(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="py-20 text-center">
@@ -115,14 +134,16 @@ export function AdminOrderDetailsPage() {
   if (!order) {
     return (
       <div className="py-20 text-center">
-        <p className="text-base text-[color:var(--color-text-primary)]">Order not found</p>
-        <Link to="/admin/orders" className="mt-4 inline-block text-xs font-semibold text-[color:var(--color-brand-primary)] hover:underline">
+        <p className="text-base font-semibold text-[color:var(--color-text-primary)]">Order not found</p>
+        <Link to="/admin/orders" className="mt-4 inline-block text-xs text-[color:var(--color-brand-primary)] hover:underline">
           Back to Orders
         </Link>
       </div>
     );
   }
 
+  const isClosed = currentStatus === "closed";
+  const isDelivered = currentStatus === "delivered";
   const paymentStatus = order.paymentProof?.status || (order.paymentMethod === "cod" ? "cod" : "pending");
 
   return (
@@ -132,7 +153,16 @@ export function AdminOrderDetailsPage() {
           <Link to="/admin/orders" className="inline-flex items-center gap-1.5 text-xs text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]">
             <ArrowLeft className="h-3 w-3" /> Back to Orders
           </Link>
-          <h1 className="mt-2 font-display text-2xl text-[color:var(--color-text-primary)] md:text-3xl">{order.orderNumber}</h1>
+          <div className="mt-2 flex items-center gap-3">
+            <h1 className="font-display text-2xl text-[color:var(--color-text-primary)] md:text-3xl">{order.orderNumber}</h1>
+            {isClosed ? (
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-gray-400/40 bg-gray-500/10 px-3 py-1 text-xs font-bold text-gray-500">
+                <ShieldAlert className="h-3.5 w-3.5" /> CLOSED (LOCKED)
+              </span>
+            ) : (
+              <StatusBadge status={currentStatus} />
+            )}
+          </div>
           <p className="text-sm text-[color:var(--color-text-secondary)]">
             {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : order.date} · {order.customerName}
           </p>
@@ -143,23 +173,70 @@ export function AdminOrderDetailsPage() {
               Generate Invoice
             </Button>
           </Link>
-          <div className="relative">
-            <Button variant="primary" iconLeft={<CheckCircle className="h-4 w-4" />} onClick={() => setShowStatusMenu(!showStatusMenu)} className="text-xs">
-              Update Status
-            </Button>
-            {showStatusMenu && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="absolute right-0 top-12 z-10 w-48 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-2 shadow-[var(--shadow-strong)]">
-                {statusFlow.map((s) => (
-                  <button key={s} type="button" onClick={() => updateStatus(s)} className={cn("flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-colors", currentStatus === s ? "bg-[color:var(--color-brand-primary)] text-white" : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)]")}>
-                    {s === currentStatus && <CheckCircle className="h-3 w-3" />}
-                    {s.replace(/-/g, " ")}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </div>
+
+          {isDelivered && (
+            <button
+              type="button"
+              onClick={() => setShowCloseModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white transition-all hover:bg-amber-700 shadow-sm"
+            >
+              <CheckCircle className="h-4 w-4" /> Close Order
+            </button>
+          )}
+
+          {isClosed ? (
+            <span className="rounded-xl border border-gray-300 bg-gray-100 px-3.5 py-2 text-xs font-semibold text-gray-500 dark:border-gray-800 dark:bg-gray-900">
+              Status Locked
+            </span>
+          ) : (
+            <div className="relative">
+              <Button variant="primary" iconLeft={<CheckCircle className="h-4 w-4" />} onClick={() => setShowStatusMenu(!showStatusMenu)} className="text-xs">
+                Update Status
+              </Button>
+              {showStatusMenu && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="absolute right-0 top-12 z-10 w-48 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-2 shadow-[var(--shadow-strong)]">
+                  {statusFlow.map((s) => (
+                    <button key={s} type="button" onClick={() => updateStatus(s)} className={cn("flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-colors", currentStatus === s ? "bg-[color:var(--color-brand-primary)] text-white" : "text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-surface-muted)]")}>
+                      {s === currentStatus && <CheckCircle className="h-3 w-3" />}
+                      {s.replace(/-/g, " ")}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Confirmation Modal for Closing Order */}
+      {showCloseModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-md rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 shadow-2xl">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+              <ShieldAlert className="h-6 w-6" />
+            </div>
+            <h3 className="mt-4 font-display text-xl font-bold text-[color:var(--color-text-primary)]">
+              Close Order {order.orderNumber}?
+            </h3>
+            <p className="mt-2 text-xs leading-relaxed text-[color:var(--color-text-secondary)]">
+              Closing an order is <strong>permanent and non-revertible</strong>. Once closed, the order status will be locked from further edits, and the customer will be enabled to submit product reviews.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setShowCloseModal(false)} className="text-xs">
+                Cancel
+              </Button>
+              <button
+                type="button"
+                disabled={closing}
+                onClick={handleCloseOrder}
+                className="rounded-xl bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition-colors disabled:opacity-50"
+              >
+                {closing ? "Closing Order..." : "Yes, Confirm Close Order"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="space-y-6">

@@ -83,6 +83,11 @@ export function AdminWebsiteSettingsPage() {
         (copy.socialLinks as Record<string, unknown>)[sub] = value;
       }
 
+      if (path === "contact.whatsapp") {
+        if (!copy.whatsapp) copy.whatsapp = { number: value };
+        (copy.whatsapp as Record<string, unknown>).number = value;
+      }
+
       // Sync shipping aliases
       if (path.startsWith("shipping.")) {
         if (!copy.shipping) copy.shipping = { ...cmsWebsiteSettings.shipping };
@@ -174,11 +179,7 @@ export function AdminWebsiteSettingsPage() {
                 {field("Email", "contact.email", "hello@khattak.com")}
                 {field("Phone", "contact.phone", "+92 300 111 2222")}
                 {field("Address", "contact.address", "57-E, Gulberg III, Lahore")}
-                {field("WhatsApp Number", "whatsapp.number", "+923001112222")}
-                {field("WhatsApp Message", "whatsapp.message", "Hi! I have a question.")}
-                {field("Order Confirmation Email", "emails.orderConfirmation", "orders@khattak.com")}
-                {field("Support Email", "emails.support", "support@khattak.com")}
-                {field("No-Reply Email", "emails.noreply", "noreply@khattak.com")}
+                {field("WhatsApp Number", "contact.whatsapp", "+923001112222")}
               </div>
             </div>
           )}

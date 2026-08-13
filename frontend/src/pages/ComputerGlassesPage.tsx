@@ -56,13 +56,10 @@ export function ComputerGlassesPage() {
 
       return (
         sub.includes("computer") ||
-        sub.includes("blue") ||
         cat.includes("computer") ||
-        cat.includes("eyeglass") ||
-        cat.includes("lens") ||
+        lensType.includes("computer") ||
         name.includes("computer") ||
-        desc.includes("computer") ||
-        lensType.includes("computer")
+        desc.includes("computer")
       );
     });
 

@@ -271,4 +271,15 @@ router.post('/promotions', auth.protectAdmin, requireRole(['admin', 'manager', '
 router.put('/promotions/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updatePromotion);
 router.delete('/promotions/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deletePromotion);
 
+const {
+  getNotifications,
+  markAllNotificationsRead,
+  markNotificationRead
+} = require('../controllers/notifications.controller');
+
+// Notification admin routes
+router.get('/notifications', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getNotifications);
+router.put('/notifications/mark-read', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), markAllNotificationsRead);
+router.put('/notifications/:id/read', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), markNotificationRead);
+
 module.exports = router;

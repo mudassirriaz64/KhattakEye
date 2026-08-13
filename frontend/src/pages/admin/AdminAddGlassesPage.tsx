@@ -335,7 +335,8 @@ export function AdminAddGlassesPage() {
     if (!form.category.trim()) missingFields.push("Parent Category");
     if (!form.shortDescription.trim()) missingFields.push("Short Description");
     if (!form.description.trim()) missingFields.push("Detailed Description");
-    if (!form.price.trim() || isNaN(Number(form.price)) || Number(form.price) <= 0) missingFields.push("Price");
+    const origNum = Number(originalPrice) || 0;
+    if (!originalPrice.trim() || isNaN(origNum) || origNum <= 0) missingFields.push("Original Base Price");
     if (form.stock === "" || form.stock === null || form.stock === undefined || isNaN(Number(form.stock)) || Number(form.stock) < 0) missingFields.push("Stock");
 
     if (missingFields.length > 0) {

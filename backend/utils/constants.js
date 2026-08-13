@@ -8,16 +8,21 @@ const ORDER_STATUSES = {
   SHIPPED: 'shipped',
   OUT_FOR_DELIVERY: 'out-for-delivery',
   DELIVERED: 'delivered',
-  CANCELLED: 'cancelled'
+  CANCELLED: 'cancelled',
+  CLOSED: 'closed'
 };
 
 const PROVINCES = {
   PUNJAB: 'Punjab',
   SINDH: 'Sindh',
-  KPK: 'KPK',
+  KPK: 'Khyber Pakhtunkhwa',
+  KPK_ALT: 'KPK',
   BALOCHISTAN: 'Balochistan',
+  ISLAMABAD: 'Islamabad Capital Territory',
+  ISLAMABAD_ALT: 'Islamabad',
   GILGIT_BALTISTAN: 'Gilgit-Baltistan',
-  AJK: 'AJK'
+  AJK: 'Azad Jammu & Kashmir',
+  AJK_ALT: 'AJK'
 };
 
 module.exports = {

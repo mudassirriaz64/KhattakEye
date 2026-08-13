@@ -1,16 +1,27 @@
 import { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Package, CreditCard, User, MapPin, FileText, HeadphonesIcon, Download, ShieldAlert, ExternalLink } from "lucide-react";
+import { ArrowLeft, Package, CreditCard, User, MapPin, FileText, HeadphonesIcon, Download, ShieldAlert, ExternalLink, Star, X, CheckCircle, ImagePlus, Video, Trash2 } from "lucide-react";
 import { OrderTimeline } from "@/components/order/OrderTimeline";
 import { AccountLayout } from "@/components/account/AccountLayout";
 import { Button } from "@/components/primitives/Button";
 import { getOrderByIdApi } from "@/lib/api/orders";
 import { getPaymentMethodLabel } from "@/lib/utils/enum-labels";
+import { cn } from "@/lib/utils";
+import axios from "@/lib/api/axios";
 
 export function AccountOrderDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reviewingProduct, setReviewingProduct] = useState<any | null>(null);
+  const [rating, setRating] = useState(5);
+  const [title, setTitle] = useState("");
+  const [text, setText] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [videos, setVideos] = useState<string[]>([]);
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState("");
+  const [reviewError, setReviewError] = useState("");
 
   useEffect(() => {
     if (id) {
@@ -21,6 +32,64 @@ export function AccountOrderDetailsPage() {
         .finally(() => setLoading(false));
     }
   }, [id]);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (ev.target?.result) {
+          setImages((prev) => [...prev, ev.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (ev.target?.result) {
+          setVideos((prev) => [...prev, ev.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewingProduct || !text) return;
+    setSubmittingReview(true);
+    setReviewError("");
+    try {
+      const pId = reviewingProduct.product?._id || reviewingProduct.product || reviewingProduct.id;
+      await axios.post("/reviews", {
+        productId: pId,
+        orderId: order._id,
+        rating,
+        title,
+        text,
+        images,
+        videos
+      });
+      setReviewSuccess("Thank you! Your verified product review with media has been published.");
+      setTimeout(() => {
+        setReviewingProduct(null);
+        setReviewSuccess("");
+        setTitle("");
+        setText("");
+        setImages([]);
+        setVideos([]);
+      }, 2000);
+    } catch (err: any) {
+      console.error("Failed to submit review:", err);
+      setReviewError(err.response?.data?.message || "Failed to submit review. Please try again.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -145,10 +214,19 @@ export function AccountOrderDetailsPage() {
                       </div>
                     )}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex flex-col items-end gap-2">
                     <p className="text-sm font-semibold">
                       {c?.priceOnRequest && c?.priceAdded === null ? "Price Pending" : `Rs. ${(item.price * item.quantity).toLocaleString()}`}
                     </p>
+                    {(order.status === "closed" || order.status === "delivered") && item.product && (
+                      <button
+                        type="button"
+                        onClick={() => setReviewingProduct(item)}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-[color:var(--color-brand-primary)] px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:opacity-90 transition-all"
+                      >
+                        <Star className="h-3.5 w-3.5 fill-white text-white" /> Write Review
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -195,6 +273,130 @@ export function AccountOrderDetailsPage() {
           </div>
         </div>
       </div>
+
+      {/* Product Review Modal */}
+      {reviewingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[color:var(--color-border)] pb-4">
+              <div className="flex items-center gap-3">
+                <img src={reviewingProduct.image} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                <div>
+                  <h3 className="font-display text-base font-bold text-[color:var(--color-text-primary)]">Write a Product Review</h3>
+                  <p className="text-xs text-[color:var(--color-text-tertiary)]">{reviewingProduct.name}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setReviewingProduct(null)} className="rounded-lg p-1 text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)]">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {reviewSuccess ? (
+              <div className="my-6 rounded-2xl bg-emerald-500/10 p-6 text-center text-emerald-600">
+                <CheckCircle className="mx-auto h-10 w-10" />
+                <p className="mt-2 font-display text-base font-bold">{reviewSuccess}</p>
+              </div>
+            ) : (
+              <div className="mt-4 space-y-4">
+                {reviewError && (
+                  <div className="rounded-xl bg-red-500/10 p-3 text-xs text-red-500 font-medium">
+                    {reviewError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-xs font-semibold text-[color:var(--color-text-secondary)]">Overall Rating</label>
+                  <div className="mt-1.5 flex gap-1.5">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button key={star} type="button" onClick={() => setRating(star)}>
+                        <Star className={cn("h-7 w-7 transition-all hover:scale-110", star <= rating ? "fill-amber-400 text-amber-400" : "text-[color:var(--color-text-tertiary)]")} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-[color:var(--color-text-secondary)]">Review Headline (Optional)</label>
+                  <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="e.g. Exceptional frame quality and crystal clear optics!"
+                    className="mt-1 w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3.5 py-2 text-xs text-[color:var(--color-text-primary)] focus:border-[color:var(--color-brand-primary)] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-[color:var(--color-text-secondary)]">Detailed Review</label>
+                  <textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    rows={4}
+                    placeholder="Describe frame fit, lens clarity, comfort, packaging, or customer service..."
+                    className="mt-1 w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3.5 py-2 text-xs text-[color:var(--color-text-primary)] focus:border-[color:var(--color-brand-primary)] focus:outline-none"
+                  />
+                </div>
+
+                {/* Photo & Video Upload Section */}
+                <div>
+                  <label className="block text-xs font-semibold text-[color:var(--color-text-secondary)] mb-1.5">Attach Photos & Videos</label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="flex items-center gap-1.5 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-xs font-medium text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-panel)] cursor-pointer transition-colors">
+                      <ImagePlus className="h-4 w-4 text-[color:var(--color-brand-primary)]" />
+                      <span>Add Photos</span>
+                      <input type="file" accept="image/*" multiple onChange={handlePhotoUpload} className="hidden" />
+                    </label>
+                    <label className="flex items-center gap-1.5 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3 py-2 text-xs font-medium text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-panel)] cursor-pointer transition-colors">
+                      <Video className="h-4 w-4 text-purple-600" />
+                      <span>Add Video</span>
+                      <input type="file" accept="video/*" multiple onChange={handleVideoUpload} className="hidden" />
+                    </label>
+                  </div>
+
+                  {/* Previews */}
+                  {(images.length > 0 || videos.length > 0) && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {images.map((img, idx) => (
+                        <div key={idx} className="relative h-14 w-14 rounded-lg overflow-hidden border border-[color:var(--color-border)] group">
+                          <img src={img} alt="" className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setImages((prev) => prev.filter((_, i) => i !== idx))}
+                            className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                      {videos.map((vid, idx) => (
+                        <div key={idx} className="relative h-14 w-14 rounded-lg overflow-hidden border border-[color:var(--color-border)] bg-black group">
+                          <video src={vid} className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setVideos((prev) => prev.filter((_, i) => i !== idx))}
+                            className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-2 border-t border-[color:var(--color-border)] pt-4">
+                  <Button variant="outline" onClick={() => setReviewingProduct(null)} className="text-xs">
+                    Cancel
+                  </Button>
+                  <Button variant="primary" disabled={submittingReview || !text} onClick={handleSubmitReview} className="text-xs">
+                    {submittingReview ? "Submitting..." : "Publish Review"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </AccountLayout>
   );
 }

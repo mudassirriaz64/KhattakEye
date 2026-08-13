@@ -479,7 +479,7 @@ const deleteProduct = async (req, res, next) => {
     const deleted = await Product.findOneAndUpdate(
       { _id: id, isDeleted: { $ne: true } },
       { $set: { isDeleted: true, deletedAt: new Date() } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!deleted) {
       return res.status(404).json({ message: 'Product not found' });
@@ -515,7 +515,7 @@ const restoreProduct = async (req, res, next) => {
     const restored = await Product.findOneAndUpdate(
       { _id: id, isDeleted: true },
       { $set: { isDeleted: false, deletedAt: null } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!restored) {
       return res.status(404).json({ message: 'Product not found in trash' });
@@ -605,6 +605,14 @@ const updateOrderStatus = async (req, res, next) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
+    if (order.status === 'closed') {
+      return res.status(400).json({ message: 'Order is closed and its status is locked and cannot be modified.' });
+    }
+
+    if (status === 'closed' && order.status !== 'delivered') {
+      return res.status(400).json({ message: 'Only delivered orders can be closed.' });
+    }
+
     order.status = status;
     if (!order.timeline) {
       order.timeline = [];
@@ -620,7 +628,8 @@ const updateOrderStatus = async (req, res, next) => {
       'shipped': { label: 'Shipped', description: 'Handed over to courier with tracking.' },
       'out-for-delivery': { label: 'Out for Delivery', description: 'Dispatched with local courier for delivery.' },
       'delivered': { label: 'Delivered', description: 'Order delivered to customer.' },
-      'cancelled': { label: 'Cancelled', description: 'Order has been cancelled.' }
+      'cancelled': { label: 'Cancelled', description: 'Order has been cancelled.' },
+      'closed': { label: 'Order Closed', description: 'Order has been fully closed and finalized by admin.' }
     };
 
     const existingIndex = order.timeline.findIndex((entry) => entry.status === status);
@@ -830,7 +839,7 @@ const updateBrand = async (req, res, next) => {
     if (featured !== undefined) updateData.featured = Boolean(featured);
     if (status !== undefined) updateData.status = status === 'inactive' ? 'inactive' : 'active';
 
-    const brand = await Brand.findByIdAndUpdate(id, updateData, { new: true });
+    const brand = await Brand.findByIdAndUpdate(id, updateData, { returnDocument: 'after' });
     if (!brand) return res.status(404).json({ message: 'Brand not found' });
     res.status(200).json(brand);
   } catch (error) {

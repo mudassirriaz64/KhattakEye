@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Camera, Sparkles, Star } from "lucide-react";
+import { ArrowRight, Camera, Sparkles, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { heroSlides } from "@/lib/hero-data";
 import { stats } from "@/lib/landing-data";
@@ -236,6 +236,36 @@ export function EditorialHero() {
                   />
                 </Link>
 
+                {/* Left/Right Floating Navigation Chevrons */}
+                {featuredProducts.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setActiveProductIdx((prev) => (prev === 0 ? featuredProducts.length - 1 : prev - 1));
+                      }}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-panel)]/90 text-[color:var(--color-text-primary)] shadow-md backdrop-blur-md transition-all hover:scale-110 hover:bg-[color:var(--color-brand-primary)] hover:text-white"
+                      aria-label="Previous featured product"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setActiveProductIdx((prev) => (prev + 1) % featuredProducts.length);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-panel)]/90 text-[color:var(--color-text-primary)] shadow-md backdrop-blur-md transition-all hover:scale-110 hover:bg-[color:var(--color-brand-primary)] hover:text-white"
+                      aria-label="Next featured product"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </>
+                )}
+
                 {/* Floating Active Frame Info Badge */}
                 {activeProduct && (
                   <motion.div
@@ -243,6 +273,11 @@ export function EditorialHero() {
                     animate={{ opacity: 1, y: 0 }}
                     className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center justify-center gap-3 rounded-full border border-[color:var(--color-border)]/80 bg-[color:var(--color-panel)]/95 px-5 py-2 shadow-sm backdrop-blur-md text-xs"
                   >
+                    {activeProduct.oldPrice && activeProduct.oldPrice > activeProduct.price && (
+                      <span className="rounded-full bg-[color:var(--color-brand-primary)] px-2.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">
+                        {Math.round(((activeProduct.oldPrice - activeProduct.price) / activeProduct.oldPrice) * 100)}% OFF
+                      </span>
+                    )}
                     <span className="flex items-center gap-1 font-bold text-amber-500">
                       <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                       {activeProduct.rating || 5}
@@ -261,9 +296,16 @@ export function EditorialHero() {
                       </>
                     )}
                     <span className="h-3 w-px bg-[color:var(--color-border)]" />
-                    <span className="font-bold text-[color:var(--color-brand-primary)]">
-                      Rs. {activeProduct.price.toLocaleString()}
-                    </span>
+                    <div className="flex items-baseline gap-1.5 font-bold">
+                      <span className="text-[color:var(--color-brand-primary)]">
+                        Rs. {activeProduct.price.toLocaleString()}
+                      </span>
+                      {activeProduct.oldPrice && activeProduct.oldPrice > activeProduct.price && (
+                        <span className="text-[10px] text-[color:var(--color-text-tertiary)] line-through font-normal">
+                          Rs. {activeProduct.oldPrice.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
                   </motion.div>
                 )}
               </motion.div>

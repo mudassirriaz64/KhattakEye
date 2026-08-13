@@ -70,14 +70,12 @@ export function BlueLightLensesPage() {
       const lensType = (p.lensType || "").toLowerCase();
 
       return (
-        cat.includes("blue") ||
         sub.includes("blue") ||
-        sub.includes("computer") ||
+        cat.includes("blue") ||
         lensType.includes("blue") ||
-        cat.includes("lens") ||
-        cat.includes("eyeglass") ||
-        name.includes("blue") ||
-        desc.includes("blue light")
+        name.includes("blue light") ||
+        desc.includes("blue light") ||
+        desc.includes("blue cut")
       );
     });
 

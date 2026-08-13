@@ -83,9 +83,10 @@ export function PhotochromicPage() {
       return (
         sub.includes("photo") ||
         sub.includes("transition") ||
-        cat.includes("lens") ||
-        cat.includes("eyeglass") ||
+        cat.includes("photo") ||
+        cat.includes("transition") ||
         lensType.includes("photo") ||
+        lensType.includes("transition") ||
         name.includes("photo") ||
         name.includes("transition") ||
         desc.includes("photochromic") ||

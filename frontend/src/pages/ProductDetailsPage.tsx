@@ -270,6 +270,13 @@ export function ProductDetailsPage() {
     },
   ];
 
+  const isContactLens =
+    product.category?.toLowerCase() === "contact-lenses" ||
+    product.subcategory?.toLowerCase() === "contact-lenses" ||
+    (product as any).kind === "contact-lenses" ||
+    product.name?.toLowerCase().includes("contact lens") ||
+    product.category?.toLowerCase().includes("contact");
+
   return (
     <>
       <div className="mx-auto max-w-[1440px] px-4 py-10 md:px-8">
@@ -455,7 +462,7 @@ export function ProductDetailsPage() {
               </div>
             </div>
 
-            {/* Ainak.pk Action Buttons */}
+            {/* Action Buttons */}
             <div className="space-y-3 pt-2">
               <Button 
                 variant="primary" 
@@ -470,7 +477,7 @@ export function ProductDetailsPage() {
                     quantity,
                     color: product.colors?.[0]?.hex || "#000",
                     colorName: product.colors?.[0]?.name || "Standard",
-                    size: product.size || "Medium",
+                    size: product.size || "Standard Box",
                     lensType: product.lensType || "Standard",
                     sku: product.sku || product.id,
                     stock: product.stock || 10
@@ -479,31 +486,37 @@ export function ProductDetailsPage() {
                 }}
               >
                 <span className="font-bold text-sm sm:text-base tracking-wider text-white">BUY NOW</span>
-                <span className="text-xs font-normal text-white/80">{product.category === "eyeglasses" ? "frame with box & cloth" : "sunglasses with box"}</span>
+                <span className="text-xs font-normal text-white/80">
+                  {isContactLens ? "sealed contact lens box" : product.category === "eyeglasses" ? "frame with box & cloth" : "sunglasses with box"}
+                </span>
               </Button>
 
-              <Button 
-                variant="outline" 
-                className="w-full py-4 border-[#B81D1D] text-[#B81D1D] hover:bg-[#B81D1D]/5 flex flex-col items-center justify-center gap-0.5 h-auto rounded-xl"
-                onClick={() => navigate(`/product/${product.slug}/select-lenses`, { state: { selectedVariant } })}
-              >
-                <span className="font-bold text-sm sm:text-base tracking-wider text-[#B81D1D]">SELECT LENSES</span>
-                <span className="text-xs font-normal text-[#B81D1D]/80">{product.category === "eyeglasses" ? "with or without eyesight glasses" : "eyesight or customise glasses color"}</span>
-                {product.category === "eyeglasses" && (
-                  <span className="text-xs font-normal text-[#2563EB]">choose blue light glasses</span>
-                )}
-              </Button>
-            </div>
-
-            {/* Ainak.pk Callout Banner */}
-            <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-900 leading-relaxed font-medium">
-              {product.category === "eyeglasses" ? (
-                "To order eyeglasses with your eyesight number or customize the lens coating, Choose "
-              ) : (
-                "To order sunglasses with your eyesight number or customize sunglasses lens color, Choose "
+              {!isContactLens && (
+                <Button 
+                  variant="outline" 
+                  className="w-full py-4 border-[#B81D1D] text-[#B81D1D] hover:bg-[#B81D1D]/5 flex flex-col items-center justify-center gap-0.5 h-auto rounded-xl"
+                  onClick={() => navigate(`/product/${product.slug}/select-lenses`, { state: { selectedVariant } })}
+                >
+                  <span className="font-bold text-sm sm:text-base tracking-wider text-[#B81D1D]">SELECT LENSES</span>
+                  <span className="text-xs font-normal text-[#B81D1D]/80">{product.category === "eyeglasses" ? "with or without eyesight glasses" : "eyesight or customise glasses color"}</span>
+                  {product.category === "eyeglasses" && (
+                    <span className="text-xs font-normal text-[#2563EB]">choose blue light glasses</span>
+                  )}
+                </Button>
               )}
-              <strong>SELECT LENSES</strong>.
             </div>
+
+            {/* Callout Banner for Eyeglasses & Sunglasses */}
+            {!isContactLens && (
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-900 leading-relaxed font-medium">
+                {product.category === "eyeglasses" ? (
+                  "To order eyeglasses with your eyesight number or customize the lens coating, Choose "
+                ) : (
+                  "To order sunglasses with your eyesight number or customize sunglasses lens color, Choose "
+                )}
+                <strong>SELECT LENSES</strong>.
+              </div>
+            )}
 
 
             <ProductAccordion items={accordionItems} />

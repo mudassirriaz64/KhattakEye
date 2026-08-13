@@ -97,6 +97,7 @@ import { CareersPage } from "@/pages/CareersPage";
 import { PressPage } from "@/pages/PressPage";
 import { ContactPage } from "@/pages/ContactPage";
 import { FAQPage } from "@/pages/FAQPage";
+import { SizeGuidePage } from "@/pages/SizeGuidePage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { OfflinePage } from "@/pages/OfflinePage";
@@ -243,6 +244,7 @@ function AppRoutes() {
         <Route path="/contact" element={<PageTransition><GlobalLayout><ContactPage /></GlobalLayout></PageTransition>} />
         <Route path="/faq" element={<PageTransition><GlobalLayout><FAQPage /></GlobalLayout></PageTransition>} />
         <Route path="/faqs" element={<PageTransition><GlobalLayout><FAQPage /></GlobalLayout></PageTransition>} />
+        <Route path="/size-guide" element={<PageTransition><GlobalLayout><SizeGuidePage /></GlobalLayout></PageTransition>} />
         <Route path="/privacy" element={<PageTransition><GlobalLayout><PrivacyPolicyPage /></GlobalLayout></PageTransition>} />
         <Route path="/privacy/*" element={<PageTransition><GlobalLayout><PrivacyPolicyPage /></GlobalLayout></PageTransition>} />
         <Route path="/privacy-policy" element={<PageTransition><GlobalLayout><PrivacyPolicyPage /></GlobalLayout></PageTransition>} />

@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save, X, ImagePlus, LoaderCircle, Eye, Video, AlertCircle } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { BrandSelect } from "@/components/admin/BrandSelect";
-import { createProductApi, updateProductApi, adminGetProductByIdApi } from "@/lib/api/admin";
+import { createProductApi, updateProductApi, adminGetProductByIdApi, getCategoriesApi } from "@/lib/api/admin";
+import type { ApiCategory } from "@/lib/admin-data";
 import { useToastStore } from "@/lib/stores/toast-store";
 import { isAxiosError } from "axios";
 
@@ -53,11 +54,41 @@ export function AdminAddLensesPage() {
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+  const [originalPrice, setOriginalPrice] = useState("");
+  const [hasDiscount, setHasDiscount] = useState(false);
+  const [discountPercent, setDiscountPercent] = useState("");
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+
+  useEffect(() => {
+    getCategoriesApi("lenses").then((data) => {
+      if (Array.isArray(data) && data.length > 0) {
+        setCategories(data);
+      } else {
+        getCategoriesApi().then((allData) => {
+          if (Array.isArray(allData)) {
+            setCategories(allData.filter((c) => c.productKind === "lenses" || c.slug.includes("lens") || c.name.toLowerCase().includes("lens")));
+          }
+        });
+      }
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (id) {
       adminGetProductByIdApi(id).then((product) => {
         if (product) {
+          const baseOrig = product.oldPrice && Number(product.oldPrice) > Number(product.price)
+            ? String(product.oldPrice)
+            : product.price ? String(product.price) : "";
+          const hasDisc = Boolean(product.oldPrice && Number(product.oldPrice) > Number(product.price));
+          const discPct = hasDisc
+            ? String(product.discount || Math.round(((Number(product.oldPrice) - Number(product.price)) / Number(product.oldPrice)) * 100))
+            : "";
+
+          setOriginalPrice(baseOrig);
+          setHasDiscount(hasDisc);
+          setDiscountPercent(discPct);
+
           setForm({
             kind: "lenses",
             name: product.name || "",
@@ -172,7 +203,12 @@ export function AdminAddLensesPage() {
     if (!form.brand.trim()) missingFields.push("Brand");
     if (!form.shortDescription.trim()) missingFields.push("Short Description");
     if (!form.description.trim()) missingFields.push("Detailed Description");
-    if (!form.price.trim() || isNaN(Number(form.price)) || Number(form.price) <= 0) missingFields.push("Price");
+    const origNum = Number(originalPrice) || 0;
+    const discNum = Number(discountPercent) || 0;
+    const isDiscApplied = hasDiscount && discNum > 0 && origNum > 0;
+    const finalPriceNum = isDiscApplied ? Math.round(origNum * (1 - discNum / 100)) : origNum;
+
+    if (!originalPrice.trim() || isNaN(origNum) || origNum <= 0) missingFields.push("Original Base Price");
     if (form.stock === "" || form.stock === null || form.stock === undefined || isNaN(Number(form.stock)) || Number(form.stock) < 0) missingFields.push("Stock");
 
     if (missingFields.length > 0) {
@@ -198,8 +234,14 @@ export function AdminAddLensesPage() {
       formData.append("subcategory", form.subcategory);
       formData.append("description", form.description);
       formData.append("shortDescription", form.shortDescription);
-      formData.append("price", form.price);
-      if (form.oldPrice) formData.append("oldPrice", form.oldPrice);
+      formData.append("price", String(finalPriceNum));
+      if (isDiscApplied) {
+        formData.append("oldPrice", String(origNum));
+        formData.append("discount", String(discNum));
+      } else {
+        formData.append("oldPrice", "");
+        formData.append("discount", "0");
+      }
       if (form.cost) formData.append("cost", form.cost);
       formData.append("sku", form.sku || `LNS-${Date.now()}`);
       formData.append("stock", form.stock || "20");
@@ -301,9 +343,37 @@ export function AdminAddLensesPage() {
                 <BrandSelect value={form.brand} onChange={(brand) => setForm({ ...form, brand })} required />
               </div>
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Category</label>
-                <input type="text" disabled value="Contact Lenses" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-tertiary)] opacity-70" />
+                <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Category *</label>
+                <select
+                  value={form.category}
+                  onChange={(e) => setForm({ ...form, category: e.target.value, subcategory: "" })}
+                  required
+                  className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]"
+                >
+                  <option value="">Select Category...</option>
+                  {categories
+                    .filter((c) => c.slug !== "eyeglasses" && c.slug !== "sunglasses" && c.name?.toLowerCase() !== "eyeglasses" && c.name?.toLowerCase() !== "sunglasses")
+                    .map((c) => (
+                      <option key={c._id || c.slug} value={c.slug}>{c.name}</option>
+                    ))}
+                </select>
               </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Subcategory (Optional)</label>
+              <select
+                value={form.subcategory}
+                onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
+                className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]"
+              >
+                <option value="">Select Subcategory (Optional)</option>
+                {categories
+                  .find((c) => c.slug === form.category || c.name?.toLowerCase() === form.category.toLowerCase())
+                  ?.subcategories?.map((s) => (
+                    <option key={s.slug || s.name} value={s.slug || s.name}>{s.name}</option>
+                  ))}
+              </select>
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Short Description *</label>
@@ -426,14 +496,71 @@ export function AdminAddLensesPage() {
         <div className="space-y-6">
           <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-6 space-y-4">
             <h2 className="font-display text-base font-bold text-[color:var(--color-text-primary)] border-b border-[color:var(--color-border)] pb-3">Pricing & Stock</h2>
+            
             <div>
-              <label className="mb-1 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Price per Box (PKR) *</label>
-              <input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required placeholder="4500" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3.5 py-2 text-sm text-[color:var(--color-text-primary)]" />
+              <label className="mb-1 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Original Base Price (PKR) *</label>
+              <input
+                type="number"
+                value={originalPrice}
+                onChange={(e) => setOriginalPrice(e.target.value)}
+                required
+                placeholder="4500"
+                className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3.5 py-2 text-sm font-semibold text-[color:var(--color-text-primary)]"
+              />
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Original Price (PKR)</label>
-              <input type="number" value={form.oldPrice} onChange={(e) => setForm({ ...form, oldPrice: e.target.value })} placeholder="5200" className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-3.5 py-2 text-sm text-[color:var(--color-text-primary)]" />
+
+            {/* Apply Discount Checkbox */}
+            <div className="pt-2 border-t border-[color:var(--color-border)]">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={hasDiscount}
+                  onChange={(e) => {
+                    setHasDiscount(e.target.checked);
+                    if (!e.target.checked) setDiscountPercent("");
+                  }}
+                  className="h-4 w-4 rounded border-[color:var(--color-border)] text-teal-600 focus:ring-teal-600"
+                />
+                <span className="text-xs font-semibold text-[color:var(--color-text-primary)]">Apply Discount Percentage (% OFF)</span>
+              </label>
             </div>
+
+            {/* Discount Percentage Input Field */}
+            {hasDiscount && (
+              <div className="space-y-2 rounded-xl bg-teal-500/10 p-3 border border-teal-500/30">
+                <label className="block text-xs font-semibold text-[color:var(--color-text-primary)]">Discount Percentage (%) *</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={discountPercent}
+                    onChange={(e) => setDiscountPercent(e.target.value)}
+                    placeholder="e.g. 5 or 10"
+                    className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-sm font-bold text-[color:var(--color-text-primary)] pr-8"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-teal-600">%</span>
+                </div>
+
+                {/* Auto-Calculated Summary Breakdown */}
+                {Number(originalPrice) > 0 && Number(discountPercent) > 0 && (
+                  <div className="mt-2 text-xs space-y-1 pt-2 border-t border-teal-500/20">
+                    <div className="flex justify-between text-[color:var(--color-text-secondary)]">
+                      <span>Original Price:</span>
+                      <span className="line-through">Rs. {Number(originalPrice).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-teal-700 dark:text-teal-300 font-semibold">
+                      <span>Discount ({discountPercent}% OFF):</span>
+                      <span>-Rs. {Math.round((Number(originalPrice) * Number(discountPercent)) / 100).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-emerald-700 dark:text-emerald-400 font-bold text-sm pt-1 border-t border-teal-500/20">
+                      <span>Final Selling Price:</span>
+                      <span>Rs. {Math.round(Number(originalPrice) * (1 - Number(discountPercent) / 100)).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 block text-xs font-semibold text-[color:var(--color-text-secondary)]">Stock (Boxes) *</label>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Package, Search, Plus, Edit3, Trash2, RotateCcw, LoaderCircle, ChevronLeft, ChevronRight, ChevronDown, X, ClipboardList } from "lucide-react";
+import { Package, Search, Plus, Edit3, Trash2, RotateCcw, LoaderCircle, ChevronLeft, ChevronRight, ChevronDown, X, ClipboardList, Layers } from "lucide-react";
 import { StatusBadge, StockBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { cn } from "@/lib/utils";
@@ -305,12 +305,12 @@ export function AdminProductsPage() {
           <h1 className="font-display text-2xl text-[color:var(--color-text-primary)] md:text-3xl">Products</h1>
           <p className="mt-1 text-sm text-[color:var(--color-text-secondary)]">Manage your inventory, pricing, media, and trash</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Link to="/admin/products/add-glasses" className="flex items-center gap-1.5 rounded-xl bg-[color:var(--color-brand-primary)] px-3.5 py-2.5 text-xs font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-black">
+        <div className="flex flex-wrap items-center gap-3">
+          <Link to="/admin/products/add-glasses" className="flex items-center gap-1.5 rounded-xl bg-[color:var(--color-brand-primary)] px-3.5 py-2.5 text-xs font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-black shadow-xs">
             <Plus className="h-4 w-4" /> Add Glasses
           </Link>
-          <Link to="/admin/products/add-lenses" className="flex items-center gap-1.5 rounded-xl bg-teal-600 px-3.5 py-2.5 text-xs font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-teal-700">
-            <Plus className="h-4 w-4" /> Add Lenses
+          <Link to="/admin/products/add-lenses" className="flex items-center gap-1.5 rounded-xl bg-teal-600 px-3.5 py-2.5 text-xs font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-teal-700 shadow-xs">
+            <Plus className="h-4 w-4" /> Add Contact Lenses
           </Link>
         </div>
       </div>

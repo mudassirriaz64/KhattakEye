@@ -12,6 +12,7 @@ const Promotion = require('../models/Promotion');
 const SiteSettings = require('../models/SiteSettings');
 const { resolveImageUrl } = require('../utils/cloudinary');
 const { hasCustomerUsedCoupon } = require('./coupons.controller');
+const { createNotification } = require('./notifications.controller');
 
 // Helper to write buffer to temp file
 const writeTempFile = (buffer, originalName) => {
@@ -538,6 +539,31 @@ exports.createOrder = async (req, res, next) => {
     });
 
     await order.save();
+
+    // Trigger real system notifications
+    try {
+      await createNotification({
+        type: 'order',
+        title: 'New Order Placed',
+        message: `Order KT-${order.orderNumber} placed by ${order.customerName || 'Customer'} — Rs. ${(order.total || 0).toLocaleString()}`,
+        recipient: 'Admin',
+        status: 'sent',
+        link: `/admin/orders/${order._id}`
+      });
+
+      if (order.customerEmail) {
+        await createNotification({
+          type: 'email',
+          title: 'Order Confirmation Sent',
+          message: `Order KT-${order.orderNumber} confirmation email sent to ${order.customerEmail}`,
+          recipient: order.customerEmail,
+          status: 'sent',
+          link: `/admin/orders/${order._id}`
+        });
+      }
+    } catch (err) {
+      console.error('Failed to create order system notifications:', err);
+    }
 
     // Trigger order confirmation email notification.
     if (!isPendingQuote) {
