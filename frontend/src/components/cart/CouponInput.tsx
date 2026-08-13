@@ -1,21 +1,37 @@
 import { useState } from "react";
-import { CheckCircle2, XCircle, Tag, X } from "lucide-react";
+import { CheckCircle2, XCircle, Tag, X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/lib/stores/cart-store";
 
 export function CouponInput() {
   const couponCode = useCartStore((s) => s.couponCode);
+  const couponDiscountPercent = useCartStore((s) => s.couponDiscountPercent);
   const applyCoupon = useCartStore((s) => s.applyCoupon);
   const removeCoupon = useCartStore((s) => s.removeCoupon);
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const [applying, setApplying] = useState(false);
 
-  const handleApply = () => {
-    if (!code.trim()) return;
-    const valid = applyCoupon(code.trim());
-    setStatus(valid ? "success" : "error");
-    if (valid) setCode("");
-    setTimeout(() => setStatus("idle"), 3000);
+  const handleApply = async () => {
+    if (!code.trim() || applying) return;
+    setApplying(true);
+    setStatus("idle");
+    setMessage("");
+    const result = await applyCoupon(code.trim());
+    setApplying(false);
+    if (result.success) {
+      setStatus("success");
+      setMessage(`Coupon applied! You saved ${result.discountPercent}% on this order.`);
+      setCode("");
+    } else {
+      setStatus("error");
+      setMessage(result.message || "Invalid coupon code.");
+    }
+    setTimeout(() => {
+      setStatus("idle");
+      setMessage("");
+    }, 4000);
   };
 
   return (
@@ -25,7 +41,9 @@ export function CouponInput() {
           <div className="flex items-center gap-2">
             <Tag className="h-4 w-4 text-[color:var(--color-accent-teal)]" />
             <span className="text-sm font-medium text-[color:var(--color-accent-teal)]">{couponCode}</span>
-            <span className="text-xs text-[color:var(--color-text-secondary)]">10% OFF applied</span>
+            <span className="text-xs text-[color:var(--color-text-secondary)]">
+              {couponDiscountPercent > 0 ? `${couponDiscountPercent}% OFF applied` : "Discount applied"}
+            </span>
           </div>
           <button type="button" onClick={removeCoupon} className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-[color:var(--color-surface-muted)]">
             <X className="h-3.5 w-3.5" />
@@ -39,29 +57,32 @@ export function CouponInput() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleApply()}
+              disabled={applying}
               placeholder="Enter coupon code"
-              className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] py-3 pl-10 pr-3 text-sm text-[color:var(--color-text-primary)] outline-none placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-accent-teal)]"
+              className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] py-3 pl-10 pr-3 text-sm text-[color:var(--color-text-primary)] outline-none placeholder:text-[color:var(--color-text-tertiary)] focus:border-[color:var(--color-accent-teal)] disabled:opacity-60"
             />
           </div>
           <button
             type="button"
             onClick={handleApply}
-            className="rounded-xl border border-[color:var(--color-border)] px-4 text-sm font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-surface-muted)]"
+            disabled={applying}
+            className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--color-border)] px-4 text-sm font-medium text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-surface-muted)] disabled:opacity-60"
           >
-            Apply
+            {applying && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {applying ? "Applying…" : "Apply"}
           </button>
         </div>
       )}
 
       <AnimatePresence>
-        {status === "success" && (
+        {status === "success" && message && (
           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-2 flex items-center gap-1.5 text-xs text-[color:var(--color-accent-teal)]">
-            <CheckCircle2 className="h-3 w-3" /> Coupon applied! You saved 10%.
+            <CheckCircle2 className="h-3 w-3 shrink-0" /> {message}
           </motion.div>
         )}
-        {status === "error" && (
+        {status === "error" && message && (
           <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-2 flex items-center gap-1.5 text-xs text-[color:var(--color-danger)]">
-            <XCircle className="h-3 w-3" /> Invalid coupon code.
+            <XCircle className="h-3 w-3 shrink-0" /> {message}
           </motion.div>
         )}
       </AnimatePresence>

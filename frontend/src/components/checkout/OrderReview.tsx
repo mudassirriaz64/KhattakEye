@@ -16,16 +16,19 @@ export function OrderReviewContent() {
 
   const items = useCartStore((s) => s.items);
   const getSubtotal = useCartStore((s) => s.getSubtotal);
-  const getDiscount = useCartStore((s) => s.getDiscount);
+  const getPromoDiscount = useCartStore((s) => s.getPromoDiscount);
+  const getCouponDiscount = useCartStore((s) => s.getCouponDiscount);
   const couponCode = useCartStore((s) => s.couponCode);
 
   const getShippingFee = useCheckoutStore((s) => s.getShippingFee);
   const shippingMethod = useCheckoutStore((s) => s.shippingMethod);
 
   const subtotal = getSubtotal();
-  const discount = getDiscount();
+  const promoDiscount = getPromoDiscount();
+  const couponDiscount = getCouponDiscount();
+  const totalDiscount = promoDiscount + couponDiscount;
   const shippingFee = getShippingFee(subtotal);
-  const finalTotal = Math.max(0, subtotal - discount + shippingFee);
+  const finalTotal = Math.max(0, subtotal - totalDiscount + shippingFee);
 
   const methodLabels: Record<string, string> = {
     "bank-transfer": "Bank Transfer",
@@ -91,10 +94,16 @@ export function OrderReviewContent() {
             <span className="text-[color:var(--color-text-secondary)]">Subtotal</span>
             <span className="font-medium">Rs. {subtotal.toLocaleString()}</span>
           </div>
-          {discount > 0 && (
+          {promoDiscount > 0 && (
             <div className="flex justify-between text-[color:var(--color-accent-teal)]">
-              <span>Discount {couponCode && `(${couponCode})`}</span>
-              <span>-Rs. {discount.toLocaleString()}</span>
+              <span>Automatic Offer Discount</span>
+              <span>-Rs. {promoDiscount.toLocaleString()}</span>
+            </div>
+          )}
+          {couponDiscount > 0 && (
+            <div className="flex justify-between text-[color:var(--color-accent-teal)]">
+              <span>Coupon Discount {couponCode && `(${couponCode})`}</span>
+              <span>-Rs. {couponDiscount.toLocaleString()}</span>
             </div>
           )}
           <div className="flex justify-between">

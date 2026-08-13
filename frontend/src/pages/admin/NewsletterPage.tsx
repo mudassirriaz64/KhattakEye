@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Send, Trash2, Search, Users } from "lucide-react";
 import { cmsSubscribers } from "@/lib/admin-data";
@@ -6,15 +6,34 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
+import axios from "@/lib/api/axios";
 
 export function AdminNewsletterPage() {
-  const [subscribers, setSubscribers] = useState(cmsSubscribers);
+  const [subscribers, setSubscribers] = useState<typeof cmsSubscribers>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<"all" | "active" | "unsubscribed">("all");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showSend, setShowSend] = useState(false);
   const [emailForm, setEmailForm] = useState({ subject: "", message: "" });
   const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    axios.get("/admin/users")
+      .then((res) => {
+        if (res.data?.items && Array.isArray(res.data.items) && res.data.items.length > 0) {
+          setSubscribers(res.data.items.map((u: { _id: string; fullName?: string; email: string; createdAt?: string }) => ({
+            id: u._id,
+            email: u.email,
+            name: u.fullName || "Subscriber",
+            subscribedAt: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "Recent",
+            status: "active" as const
+          })));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = subscribers.filter((s) => {
     const matchStatus = activeFilter === "all" || s.status === activeFilter;
@@ -82,24 +101,36 @@ export function AdminNewsletterPage() {
         </div>
 
         <div className="divide-y divide-[color:var(--color-border)]">
-          <AnimatePresence>
-            {filtered.map((sub, i) => (
-              <motion.div key={sub.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-4 px-5 py-4">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--color-surface-muted)]"><Mail className="h-4 w-4 text-[color:var(--color-text-tertiary)]" /></div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-[color:var(--color-text-primary)]">{sub.name}</p>
-                  <p className="text-xs text-[color:var(--color-text-secondary)]">{sub.email}</p>
+          {loading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-5 py-4 animate-pulse">
+                <div className="h-9 w-9 rounded-lg bg-[color:var(--color-surface-muted)]" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-1/3 rounded bg-[color:var(--color-surface-muted)]" />
+                  <div className="h-3 w-1/2 rounded bg-[color:var(--color-surface-muted)]" />
                 </div>
-                <div className="text-right">
-                  <StatusBadge status={sub.status} />
-                  <p className="mt-0.5 text-[10px] text-[color:var(--color-text-tertiary)]">{sub.subscribedAt}</p>
-                </div>
-                {sub.status === "unsubscribed" && (
-                  <button type="button" onClick={() => setDeleteId(sub.id)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-red-500/10 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
+              </div>
+            ))
+          ) : (
+            <AnimatePresence>
+              {filtered.map((sub, i) => (
+                <motion.div key={sub.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} transition={{ delay: i * 0.03 }} className="flex items-center gap-4 px-5 py-4">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--color-surface-muted)]"><Mail className="h-4 w-4 text-[color:var(--color-text-tertiary)]" /></div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-[color:var(--color-text-primary)]">{sub.name}</p>
+                    <p className="text-xs text-[color:var(--color-text-secondary)]">{sub.email}</p>
+                  </div>
+                  <div className="text-right">
+                    <StatusBadge status={sub.status} />
+                    <p className="mt-0.5 text-[10px] text-[color:var(--color-text-tertiary)]">{sub.subscribedAt}</p>
+                  </div>
+                  {sub.status === "unsubscribed" && (
+                    <button type="button" onClick={() => setDeleteId(sub.id)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-red-500/10 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
         </div>
         {filtered.length === 0 && (
           <div className="flex flex-col items-center py-12 text-center">

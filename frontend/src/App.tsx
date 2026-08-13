@@ -78,6 +78,7 @@ import { HeroSlidesPage } from "@/pages/admin/HeroSlidesPage";
 import { AdminBannerManagementPage } from "@/pages/admin/BannerManagementPage";
 import { AdminPagesCMSPage } from "@/pages/admin/PagesCMSPage";
 import { AdminCouponsPage } from "@/pages/admin/CouponsPage";
+import { AdminPromotionsPage } from "@/pages/admin/PromotionsPage";
 import { AdminNewsletterPage } from "@/pages/admin/NewsletterPage";
 import { AdminMediaLibraryPage } from "@/pages/admin/MediaLibraryPage";
 import { AdminWebsiteSettingsPage } from "@/pages/admin/WebsiteSettingsPage";
@@ -159,6 +160,8 @@ function AppRoutes() {
           <Route path="cms/faqs" element={<AdminPagesCMSPage />} />
           <Route path="cms/banners" element={<AdminBannerManagementPage />} />
           <Route path="cms/coupons" element={<AdminCouponsPage />} />
+          <Route path="promotions" element={<AdminPromotionsPage />} />
+          <Route path="cms/promotions" element={<AdminPromotionsPage />} />
           <Route path="cms/newsletter" element={<AdminNewsletterPage />} />
           <Route path="cms/settings" element={<AdminWebsiteSettingsPage />} />
           <Route path="reports" element={<AdminReportsPage />} />
@@ -279,17 +282,20 @@ import { useEffect } from "react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useAdminStore } from "@/lib/stores/admin-store";
 import { useWishlistStore } from "@/lib/stores/wishlist-store";
+import { useCartStore } from "@/lib/stores/cart-store";
 
 export default function App() {
   const checkCustomerAuth = useAuthStore((s) => s.checkAuth);
   const checkAdminAuth = useAdminStore((s) => s.checkAuth);
   const fetchWishlist = useWishlistStore((s) => s.fetchWishlist);
+  const fetchPromotions = useCartStore((s) => s.fetchPromotions);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
     checkCustomerAuth();
     checkAdminAuth();
-  }, [checkCustomerAuth, checkAdminAuth]);
+    fetchPromotions();
+  }, [checkCustomerAuth, checkAdminAuth, fetchPromotions]);
 
   useEffect(() => {
     fetchWishlist();

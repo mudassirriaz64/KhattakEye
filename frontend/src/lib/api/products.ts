@@ -28,6 +28,7 @@ export interface ApiProduct {
   description?: string;
   shortDescription?: string;
   images?: (string | { url?: string })[];
+  hoverImage?: string;
   videos?: string[];
   variants?: ApiProductVariant[];
   category?: string;
@@ -138,7 +139,7 @@ export const getProductBySlug = async (slug: string): Promise<ApiProduct> => {
   return response.data;
 };
 
-export const getBrands = async (): Promise<{ name: string; logo?: string }[]> => {
+export const getBrands = async (): Promise<{ name: string; logo?: string; tagline?: string }[]> => {
   const response = await axios.get('/brands');
   return response.data;
 };

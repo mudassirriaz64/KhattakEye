@@ -1,0 +1,9 @@
+◇ injected env (12) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+MongoDB Connected: ac-k5k6fto-shard-00-00.njcpcii.mongodb.net
+Server running on port 5000
+ValidationError: Banner validation failed: image: Path `image` is required.
+    at model.validate (C:\Users\riazm\AskProjects\KhattakEye\backend\node_modules\mongoose\lib\document.js:2910:36)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async model.$__save (C:\Users\riazm\AskProjects\KhattakEye\backend\node_modules\mongoose\lib\model.js:399:7)
+    at async maybeTracedSave (C:\Users\riazm\AskProjects\KhattakEye\backend\node_modules\mongoose\lib\model.js:676:7)
+    at async createBanner (C:\Users\riazm\AskProjects\KhattakEye\backend\controllers\cms.controller.js:227:5)

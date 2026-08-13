@@ -5,13 +5,17 @@ import { Button } from "@/components/primitives/Button";
 
 export function CartSummary() {
   const items = useCartStore((s) => s.items);
+  const couponCode = useCartStore((s) => s.couponCode);
+  const couponDiscountPercent = useCartStore((s) => s.couponDiscountPercent);
   const getSubtotal = useCartStore((s) => s.getSubtotal);
-  const getDiscount = useCartStore((s) => s.getDiscount);
+  const getPromoDiscount = useCartStore((s) => s.getPromoDiscount);
+  const getCouponDiscount = useCartStore((s) => s.getCouponDiscount);
   const getShipping = useCartStore((s) => s.getShipping);
   const getTotal = useCartStore((s) => s.getTotal);
 
   const subtotal = getSubtotal();
-  const discount = getDiscount();
+  const promoDiscount = getPromoDiscount();
+  const couponDiscount = getCouponDiscount();
   const shipping = getShipping();
   const total = getTotal();
   const hasPriceOnRequest = items.some((i) => i.customization?.priceOnRequest === true);
@@ -32,10 +36,16 @@ export function CartSummary() {
           <span className="text-[color:var(--color-text-secondary)]">Subtotal</span>
           <span className="font-medium text-[color:var(--color-text-primary)]">Rs. {subtotal.toLocaleString()}</span>
         </div>
-        {discount > 0 && (
+        {promoDiscount > 0 && (
           <div className="flex justify-between text-[color:var(--color-accent-teal)]">
-            <span>Discount (10%)</span>
-            <span>-Rs. {discount.toLocaleString()}</span>
+            <span>Automatic Offer Discount</span>
+            <span>-Rs. {promoDiscount.toLocaleString()}</span>
+          </div>
+        )}
+        {couponDiscount > 0 && (
+          <div className="flex justify-between text-[color:var(--color-accent-teal)]">
+            <span>Coupon Discount {couponCode && `(${couponCode})`}</span>
+            <span>-Rs. {couponDiscount.toLocaleString()}</span>
           </div>
         )}
         <div className="flex justify-between">

@@ -64,6 +64,7 @@ export type AdminBrand = {
   name: string;
   slug: string;
   logo: string;
+  tagline?: string;
   description: string;
   website: string;
   featured: boolean;
@@ -487,7 +488,30 @@ export const inventoryHistory: InventoryHistory[] = [
   { id: "ih-007", product: "Noir Line Titanium", sku: "KT-AT-001", type: "sale", quantity: -1, before: 16, after: 15, date: "Jul 28, 2026 - 02:30 PM", user: "System", note: "Order KT-2A3F9C" },
 ];
 
-export type CmsBanner = { id: string; title: string; subtitle: string; image: string; link: string; active: boolean; type: "slider" | "offer" | "popup" | "seasonal"; position: number };
+export type FeaturedProductSummary = {
+  _id?: string;
+  id?: string;
+  name: string;
+  slug: string;
+  price: number;
+  oldPrice: number | null;
+  rating: number;
+  reviewCount: number;
+  images: string[];
+  hoverImage?: string;
+};
+
+export type CmsBanner = { id: string; title: string; subtitle: string; image: string; link: string; active: boolean; type: "slider" | "offer" | "popup" | "seasonal"; position: number; placement: string[]; featuredProduct?: FeaturedProductSummary | null };
+
+export const BANNER_PLACEMENTS = [
+  { value: "homepage-hero", label: "Homepage Hero" },
+  { value: "homepage-promo", label: "Homepage Promo Strip" },
+  { value: "shop-page", label: "Shop Page" },
+  { value: "megamenu-eyeglasses", label: "Eyeglasses Mega-Menu" },
+  { value: "megamenu-sunglasses", label: "Sunglasses Mega-Menu" },
+  { value: "megamenu-lenses", label: "Lenses Mega-Menu" },
+  { value: "megamenu-contact-lenses", label: "Contact Lenses Mega-Menu" },
+];
 export type CmsCoupon = { id: string; code: string; description: string; discount: number; type: "percentage" | "fixed"; minOrder: number; usageLimit: number; used: number; expiresAt: string; active: boolean };
 export type CmsSubscriber = { id: string; email: string; name: string; subscribedAt: string; status: "active" | "unsubscribed" };
 export type CmsMediaItem = { id: string; name: string; url: string; folder: string; type: "image" | "document"; size: string; uploadedAt: string; alt: string };
@@ -510,11 +534,11 @@ export const cmsHomepageSections: CmsHomepageSection[] = [
 ];
 
 export const cmsBanners: CmsBanner[] = [
-  { id: "bn-1", title: "Summer Collection 2026", subtitle: "Up to 30% off on premium sunglasses", image: "", link: "/shop/sunglasses", active: true, type: "slider", position: 1 },
-  { id: "bn-2", title: "New Titanium Arrivals", subtitle: "Ultra-light frames, maximum comfort", image: "", link: "/shop?material=titanium", active: true, type: "slider", position: 2 },
-  { id: "bn-3", title: "Free Shipping Over Rs. 3,000", subtitle: "Nationwide delivery", image: "", link: "/shop", active: true, type: "offer", position: 1 },
-  { id: "bn-4", title: "First Purchase Discount", subtitle: "Get 10% off using code KHATTAK10", image: "", link: "/shop", active: true, type: "popup", position: 1 },
-  { id: "bn-5", title: "Eid Collection", subtitle: "Limited edition frames", image: "", link: "/shop", active: false, type: "seasonal", position: 1 },
+  { id: "bn-1", title: "Summer Collection 2026", subtitle: "Up to 30% off on premium sunglasses", image: "", link: "/shop/sunglasses", active: true, type: "slider", position: 1, placement: ["homepage-hero"] },
+  { id: "bn-2", title: "New Titanium Arrivals", subtitle: "Ultra-light frames, maximum comfort", image: "", link: "/shop?material=titanium", active: true, type: "slider", position: 2, placement: ["homepage-hero"] },
+  { id: "bn-3", title: "Free Shipping Over Rs. 3,000", subtitle: "Nationwide delivery", image: "", link: "/shop", active: true, type: "offer", position: 1, placement: ["homepage-promo", "shop-page"] },
+  { id: "bn-4", title: "First Purchase Discount", subtitle: "Get 10% off using code KHATTAK10", image: "", link: "/shop", active: true, type: "popup", position: 1, placement: [] },
+  { id: "bn-5", title: "Eid Collection", subtitle: "Limited edition frames", image: "", link: "/shop", active: false, type: "seasonal", position: 1, placement: [] },
 ];
 
 export const cmsPages: CmsPageContent[] = [

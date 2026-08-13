@@ -4,7 +4,8 @@ const { Schema } = mongoose;
 const BrandSchema = new Schema({
   name: { type: String, required: true, trim: true },
   slug: { type: String, required: true, unique: true, index: true, trim: true },
-  logo: { type: String }
+  logo: { type: String },
+  tagline: { type: String, trim: true }
 }, {
   timestamps: true
 });

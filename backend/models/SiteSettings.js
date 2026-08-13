@@ -70,6 +70,9 @@ const SiteSettingsSchema = new Schema({
     returnWindowDays: { type: Number, default: 0 },
     warrantyYears: { type: Number, default: 0 }
   },
+  homepage: {
+    featuredProductCount: { type: Number, default: 3 }
+  },
   homepageSections: [
     {
       id: { type: String },

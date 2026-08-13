@@ -23,6 +23,7 @@ type ReviewRow = {
 
 export function AdminReviewsManagePage() {
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("pending");
   const [replyText, setReplyText] = useState<string | null>(null);
@@ -49,6 +50,8 @@ export function AdminReviewsManagePage() {
       }
     } catch {
       /* review list is optional; keep existing data */
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -103,8 +106,16 @@ export function AdminReviewsManagePage() {
         </div>
 
         <div className="space-y-3 p-4">
-          <AnimatePresence>
-            {filtered.map((review, i) => (
+          {loading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="animate-pulse rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-app-bg)] p-4 space-y-3">
+                <div className="h-4 w-1/3 rounded bg-[color:var(--color-surface-muted)]" />
+                <div className="h-8 w-full rounded bg-[color:var(--color-surface-muted)]" />
+              </div>
+            ))
+          ) : (
+            <AnimatePresence>
+              {filtered.map((review, i) => (
               <motion.div key={review.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ delay: i * 0.03 }} className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-app-bg)] p-4">
                 <div className="flex items-start gap-4">
                   <img src={review.productImage} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
@@ -162,6 +173,7 @@ export function AdminReviewsManagePage() {
               </motion.div>
             ))}
           </AnimatePresence>
+          )}
         </div>
       </div>
     </div>

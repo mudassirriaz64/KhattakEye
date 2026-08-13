@@ -8,7 +8,7 @@ import { FilterGroup, FilterCheckbox } from "./FilterGroup";
 import { PriceSlider } from "./PriceSlider";
 import { FilterDropdownPopover } from "./FilterDropdownPopover";
 import { ActiveFilterChips } from "./ActiveFilterChips";
-import { getProducts, type ApiProduct } from "@/lib/api/products";
+import { getProducts, getBrands, type ApiProduct } from "@/lib/api/products";
 
 type FilterSidebarProps = {
   open: boolean;
@@ -23,12 +23,19 @@ export function FilterSidebar({ open, onClose }: FilterSidebarProps) {
   const resetFilters = useShopStore((s) => s.resetFilters);
 
   const [dbProducts, setDbProducts] = useState<ApiProduct[]>([]);
+  const [dbBrands, setDbBrands] = useState<{ name: string; logo?: string }[]>([]);
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   useEffect(() => {
     getProducts({ limit: 100 }).then((data) => {
       if (data && data.items) {
         setDbProducts(data.items);
+      }
+    }).catch(() => {});
+
+    getBrands().then((brands) => {
+      if (Array.isArray(brands) && brands.length > 0) {
+        setDbBrands(brands);
       }
     }).catch(() => {});
   }, []);
@@ -44,6 +51,14 @@ export function FilterSidebar({ open, onClose }: FilterSidebarProps) {
   // Helper to compute option counts & path-based category filtering
   const processGroupOptions = (group: typeof filterGroups[0]) => {
     let displayOptions = group.options;
+
+    if (group.id === "brand" && dbBrands.length > 0) {
+      displayOptions = dbBrands.map((b) => ({
+        label: b.name,
+        value: b.name,
+        count: 0
+      }));
+    }
 
     if (group.id === "category") {
       const path = window.location.pathname.toLowerCase();
@@ -118,15 +133,15 @@ export function FilterSidebar({ open, onClose }: FilterSidebarProps) {
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-[color:var(--color-border)] px-5 py-4">
         <span className="font-display text-xl">Filters</span>
-        <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--color-border)]">
-          <X className="h-4 w-4" />
+        <button type="button" onClick={onClose} className="rounded-full p-2 text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)]">
+          <X className="h-5 w-5" />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto px-5 py-2">
+      <div className="flex-1 overflow-y-auto p-5 space-y-6">
         {filterGroups.map((group) => {
           if (group.type === "price") {
             return (
-              <FilterGroup key={group.id} label="Price Range">
+              <FilterGroup key={group.id} label={group.label}>
                 <PriceSlider min={0} max={100000} value={priceRange} onChange={setPriceRange} />
               </FilterGroup>
             );
@@ -136,20 +151,24 @@ export function FilterSidebar({ open, onClose }: FilterSidebarProps) {
 
           return (
             <FilterGroup key={group.id} label={group.label}>
-              {options.map((opt) => (
-                <FilterCheckbox
-                  key={opt.value}
-                  label={opt.label}
-                  count={opt.count}
-                  checked={currentValues.includes(opt.value)}
-                  onChange={() => {
-                    const next = currentValues.includes(opt.value)
-                      ? currentValues.filter((v) => v !== opt.value)
-                      : [...currentValues, opt.value];
-                    setFilter(group.id, next);
-                  }}
-                />
-              ))}
+              {options.map((opt) => {
+                const isChecked = currentValues.some((v) => v.toLowerCase() === opt.value.toLowerCase() || v.toLowerCase() === opt.label.toLowerCase());
+                return (
+                  <FilterCheckbox
+                    key={opt.value}
+                    label={opt.label}
+                    count={opt.count}
+                    checked={isChecked}
+                    onChange={() => {
+                      const isMatch = (v: string) => v.toLowerCase() === opt.value.toLowerCase() || v.toLowerCase() === opt.label.toLowerCase();
+                      const next = isChecked
+                        ? currentValues.filter((v) => !isMatch(v))
+                        : [...currentValues, opt.value];
+                      setFilter(group.id, next);
+                    }}
+                  />
+                );
+              })}
             </FilterGroup>
           );
         })}

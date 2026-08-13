@@ -19,7 +19,8 @@ function Stars({ rating }: { rating: number }) {
 }
 
 export function TestimonialWall() {
-  const [list, setList] = useState<Testimonial[]>(fallbackTestimonials);
+  const [list, setList] = useState<Testimonial[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     axios.get("/testimonials")
@@ -35,10 +36,37 @@ export function TestimonialWall() {
           })));
         }
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
-  const [featured, ...rest] = list.length > 0 ? list : fallbackTestimonials;
+  const displayList = list.length > 0 ? list : fallbackTestimonials;
+  const [featured, ...rest] = displayList;
+
+  if (loading) {
+    return (
+      <section className="bg-[color:var(--color-panel)] py-20 md:py-28">
+        <div className="mx-auto max-w-[1440px] px-4 md:px-8">
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-16">
+            <div className="lg:col-span-5 space-y-4 animate-pulse">
+              <div className="h-4 w-32 rounded bg-[color:var(--color-surface-muted)]" />
+              <div className="h-10 w-3/4 rounded bg-[color:var(--color-surface-muted)]" />
+              <div className="h-20 w-full rounded bg-[color:var(--color-surface-muted)]" />
+            </div>
+            <div className="lg:col-span-7 grid gap-6 sm:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="animate-pulse rounded-3xl border border-[color:var(--color-border)] p-6 space-y-3">
+                  <div className="h-4 w-20 rounded bg-[color:var(--color-surface-muted)]" />
+                  <div className="h-12 w-full rounded bg-[color:var(--color-surface-muted)]" />
+                  <div className="h-4 w-1/2 rounded bg-[color:var(--color-surface-muted)]" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-[color:var(--color-panel)] py-20 md:py-28">

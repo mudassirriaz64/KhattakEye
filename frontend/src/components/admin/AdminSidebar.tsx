@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Grid3X3, Eye, Bookmark, ShoppingCart, Users, FileText, BarChart3, Settings, LogOut, ChevronLeft,
-  ShieldCheck, Star, MessageSquare, ClipboardList, Image, Tag, Mail, Globe, Layout, Glasses,
+  ShieldCheck, Star, MessageSquare, ClipboardList, Image, Tag, Mail, Globe, Layout, Glasses, Sparkles,
   TrendingUp, Lock, Bell, Activity, UserCog, ScrollText, Shield, type LucideIcon,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/stores/admin-store";
@@ -33,13 +33,13 @@ const navItems: NavItem[] = [
   { to: "/admin/customers", icon: Users, label: "Customers" },
   { to: "/admin/reviews", icon: Star, label: "Reviews" },
   { to: "/admin/testimonials", icon: MessageSquare, label: "Testimonials" },
-  { to: "/admin/settings", icon: Settings, label: "Settings" },
 ];
 
 const cmsSubItems = [
   { to: "/admin/cms/faqs", icon: FileText, label: "FAQs" },
   { to: "/admin/cms/banners", icon: Image, label: "Banners" },
   { to: "/admin/cms/coupons", icon: Tag, label: "Coupons" },
+  { to: "/admin/cms/promotions", icon: Sparkles, label: "Promotions & Offers" },
   { to: "/admin/cms/newsletter", icon: Mail, label: "Newsletter" },
   { to: "/admin/cms/settings", icon: Settings, label: "Site Settings" },
 ];
@@ -135,7 +135,6 @@ export function AdminSidebar({ onClose }: Props) {
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
         {navItems.map((item) => {
-          if (item.to === "/admin/settings") return null;
           const active = isNavItemActive(item);
           return (
             <Link

@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Star, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowRight, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { heroSlides } from "@/lib/hero-data";
 import { stats } from "@/lib/landing-data";
 import axios from "@/lib/api/axios";
+import { getProducts, sanitizeProductImages, resolveCloudinaryUrl, type ApiProduct } from "@/lib/api/products";
 
 const container: Variants = {
   hidden: {},
@@ -17,44 +18,145 @@ const item: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } },
 };
 
+interface FeaturedProduct {
+  name: string;
+  slug: string;
+  price: number;
+  oldPrice?: number | null;
+  rating: number;
+  reviewCount: number;
+  image: string;
+}
+
 interface SlideData {
   id: string;
   image: string;
   headline?: string;
+  subtitle?: string;
   discountBadge?: string;
-  floatingProduct?: typeof heroSlides[0]["floatingProduct"];
+  floatingProduct?: FeaturedProduct;
 }
 
+interface BannerPayload {
+  _id?: string;
+  image?: string;
+  title?: string;
+  subtitle?: string;
+  featuredProduct?: {
+    name?: string;
+    slug?: string;
+    price?: number;
+    oldPrice?: number | null;
+    rating?: number;
+    reviewCount?: number;
+    images?: string[];
+    hoverImage?: string;
+  } | null;
+}
+
+const toFeaturedProduct = (p: ApiProduct | NonNullable<BannerPayload["featuredProduct"]>): FeaturedProduct | undefined => {
+  if (!p?.name || !p?.slug) return undefined;
+  const images = sanitizeProductImages(p.images);
+  const image = p.hoverImage ? resolveCloudinaryUrl(p.hoverImage) : images[0];
+  if (!image) return undefined;
+  return {
+    name: p.name,
+    slug: p.slug,
+    price: p.price || 0,
+    oldPrice: p.oldPrice ?? null,
+    rating: p.rating || 0,
+    reviewCount: p.reviewCount || 0,
+    image,
+  };
+};
+
+const discountBadgeFor = (fp?: FeaturedProduct): string | undefined => {
+  if (!fp) return undefined;
+  if (fp.oldPrice && fp.price && fp.oldPrice > fp.price) {
+    const pct = Math.round((1 - fp.price / fp.oldPrice) * 100);
+    if (pct > 0) return `${pct}% Off`;
+  }
+  return undefined;
+};
+
 export function EditorialHero() {
-  const [banners, setBanners] = useState<{ _id?: string; image?: string; title?: string }[]>([]);
+  const [banners, setBanners] = useState<BannerPayload[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<ApiProduct[]>([]);
+  const [settings, setSettings] = useState<{
+    homepage?: { featuredProductCount?: number };
+    policies?: { returnWindowDays?: number; warrantyYears?: number };
+  } | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get("/banners?type=homepage-slider")
-      .then((res) => {
-        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          setBanners(res.data);
-        }
-      })
-      .catch((err) => console.error("Failed to load hero banners:", err));
+    let cancelled = false;
+    (async () => {
+      try {
+        const [bannerRes, settingsRes] = await Promise.all([
+          axios.get("/banners?type=homepage-slider&placement=homepage-hero"),
+          axios.get("/settings"),
+        ]);
+        if (cancelled) return;
+        const bannerList = Array.isArray(bannerRes.data) ? bannerRes.data : [];
+        const count = Math.max(1, Number(settingsRes.data?.homepage?.featuredProductCount) || 3);
+        setBanners(bannerList);
+        setSettings(settingsRes.data);
+        const productRes = await getProducts({ featured: true, limit: count });
+        if (!cancelled) setFeaturedProducts(productRes.items || []);
+      } catch (err) {
+        console.error("Failed to load hero data:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  // Map active slides from API banners or fallback to rich heroSlides
+  // Featured frames drive the floating card; fall back to a banner's featuredProduct.
+  const featuredProductAt = (idx: number): FeaturedProduct | undefined => {
+    if (featuredProducts.length === 0) return undefined;
+    return toFeaturedProduct(featuredProducts[idx % featuredProducts.length]);
+  };
+
+  // Map active slides from API banners or fallback to rich heroSlides once loading completes
   const slides: SlideData[] = banners.length > 0
-    ? banners.map((b, idx) => ({
-        id: b._id || `banner-${idx}`,
-        image: b.image || heroSlides[idx % heroSlides.length].desktopImage,
-        headline: b.title,
-        discountBadge: heroSlides[idx % heroSlides.length]?.discountBadge,
-        floatingProduct: heroSlides[idx % heroSlides.length]?.floatingProduct,
-      }))
-    : heroSlides.map((s) => ({
-        id: s.id,
-        image: s.desktopImage,
-        headline: s.headline,
-        discountBadge: s.discountBadge,
-        floatingProduct: s.floatingProduct,
-      }));
+    ? banners.map((b, idx) => {
+        const fp = featuredProductAt(idx) || (b.featuredProduct ? toFeaturedProduct(b.featuredProduct) : undefined);
+        return {
+          id: b._id || `banner-${idx}`,
+          image: b.image || heroSlides[idx % heroSlides.length].desktopImage,
+          headline: b.title,
+          subtitle: b.subtitle,
+          discountBadge: discountBadgeFor(fp),
+          floatingProduct: fp,
+        };
+      })
+    : heroSlides.map((s, idx) => {
+        const fp = featuredProductAt(idx);
+        return {
+          id: s.id,
+          image: s.desktopImage,
+          headline: s.headline,
+          subtitle: "Hand-finished frames in Italian acetate and Japanese titanium — quiet luxury, impeccable precision, and optics engineered for the way you live.",
+          discountBadge: discountBadgeFor(fp) || s.discountBadge,
+          floatingProduct: fp,
+        };
+      });
+
+  const heroStats = [
+    { value: stats[0].value, suffix: stats[0].suffix, label: stats[0].label },
+    {
+      value: settings?.policies?.returnWindowDays ?? stats[1].value,
+      suffix: stats[1].suffix,
+      label: stats[1].label,
+    },
+    {
+      value: settings?.policies?.warrantyYears ?? stats[2].value,
+      suffix: stats[2].suffix,
+      label: stats[2].label,
+    },
+  ];
 
   // Auto-advance slide every 5.5 seconds
   useEffect(() => {
@@ -66,6 +168,19 @@ export function EditorialHero() {
   }, [slides.length]);
 
   const activeSlide = slides[currentIndex] || slides[0];
+
+  if (loading) {
+    return (
+      <section className="relative min-h-[85vh] w-full overflow-hidden bg-stone-950 text-white flex flex-col justify-between p-8">
+        <div className="mx-auto max-w-[1440px] w-full flex-1 flex flex-col justify-center gap-6">
+          <div className="h-8 w-48 rounded-full bg-white/10 animate-pulse" />
+          <div className="h-16 w-3/4 max-w-2xl rounded-2xl bg-white/10 animate-pulse" />
+          <div className="h-6 w-1/2 max-w-md rounded-xl bg-white/10 animate-pulse" />
+          <div className="h-12 w-40 rounded-xl bg-white/20 animate-pulse mt-4" />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative min-h-[85vh] w-full overflow-hidden bg-stone-950 text-white flex flex-col justify-between">
@@ -121,14 +236,14 @@ export function EditorialHero() {
               variants={item}
               className="mt-6 font-display text-5xl font-bold leading-[1.08] tracking-tight text-white md:text-7xl lg:text-[80px] drop-shadow-md"
             >
-              The World is Worth Seeing.
+              {activeSlide.headline || "The World is Worth Seeing."}
             </motion.h1>
 
             <motion.p
               variants={item}
               className="mt-6 max-w-xl text-base leading-relaxed text-stone-200 md:text-lg font-light drop-shadow"
             >
-              Hand-finished frames in Italian acetate and Japanese titanium — quiet luxury, impeccable precision, and optics engineered for the way you live.
+              {activeSlide.subtitle || "Hand-finished frames in Italian acetate and Japanese titanium — quiet luxury, impeccable precision, and optics engineered for the way you live."}
             </motion.p>
 
             <motion.div variants={item} className="mt-8 flex flex-wrap items-center gap-4">
@@ -152,7 +267,7 @@ export function EditorialHero() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                className="relative flex items-center gap-4 rounded-2xl border border-white/20 bg-stone-900/90 p-4 pr-7 shadow-2xl backdrop-blur-xl max-w-xs"
+                className="relative max-w-xs rounded-2xl border border-white/20 bg-stone-900/90 p-4 pr-7 shadow-2xl backdrop-blur-xl"
               >
                 {/* Integrated Ribbon Badge on Top Edge */}
                 {activeSlide.discountBadge && (
@@ -161,25 +276,40 @@ export function EditorialHero() {
                   </div>
                 )}
 
-                <img
-                  src={activeSlide.floatingProduct.image}
-                  alt={activeSlide.floatingProduct.name}
-                  className="h-16 w-16 rounded-xl object-cover border border-white/10 shrink-0"
-                />
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">
-                    Featured Frame
-                  </p>
-                  <p className="mt-0.5 font-display text-base font-semibold text-white">
-                    {activeSlide.floatingProduct.name}
-                  </p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <span className="flex items-center gap-1 text-xs font-semibold text-amber-300">
-                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                      {activeSlide.floatingProduct.rating}
-                    </span>
+                <Link to={`/product/${activeSlide.floatingProduct.slug}`} className="flex items-center gap-4">
+                  <img
+                    src={activeSlide.floatingProduct.image}
+                    alt={activeSlide.floatingProduct.name}
+                    className="h-16 w-16 shrink-0 rounded-xl border border-white/10 object-cover"
+                  />
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">
+                      Featured Frame
+                    </p>
+                    <p className="mt-0.5 font-display text-base font-semibold text-white">
+                      {activeSlide.floatingProduct.name}
+                    </p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="flex items-center gap-1 text-xs font-semibold text-amber-300">
+                        <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                        {activeSlide.floatingProduct.rating}
+                      </span>
+                      <span className="text-[10px] text-stone-400">
+                        ({activeSlide.floatingProduct.reviewCount} reviews)
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-sm font-bold text-white">
+                        Rs. {activeSlide.floatingProduct.price.toLocaleString()}
+                      </span>
+                      {activeSlide.floatingProduct.oldPrice ? (
+                        <span className="text-[10px] text-stone-500 line-through">
+                          Rs. {activeSlide.floatingProduct.oldPrice.toLocaleString()}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
+                </Link>
               </motion.div>
             )}
           </div>
@@ -192,7 +322,7 @@ export function EditorialHero() {
           
           {/* Stats Bar */}
           <div className="grid grid-cols-3 gap-8 sm:gap-14">
-            {stats.slice(0, 3).map((stat) => (
+            {heroStats.map((stat) => (
               <div key={stat.label} className="text-center sm:text-left">
                 <p className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
                   {stat.value}

@@ -6,7 +6,7 @@ import { Button } from "@/components/primitives/Button";
 import { cn } from "@/lib/utils";
 import axios from "@/lib/api/axios";
 
-type SettingsSections = "general" | "contact" | "social" | "payments" | "shipping" | "seo" | "analytics";
+type SettingsSections = "general" | "contact" | "social" | "payments" | "shipping" | "policies" | "seo" | "analytics";
 
 const sections: { key: SettingsSections; label: string }[] = [
   { key: "general", label: "General" },
@@ -14,6 +14,7 @@ const sections: { key: SettingsSections; label: string }[] = [
   { key: "social", label: "Social" },
   { key: "payments", label: "Payments" },
   { key: "shipping", label: "Shipping" },
+  { key: "policies", label: "Policies" },
   { key: "seo", label: "SEO" },
   { key: "analytics", label: "Analytics" },
 ];
@@ -22,6 +23,7 @@ export function AdminWebsiteSettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingsSections>("general");
   const [settings, setSettings] = useState(cmsWebsiteSettings);
   const [saved, setSaved] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
     axios.get("/settings").then((res) => {
@@ -33,6 +35,25 @@ export function AdminWebsiteSettingsPage() {
       }
     }).catch(() => {});
   }, []);
+
+  const handleLogoUpload = async (file: File) => {
+    setUploadingLogo(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("folder", "site");
+      const res = await axios.post("/uploads/image", formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+      if (res.data && res.data.public_id) {
+        update("logo", res.data.public_id);
+      }
+    } catch (err) {
+      console.error("Failed to upload logo:", err);
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -114,11 +135,35 @@ export function AdminWebsiteSettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {field("Site Title", "siteTitle", "Khattak Eyewear")}
                 {field("Tagline", "tagline", "Precision Crafted For Your Vision")}
-                {field("Logo URL", "logo", "/logo.png")}
+                <div>
+                  <label className="mb-1 block text-[10px] font-semibold uppercase tracking-[0.12em]">Store Logo (Cloudinary)</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="text"
+                      value={readPath("logo")}
+                      onChange={(e) => update("logo", e.target.value)}
+                      placeholder="khattak-eye/site/logo"
+                      className="flex-1 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm text-[color:var(--color-text-primary)]"
+                    />
+                    <label className="cursor-pointer inline-flex items-center rounded-xl bg-[color:var(--color-brand-primary)] px-3.5 py-2.5 text-xs font-semibold text-white transition-all hover:bg-black">
+                      {uploadingLogo ? "Uploading…" : "Upload"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleLogoUpload(file);
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
                 {field("Favicon URL", "favicon", "/favicon.ico")}
                 {field("Primary Color", "theme.primaryColor", "#111111")}
                 {field("Accent Color", "theme.accentColor", "#B6191B")}
                 {field("Border Radius", "theme.borderRadius", "16px")}
+                {field("Hero Featured Product Count", "homepage.featuredProductCount", "3")}
               </div>
             </div>
           )}
@@ -436,10 +481,21 @@ export function AdminWebsiteSettingsPage() {
             <div className="space-y-4">
               <h3 className="text-sm font-semibold">Shipping Settings</h3>
               <div className="grid gap-4 sm:grid-cols-2">
-                {field("Free Shipping Threshold (Rs.)", "shipping.freeThreshold", "3000")}
+                {field("Free Shipping Threshold (Rs.)", "shipping.freeThreshold", "15000")}
                 {field("Standard Rate (Rs.)", "shipping.standardRate", "350")}
                 {field("Express Rate (Rs.)", "shipping.expressRate", "750")}
-                {field("Estimated Days", "shipping.estimatedDays", "3-5 business days")}
+                {field("Estimated Days Text", "shipping.estimatedDays", "3-5 business days")}
+                {field("Min Delivery Days", "shipping.estimatedDaysMin", "1", "number")}
+                {field("Max Delivery Days", "shipping.estimatedDaysMax", "7", "number")}
+              </div>
+            </div>
+          )}
+          {activeSection === "policies" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold">Store Policy Settings</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {field("Return Window (Days)", "policies.returnWindowDays", "14", "number")}
+                {field("Warranty Duration (Years)", "policies.warrantyYears", "2", "number")}
               </div>
             </div>
           )}

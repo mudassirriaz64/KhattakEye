@@ -55,6 +55,9 @@ app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/wishlist', require('./routes/wishlist.routes'));
 app.use('/api/orders', require('./routes/orders.routes'));
 app.use('/api/public/orders', require('./routes/orders.routes'));
+app.use('/api/coupons', require('./routes/coupons.routes'));
+app.use('/api/promotions', require('./routes/promotions.routes'));
+app.use('/api/uploads', require('./routes/uploads.routes'));
 app.use('/api/admin/auth', require('./routes/admin/auth.routes'));
 app.use('/api/admin', require('./routes/admin.routes'));
 

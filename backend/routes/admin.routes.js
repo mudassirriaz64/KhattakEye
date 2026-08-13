@@ -153,6 +153,13 @@ router.post(
   adminController.createBrand
 );
 
+router.put(
+  '/brands/:id',
+  auth.protectAdmin,
+  requireRole(['admin', 'manager', 'super-admin']),
+  adminController.updateBrand
+);
+
 router.delete(
   '/brands/:id',
   auth.protectAdmin,
@@ -167,6 +174,7 @@ const {
   createBanner,
   updateBanner,
   deleteBanner,
+  getSettings,
   updateSettings
 } = require('../controllers/cms.controller');
 
@@ -181,7 +189,10 @@ router.put('/banners/:id', auth.protectAdmin, requireRole(['admin', 'manager', '
 router.delete('/banners/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteBanner);
 
 // Site Settings admin routes
+router.get('/settings', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getSettings);
 router.put('/settings', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateSettings);
+router.get('/site-settings', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getSettings);
+router.put('/site-settings', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateSettings);
 
 const {
   getPublicTestimonials,
@@ -248,16 +259,16 @@ router.put('/lens-options/:id', auth.protectAdmin, requireRole(['admin', 'manage
 router.delete('/lens-options/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteLensOption);
 
 const {
-  getAllFAQsAdmin,
-  createFAQ,
-  updateFAQ,
-  deleteFAQ
-} = require('../controllers/cms.controller');
+  getAllPromotions,
+  createPromotion,
+  updatePromotion,
+  deletePromotion
+} = require('../controllers/adminPromotions.controller');
 
-// FAQ admin routes
-router.get('/faqs', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getAllFAQsAdmin);
-router.post('/faqs', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), createFAQ);
-router.put('/faqs/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updateFAQ);
-router.delete('/faqs/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deleteFAQ);
+// Promotion admin routes
+router.get('/promotions', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), getAllPromotions);
+router.post('/promotions', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), createPromotion);
+router.put('/promotions/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), updatePromotion);
+router.delete('/promotions/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), deletePromotion);
 
 module.exports = router;

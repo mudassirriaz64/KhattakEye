@@ -8,8 +8,10 @@ const LensOption = require('../models/LensOption');
 const { sendOrderConfirmationEmail } = require('../utils/email');
 const { sendWhatsAppPriceOnRequestNotification } = require('../utils/whatsapp');
 const Coupon = require('../models/Coupon');
+const Promotion = require('../models/Promotion');
 const SiteSettings = require('../models/SiteSettings');
 const { resolveImageUrl } = require('../utils/cloudinary');
+const { hasCustomerUsedCoupon } = require('./coupons.controller');
 
 // Helper to write buffer to temp file
 const writeTempFile = (buffer, originalName) => {
@@ -334,6 +336,7 @@ exports.createOrder = async (req, res, next) => {
         product: product._id,
         name: product.name,
         brand: product.brand,
+        category: product.category,
         image: (product.images && product.images[0]) || '',
         price: itemPrice,
         quantity: qty,
@@ -342,8 +345,90 @@ exports.createOrder = async (req, res, next) => {
       });
     }
 
-    // Coupon validation against the Coupon collection (authoritative).
-    let discount = 0;
+    // Step 3: Automatic Promotions Calculation (Rules.md §8a)
+    const now = new Date();
+    const activePromotions = await Promotion.find({
+      isActive: true,
+      startDate: { $lte: now },
+      endDate: { $gte: now }
+    }).lean();
+
+    let promoDiscount = 0;
+    const appliedPromotions = [];
+    const bogoCoveredItemIndices = new Set();
+
+    // BOGO logic (highest priority - BOGO wins over category-percent)
+    const bogoPromos = activePromotions.filter((p) => p.type === 'bogo');
+    for (const promo of bogoPromos) {
+      const matchingIndices = [];
+      let totalMatchingQty = 0;
+
+      formattedItems.forEach((item, idx) => {
+        const matchesProduct = promo.targetProduct && String(item.product) === String(promo.targetProduct);
+        const matchesCategory = promo.targetCategory && String(item.category || '').toLowerCase() === String(promo.targetCategory).toLowerCase();
+        const matchesSubCategory = !promo.targetSubCategory || String(item.subcategory || '').toLowerCase() === String(promo.targetSubCategory).toLowerCase();
+        if (matchesProduct || (matchesCategory && matchesSubCategory)) {
+          matchingIndices.push(idx);
+          totalMatchingQty += item.quantity;
+        }
+      });
+
+      if (totalMatchingQty >= 2 && matchingIndices.length > 0) {
+        // Find lowest-priced single unit among qualifying items
+        let lowestUnitPrice = Infinity;
+        matchingIndices.forEach((idx) => {
+          bogoCoveredItemIndices.add(idx); // BOGO wins, exempts item from category %-off
+          if (formattedItems[idx].price < lowestUnitPrice) {
+            lowestUnitPrice = formattedItems[idx].price;
+          }
+        });
+
+        if (Number.isFinite(lowestUnitPrice) && lowestUnitPrice > 0) {
+          promoDiscount += lowestUnitPrice;
+          appliedPromotions.push({
+            promotion: promo._id,
+            name: promo.name,
+            type: promo.type,
+            badgeText: promo.badgeText || 'BUY 1 GET 1 FREE',
+            discountAmount: lowestUnitPrice
+          });
+        }
+      }
+    }
+
+    // Category-percent-off logic (for non-BOGO items)
+    const catPromos = activePromotions.filter((p) => p.type === 'category-percent-off');
+    for (const promo of catPromos) {
+      if (!promo.targetCategory || !promo.discountPercent) continue;
+      let catDiscountAmount = 0;
+
+      formattedItems.forEach((item, idx) => {
+        if (bogoCoveredItemIndices.has(idx)) return; // Precedence rule: BOGO wins!
+
+        const matchesCategory = String(item.category || '').toLowerCase() === String(promo.targetCategory).toLowerCase();
+        const matchesSubCategory = !promo.targetSubCategory || String(item.subcategory || '').toLowerCase() === String(promo.targetSubCategory).toLowerCase();
+        if (matchesCategory && matchesSubCategory) {
+          const itemSubtotal = item.price * item.quantity;
+          const itemDiscount = Math.round((itemSubtotal * promo.discountPercent) / 100);
+          catDiscountAmount += itemDiscount;
+        }
+      });
+
+      if (catDiscountAmount > 0) {
+        promoDiscount += catDiscountAmount;
+        appliedPromotions.push({
+          promotion: promo._id,
+          name: promo.name,
+          type: promo.type,
+          badgeText: promo.badgeText || `${promo.discountPercent}% OFF`,
+          discountAmount: catDiscountAmount
+        });
+      }
+    }
+
+    // Step 4: Coupon validation against post-promotion subtotal (Rules.md §8a)
+    const subtotalAfterPromo = Math.max(0, subtotal - promoDiscount);
+    let couponDiscount = 0;
     let appliedCoupon = null;
     if (couponCode) {
       appliedCoupon = await Coupon.findOne({ code: String(couponCode).toUpperCase().trim() });
@@ -353,14 +438,19 @@ exports.createOrder = async (req, res, next) => {
       if (appliedCoupon.expiryDate && new Date(appliedCoupon.expiryDate) < new Date()) {
         return res.status(400).json({ message: 'Coupon code has expired' });
       }
-      if (appliedCoupon.minOrderValue && subtotal < appliedCoupon.minOrderValue) {
+      if (appliedCoupon.minOrderValue && subtotalAfterPromo < appliedCoupon.minOrderValue) {
         return res.status(400).json({ message: `Coupon requires a minimum order of Rs. ${appliedCoupon.minOrderValue}` });
       }
       if (appliedCoupon.usageLimit && appliedCoupon.usedCount >= appliedCoupon.usageLimit) {
         return res.status(400).json({ message: 'Coupon usage limit reached' });
       }
-      discount = Math.round((subtotal * appliedCoupon.discountPercent) / 100);
+      if (await hasCustomerUsedCoupon(appliedCoupon.code, authenticatedUserId, customerEmail)) {
+        return res.status(400).json({ message: 'You have used this coupon' });
+      }
+      couponDiscount = Math.round((subtotalAfterPromo * appliedCoupon.discountPercent) / 100);
     }
+
+    const discount = promoDiscount + couponDiscount;
 
     // Pass 2: atomically reserve stock. All validations have passed, so the only
     // failure mode left is a genuine stock shortage mid-reservation.
@@ -434,6 +524,8 @@ exports.createOrder = async (req, res, next) => {
       subtotal,
       shipping,
       discount,
+      promoDiscount,
+      couponDiscount,
       total,
       paymentMethod,
       paymentProof: paymentProofData || undefined,
@@ -441,6 +533,7 @@ exports.createOrder = async (req, res, next) => {
       status: initialStatus,
       timeline: defaultTimeline,
       couponCode: appliedCoupon ? appliedCoupon.code : undefined,
+      appliedPromotions,
       estimatedDelivery: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000)
     });
 

@@ -155,8 +155,13 @@ export const adminGetBrandsApi = async () => {
   return response.data;
 };
 
-export const adminCreateBrandApi = async (data: { name: string; logo?: string }) => {
+export const adminCreateBrandApi = async (data: { name: string; logo?: string; tagline?: string }) => {
   const response = await api.post('/admin/brands', data);
+  return response.data;
+};
+
+export const adminUpdateBrandApi = async (id: string, data: { name?: string; logo?: string; tagline?: string }) => {
+  const response = await api.put(`/admin/brands/${id}`, data);
   return response.data;
 };
 

@@ -77,7 +77,21 @@ exports.getCategories = async (req, res, next) => {
 
 exports.getBrands = async (req, res, next) => {
   try {
-    const brands = await Brand.find().sort({ name: 1 }).lean();
+    let brands = await Brand.find({ status: { $ne: 'inactive' } }).sort({ name: 1 }).lean();
+    if (!brands || brands.length === 0) {
+      const defaultBrands = [
+        { name: "Khattak Atelier", slug: "khattak-atelier", tagline: "Sculptural", status: "active" },
+        { name: "Khattak Signature", slug: "khattak-signature", tagline: "Distinctive", status: "active" },
+        { name: "Khattak Heritage", slug: "khattak-heritage", tagline: "Timeless", status: "active" },
+        { name: "Khattak Performance", slug: "khattak-performance", tagline: "Engineered", status: "active" },
+        { name: "Ray-Ban", slug: "ray-ban", tagline: "Iconic", status: "active" },
+        { name: "Oakley", slug: "oakley", tagline: "Performance", status: "active" },
+        { name: "Persol", slug: "persol", tagline: "Heritage", status: "active" },
+        { name: "Tom Ford", slug: "tom-ford", tagline: "Glamorous", status: "active" }
+      ];
+      await Brand.insertMany(defaultBrands);
+      brands = await Brand.find({ status: { $ne: 'inactive' } }).sort({ name: 1 }).lean();
+    }
     const formattedBrands = brands.map(b => {
       if (b.logo) b.logo = resolveImageUrl(b.logo) || b.logo;
       return b;

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, X, ImagePlus, LoaderCircle, Glasses, Plus, Video } from "lucide-react";
+import { ArrowLeft, Save, X, ImagePlus, LoaderCircle, Glasses, Plus, Video, AlertCircle } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { BrandSelect } from "@/components/admin/BrandSelect";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,7 @@ export function AdminAddGlassesPage() {
   const navigate = useNavigate();
   const addToast = useToastStore((s) => s.addToast);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [dbCategories, setDbCategories] = useState<ApiCategory[]>([]);
 
@@ -312,10 +313,39 @@ export function AdminAddGlassesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.price || !form.category) {
-      addToast({ title: "Validation Error", description: "Name, price, and category are required", type: "error" });
+    const missingFields: string[] = [];
+    if (!form.name.trim()) missingFields.push("Product Title");
+    if (!form.brand.trim()) missingFields.push("Brand");
+    if (!form.category.trim()) missingFields.push("Parent Category");
+    if (!form.price.trim() || isNaN(Number(form.price)) || Number(form.price) <= 0) missingFields.push("Price");
+    if (form.stock === "" || form.stock === null || form.stock === undefined || isNaN(Number(form.stock)) || Number(form.stock) < 0) missingFields.push("Stock");
+
+    if (missingFields.length > 0) {
+      const msg = `Please fill required fields: ${missingFields.join(", ")}`;
+      setFormError(msg);
+      addToast({
+        title: "Missing Required Fields",
+        description: msg,
+        type: "error",
+      });
       return;
     }
+
+    for (let i = 0; i < variants.length; i++) {
+      const v = variants[i];
+      if (!v.colorName.trim() || v.stock === undefined || v.stock === null || v.stock === ("" as any) || isNaN(Number(v.stock)) || Number(v.stock) < 0) {
+        const msg = `Please fill Color Name & Stock for Variant #${i + 1}`;
+        setFormError(msg);
+        addToast({
+          title: "Missing Variant Details",
+          description: msg,
+          type: "error",
+        });
+        return;
+      }
+    }
+
+    setFormError(null);
 
     try {
       setIsSubmitting(true);
@@ -422,7 +452,13 @@ export function AdminAddGlassesPage() {
             <p className="mt-0.5 text-xs text-[color:var(--color-text-secondary)]">Eyeglasses & Sunglasses inventory</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {formError && (
+            <div className="flex items-center gap-1.5 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/40 dark:border-red-800 px-3.5 py-2 text-xs font-semibold text-red-600 dark:text-red-400 shadow-sm animate-pulse">
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+              <span>{formError}</span>
+            </div>
+          )}
           <Button type="button" variant="outline" onClick={() => navigate("/admin/products")}>Cancel</Button>
           <Button type="button" onClick={handleSubmit} disabled={isSubmitting} className="flex items-center gap-2 bg-[color:var(--color-brand-primary)] text-white">
             {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

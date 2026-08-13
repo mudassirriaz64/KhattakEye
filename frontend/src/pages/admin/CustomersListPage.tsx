@@ -23,7 +23,8 @@ type CustomerRow = {
 };
 
 export function AdminCustomersListPage() {
-  const [customers, setCustomers] = useState<CustomerRow[]>(adminCustomerDetails);
+  const [customers, setCustomers] = useState<CustomerRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [blockId, setBlockId] = useState<string | null>(null);
 
@@ -50,6 +51,8 @@ export function AdminCustomersListPage() {
       }
     } catch {
       /* user list is optional; keep existing data */
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -92,9 +95,18 @@ export function AdminCustomersListPage() {
               </tr>
             </thead>
             <tbody>
-              <AnimatePresence>
-                {filtered.map((c, i) => (
-                  <motion.tr key={c.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="border-b border-[color:var(--color-border)] transition-colors last:border-0 hover:bg-[color:var(--color-surface-muted)]">
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-[color:var(--color-border)] animate-pulse">
+                    <td className="px-4 py-4" colSpan={7}>
+                      <div className="h-6 w-full rounded bg-[color:var(--color-surface-muted)]" />
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <AnimatePresence>
+                  {filtered.map((c, i) => (
+                    <motion.tr key={c.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }} className="border-b border-[color:var(--color-border)] transition-colors last:border-0 hover:bg-[color:var(--color-surface-muted)]">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color:var(--color-brand-primary)] text-[10px] font-bold text-white">
@@ -127,6 +139,7 @@ export function AdminCustomersListPage() {
                   </motion.tr>
                 ))}
               </AnimatePresence>
+              )}
             </tbody>
           </table>
         </div>

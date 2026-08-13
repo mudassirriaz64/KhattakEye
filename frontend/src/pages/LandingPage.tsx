@@ -5,6 +5,7 @@ import { FeaturedProducts } from "@/components/landing/FeaturedProducts";
 import { FaceShapeGuide } from "@/components/landing/FaceShapeGuide";
 import { GenderCollections } from "@/components/landing/GenderCollections";
 import { TryOnPromo } from "@/components/landing/TryOnPromo";
+import { BrandStory } from "@/components/landing/BrandStory";
 import { PremiumBrands } from "@/components/landing/PremiumBrands";
 import { TestimonialWall } from "@/components/landing/TestimonialWall";
 import { NewsletterSection } from "@/components/landing/NewsletterSection";
@@ -24,6 +25,7 @@ const SECTION_COMPONENTS: Record<string, React.ComponentType> = {
   "face-shape-guide": FaceShapeGuide,
   "gender-collections": GenderCollections,
   "tryon-promo": TryOnPromo,
+  "why-choose-us": BrandStory,
   "premium-brands": PremiumBrands,
   "testimonials": TestimonialWall,
   "newsletter": NewsletterSection,
@@ -37,9 +39,10 @@ export function LandingPage() {
     { id: "sec-4", section: "face-shape-guide", visible: true, order: 4 },
     { id: "sec-5", section: "gender-collections", visible: true, order: 5 },
     { id: "sec-6", section: "tryon-promo", visible: true, order: 6 },
-    { id: "sec-7", section: "premium-brands", visible: true, order: 7 },
-    { id: "sec-8", section: "testimonials", visible: true, order: 8 },
-    { id: "sec-9", section: "newsletter", visible: true, order: 9 },
+    { id: "sec-7", section: "why-choose-us", visible: true, order: 7 },
+    { id: "sec-8", section: "premium-brands", visible: true, order: 8 },
+    { id: "sec-9", section: "testimonials", visible: true, order: 9 },
+    { id: "sec-10", section: "newsletter", visible: true, order: 10 },
   ]);
 
   useEffect(() => {

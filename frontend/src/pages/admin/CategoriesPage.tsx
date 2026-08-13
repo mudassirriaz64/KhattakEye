@@ -1,16 +1,20 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Grid3X3, Plus, Edit3, Trash2, Search, X, FolderOpen, ArrowRight, Layers, Columns } from "lucide-react";
+import { Grid3X3, Plus, Edit3, Trash2, Search, X, FolderOpen, ArrowRight, Layers, Columns, AlertCircle } from "lucide-react";
 import { type AdminCategory } from "@/lib/admin-data";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
 import { getCategoriesApi, adminCreateCategoryApi, adminDeleteCategoryApi, adminUpdateCategoryApi } from "@/lib/api/admin";
+import { useToastStore } from "@/lib/stores/toast-store";
 
 export function AdminCategoriesPage() {
+  const addToast = useToastStore((s) => s.addToast);
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [search, setSearch] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [parentFormError, setParentFormError] = useState<string | null>(null);
+  const [subFormError, setSubFormError] = useState<string | null>(null);
 
   const fetchCategories = () => {
     getCategoriesApi("glasses").then((data) => {
@@ -116,15 +120,25 @@ export function AdminCategoriesPage() {
   const resetParentForm = () => {
     setParentForm({ name: "", slug: "", description: "", productKind: "glasses", type: "category", featured: true, status: "active" });
     setEditingCat(null);
+    setParentFormError(null);
   };
 
   const openEditParent = (cat: AdminCategory) => {
     setParentForm({ name: cat.name, slug: cat.slug, description: cat.description, productKind: cat.productKind || "glasses", type: cat.type || "category", featured: cat.featured, status: cat.status });
     setEditingCat(cat);
+    setParentFormError(null);
     setShowParentForm(true);
   };
 
   const saveParentCategory = async () => {
+    if (!parentForm.name.trim()) {
+      const msg = "Please enter the Parent Category Name";
+      setParentFormError(msg);
+      addToast({ title: "Missing Required Field", description: msg, type: "error" });
+      return;
+    }
+    setParentFormError(null);
+
     try {
       if (editingCat) {
         await adminUpdateCategoryApi(editingCat.id, parentForm);
@@ -132,15 +146,25 @@ export function AdminCategoriesPage() {
         await adminCreateCategoryApi({ name: parentForm.name, description: parentForm.description, productKind: parentForm.productKind, type: parentForm.type });
       }
       fetchCategories();
+      setShowParentForm(false);
+      resetParentForm();
+      addToast({ title: "Success", description: editingCat ? "Category updated successfully" : "Category created successfully", type: "success" });
     } catch (err) {
       console.error("Failed to save category:", err);
+      addToast({ title: "Error", description: "Failed to save category", type: "error" });
     }
-    setShowParentForm(false);
-    resetParentForm();
   };
 
   const handleAddSubcategory = async () => {
-    if (!selectedParent || !newSubName.trim()) return;
+    if (!selectedParent) return;
+    if (!newSubName.trim()) {
+      const msg = "Please enter Option Name";
+      setSubFormError(msg);
+      addToast({ title: "Missing Required Field", description: msg, type: "error" });
+      return;
+    }
+    setSubFormError(null);
+
     const slug = newSubName.toLowerCase().replace(/\s+/g, "-");
     const groupToSave = (existingGroups.length === 0 || selectedGroupOption === "_new_") 
       ? (customGroup.trim() || "Category") 
@@ -177,8 +201,10 @@ export function AdminCategoriesPage() {
         setCustomGroup("Category");
       }
       fetchCategories();
+      addToast({ title: "Success", description: "Subcategory option added successfully", type: "success" });
     } catch (err) {
       console.error("Failed to add subcategory option:", err);
+      addToast({ title: "Error", description: "Failed to add subcategory option", type: "error" });
     }
   };
 
@@ -259,9 +285,15 @@ export function AdminCategoriesPage() {
                 <input type="text" value={parentForm.description} onChange={(e) => setParentForm((p) => ({ ...p, description: e.target.value }))} placeholder="Category description..." className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)] px-4 py-2.5 text-sm" />
               </div>
             </div>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 flex flex-wrap items-center gap-3">
               <Button variant="primary" onClick={saveParentCategory} className="text-xs">{editingCat ? "Update" : "Create"} Parent Category</Button>
-              <Button variant="ghost" onClick={() => setShowParentForm(false)} className="text-xs">Cancel</Button>
+              <Button variant="ghost" onClick={() => { setShowParentForm(false); setParentFormError(null); }} className="text-xs">Cancel</Button>
+              {parentFormError && (
+                <div className="flex items-center gap-1.5 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/40 dark:border-red-800 px-3.5 py-2 text-xs font-semibold text-red-600 dark:text-red-400 shadow-sm animate-pulse">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                  <span>{parentFormError}</span>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
@@ -429,15 +461,22 @@ export function AdminCategoriesPage() {
                       className="rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] px-3.5 py-2 text-xs sm:col-span-3" 
                     />
                   </div>
-                  <Button 
-                    variant="primary" 
-                    onClick={handleAddSubcategory} 
-                    disabled={!newSubName.trim()} 
-                    className="mt-3 text-xs"
-                    iconLeft={<Plus className="h-3.5 w-3.5" />}
-                  >
-                    Add to {selectedParent.name}
-                  </Button>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <Button 
+                      variant="primary" 
+                      onClick={handleAddSubcategory} 
+                      className="text-xs"
+                      iconLeft={<Plus className="h-3.5 w-3.5" />}
+                    >
+                      Add to {selectedParent.name}
+                    </Button>
+                    {subFormError && (
+                      <div className="flex items-center gap-1.5 rounded-xl border border-red-300 bg-red-50 dark:bg-red-950/40 dark:border-red-800 px-3.5 py-2 text-xs font-semibold text-red-600 dark:text-red-400 shadow-sm animate-pulse">
+                        <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                        <span>{subFormError}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* List of Subcategory Options */}

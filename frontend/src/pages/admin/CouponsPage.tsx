@@ -10,7 +10,8 @@ import axios from "@/lib/api/axios";
 const formDefault = { code: "", description: "", discount: 10, type: "percentage", minOrder: 0, usageLimit: 100, used: 0, expiresAt: "2026-12-31", active: true };
 
 export function AdminCouponsPage() {
-  const [coupons, setCoupons] = useState<CmsCoupon[]>(cmsCoupons);
+  const [coupons, setCoupons] = useState<CmsCoupon[]>([]);
+  const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editing, setEditing] = useState<CmsCoupon | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -40,6 +41,8 @@ export function AdminCouponsPage() {
       }
     } catch {
       /* coupon list is optional; keep existing data */
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -130,37 +133,49 @@ export function AdminCouponsPage() {
         </motion.div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <AnimatePresence>
-          {coupons.map((coupon, i) => (
-            <motion.div key={coupon.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.04 }} className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-5">
-              <div className="flex items-start justify-between">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-accent-teal)]/10"><Tag className="h-5 w-5 text-[color:var(--color-accent-teal)]" /></div>
-                <div className="flex gap-1">
-                  <button type="button" onClick={() => openEdit(coupon)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)]"><Edit3 className="h-3.5 w-3.5" /></button>
-                  <button type="button" onClick={() => setDeleteId(coupon.id)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-red-500/10 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-2">
-                <code className="rounded-lg bg-[color:var(--color-brand-primary)] px-2.5 py-1 text-xs font-bold tracking-wider text-white">{coupon.code}</code>
-                <button type="button" onClick={() => copyCode(coupon.code)} className="flex h-6 w-6 items-center justify-center rounded text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-accent-teal)]">
-                  {copied === coupon.code ? <span className="text-[10px] font-medium text-[color:var(--color-accent-teal)]">Copied!</span> : <Copy className="h-3 w-3" />}
-                </button>
-              </div>
-              <p className="mt-2 text-xs text-[color:var(--color-text-secondary)]">{coupon.description}</p>
-              <div className="mt-3 flex items-center gap-2">
-                <span className="rounded-lg bg-[color:var(--color-surface-muted)] px-2 py-0.5 text-[10px] font-semibold">{coupon.type === "percentage" ? `${coupon.discount}%` : `Rs. ${coupon.discount}`}</span>
-                <StatusBadge status={coupon.active ? "active" : "inactive"} />
-              </div>
-              <div className="mt-2 flex items-center justify-between text-[10px] text-[color:var(--color-text-tertiary)]">
-                <span>Used: {coupon.used}/{coupon.usageLimit}</span>
-                <span>Min: Rs. {coupon.minOrder.toLocaleString()}</span>
-                <span>Exp: {coupon.expiresAt}</span>
-              </div>
-            </motion.div>
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="animate-pulse rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-5 space-y-3">
+              <div className="h-10 w-10 rounded-xl bg-[color:var(--color-surface-muted)]" />
+              <div className="h-5 w-1/3 rounded bg-[color:var(--color-surface-muted)]" />
+              <div className="h-4 w-2/3 rounded bg-[color:var(--color-surface-muted)]" />
+            </div>
           ))}
-        </AnimatePresence>
-      </div>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <AnimatePresence>
+            {coupons.map((coupon, i) => (
+              <motion.div key={coupon.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: i * 0.04 }} className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] p-5">
+                <div className="flex items-start justify-between">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[color:var(--color-accent-teal)]/10"><Tag className="h-5 w-5 text-[color:var(--color-accent-teal)]" /></div>
+                  <div className="flex gap-1">
+                    <button type="button" onClick={() => openEdit(coupon)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-surface-muted)]"><Edit3 className="h-3.5 w-3.5" /></button>
+                    <button type="button" onClick={() => setDeleteId(coupon.id)} className="flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--color-text-tertiary)] hover:bg-red-500/10 hover:text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <code className="rounded-lg bg-[color:var(--color-brand-primary)] px-2.5 py-1 text-xs font-bold tracking-wider text-white">{coupon.code}</code>
+                  <button type="button" onClick={() => copyCode(coupon.code)} className="flex h-6 w-6 items-center justify-center rounded text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-accent-teal)]">
+                    {copied === coupon.code ? <span className="text-[10px] font-medium text-[color:var(--color-accent-teal)]">Copied!</span> : <Copy className="h-3 w-3" />}
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-[color:var(--color-text-secondary)]">{coupon.description}</p>
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="rounded-lg bg-[color:var(--color-surface-muted)] px-2 py-0.5 text-[10px] font-semibold">{coupon.type === "percentage" ? `${coupon.discount}%` : `Rs. ${coupon.discount}`}</span>
+                  <StatusBadge status={coupon.active ? "active" : "inactive"} />
+                </div>
+                <div className="mt-2 flex items-center justify-between text-[10px] text-[color:var(--color-text-tertiary)]">
+                  <span>Used: {coupon.used}/{coupon.usageLimit}</span>
+                  <span>Min: Rs. {coupon.minOrder.toLocaleString()}</span>
+                  <span>Exp: {coupon.expiresAt}</span>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
 
       <ConfirmModal open={!!deleteId} onClose={() => setDeleteId(null)} onConfirm={removeCoupon} title="Delete Coupon" message="Are you sure you want to delete this coupon?" />
     </div>

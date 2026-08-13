@@ -84,6 +84,14 @@ const TimelineSchema = new Schema({
   completed: { type: Boolean, default: false }
 }, { _id: false });
 
+const AppliedPromotionSchema = new Schema({
+  promotion: { type: Schema.Types.ObjectId, ref: 'Promotion', required: true },
+  name: { type: String, required: true },
+  type: { type: String, enum: ['bogo', 'category-percent-off'], required: true },
+  badgeText: { type: String },
+  discountAmount: { type: Number, required: true }
+}, { _id: false });
+
 const OrderSchema = new Schema({
   orderNumber: { type: String, required: true, unique: true, index: true, trim: true },
   user: { type: Schema.Types.ObjectId, ref: 'User', default: null },
@@ -95,6 +103,8 @@ const OrderSchema = new Schema({
   subtotal: { type: Number, required: true, min: 0 },
   shipping: { type: Number, required: true, min: 0 },
   discount: { type: Number, default: 0, min: 0 },
+  promoDiscount: { type: Number, default: 0, min: 0 },
+  couponDiscount: { type: Number, default: 0, min: 0 },
   total: { type: Number, required: true, min: 0 },
   paymentMethod: {
     type: String,
@@ -111,7 +121,8 @@ const OrderSchema = new Schema({
   },
   timeline: { type: [TimelineSchema], default: [] },
   estimatedDelivery: { type: Date },
-  couponCode: { type: String, trim: true }
+  couponCode: { type: String, trim: true },
+  appliedPromotions: { type: [AppliedPromotionSchema], default: [] }
 }, {
   timestamps: true
 });

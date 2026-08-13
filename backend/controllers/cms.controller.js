@@ -86,6 +86,9 @@ const defaultSettings = {
     returnWindowDays: 14,
     warrantyYears: 2
   },
+  homepage: {
+    featuredProductCount: 3
+  },
   homepageSections: [
     { id: "sec-1", section: "hero-slider", title: "Hero Carousel", subtitle: "Main promo slider with CTA buttons", visible: true, order: 1 },
     { id: "sec-2", section: "featured-categories", title: "Featured Categories", subtitle: "Eyeglasses, Sunglasses, Contact Lenses", visible: true, order: 2 },
@@ -93,11 +96,28 @@ const defaultSettings = {
     { id: "sec-4", section: "face-shape-guide", title: "Face Shape Guide", subtitle: "Interactive fit and geometry guide", visible: true, order: 4 },
     { id: "sec-5", section: "gender-collections", title: "Gender Collections", subtitle: "Men's and Women's collections", visible: true, order: 5 },
     { id: "sec-6", section: "tryon-promo", title: "Virtual Try-On Promo", subtitle: "Interactive AR try-on spotlight", visible: true, order: 6 },
-    { id: "sec-7", section: "premium-brands", title: "Brand Logotypes", subtitle: "Luxury brand partner showcase", visible: true, order: 7 },
-    { id: "sec-8", section: "testimonials", title: "Customer Reviews Wall", subtitle: "Star ratings and verified testimonials", visible: true, order: 8 },
-    { id: "sec-9", section: "newsletter", title: "Newsletter Signup Box", subtitle: "Email subscription section", visible: true, order: 9 }
+    { id: "sec-7", section: "why-choose-us", title: "Why Choose Us", subtitle: "The Khattak difference", visible: true, order: 7 },
+    { id: "sec-8", section: "premium-brands", title: "Brand Logotypes", subtitle: "Luxury brand partner showcase", visible: true, order: 8 },
+    { id: "sec-9", section: "testimonials", title: "Customer Reviews Wall", subtitle: "Star ratings and verified testimonials", visible: true, order: 9 },
+    { id: "sec-10", section: "newsletter", title: "Newsletter Signup Box", subtitle: "Email subscription section", visible: true, order: 10 }
   ],
   logo: '/khattak.png'
+};
+
+// Ensure stored settings always include every known homepage section, so new
+// sections added to the registry show up for existing installs without a reseed.
+const mergeHomepageSections = (sections) => {
+  if (!Array.isArray(sections) || sections.length === 0) return defaultSettings.homepageSections;
+  const bySection = new Map(sections.map((s) => [s.section, s]));
+  const knownKeys = new Set(defaultSettings.homepageSections.map((d) => d.section));
+  const merged = defaultSettings.homepageSections.map((d) => {
+    const existing = bySection.get(d.section);
+    return existing ? { ...existing } : { ...d };
+  });
+  const extras = sections.filter((s) => !knownKeys.has(s.section));
+  return [...merged, ...extras]
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
+    .map((s, i) => ({ ...s, id: s.id || `sec-${i + 1}`, order: i + 1 }));
 };
 
 // GET /api/cms/:slug
@@ -154,14 +174,31 @@ const upsertCMSPage = async (req, res, next) => {
 // GET /api/banners
 const getBanners = async (req, res, next) => {
   try {
-    const { type } = req.query;
+    const { type, placement } = req.query;
     const filter = { isActive: true };
-    if (type) filter.type = type;
+    if (type) {
+      if (type === 'promotional' || type === 'offer') {
+        filter.type = { $in: ['promotional', 'offer'] };
+      } else if (type === 'homepage-slider' || type === 'slider') {
+        filter.type = { $in: ['homepage-slider', 'slider'] };
+      } else {
+        filter.type = type;
+      }
+    }
+    if (placement) {
+      filter.placement = placement;
+    }
 
-    const banners = await Banner.find(filter).sort({ order: 1 });
+    const banners = await Banner.find(filter).sort({ order: 1 }).populate('featuredProduct', 'name slug price oldPrice rating reviewCount images hoverImage');
     const formatted = banners.map(b => {
       const item = b.toObject();
       if (item.image) item.image = resolveImageUrl(item.image) || item.image;
+      if (item.featuredProduct) {
+        if (Array.isArray(item.featuredProduct.images)) {
+          item.featuredProduct.images = item.featuredProduct.images.map(img => resolveImageUrl(img) || img);
+        }
+        if (item.featuredProduct.hoverImage) item.featuredProduct.hoverImage = resolveImageUrl(item.featuredProduct.hoverImage) || item.featuredProduct.hoverImage;
+      }
       return item;
     });
 
@@ -174,10 +211,16 @@ const getBanners = async (req, res, next) => {
 // GET /api/admin/banners
 const getAllBannersAdmin = async (req, res, next) => {
   try {
-    const banners = await Banner.find().sort({ order: 1 });
+    const banners = await Banner.find().sort({ order: 1 }).populate('featuredProduct', 'name slug price oldPrice rating reviewCount images hoverImage');
     const formatted = banners.map(b => {
       const item = b.toObject();
       if (item.image) item.image = resolveImageUrl(item.image) || item.image;
+      if (item.featuredProduct) {
+        if (Array.isArray(item.featuredProduct.images)) {
+          item.featuredProduct.images = item.featuredProduct.images.map(img => resolveImageUrl(img) || img);
+        }
+        if (item.featuredProduct.hoverImage) item.featuredProduct.hoverImage = resolveImageUrl(item.featuredProduct.hoverImage) || item.featuredProduct.hoverImage;
+      }
       return item;
     });
     res.status(200).json(formatted);
@@ -189,12 +232,15 @@ const getAllBannersAdmin = async (req, res, next) => {
 // POST /api/admin/banners
 const createBanner = async (req, res, next) => {
   try {
-    const { type, image, link, title, order, isActive } = req.body;
+    const { type, image, link, title, subtitle, order, isActive, placement, featuredProduct } = req.body;
     const banner = new Banner({
       type: type || 'homepage-slider',
       image: image || '',
       link: link || '/shop',
       title: title || '',
+      subtitle: subtitle || '',
+      placement: Array.isArray(placement) ? placement : [],
+      featuredProduct: featuredProduct || undefined,
       order: Number(order) || 0,
       isActive: isActive !== undefined ? isActive : true
     });
@@ -234,6 +280,9 @@ const getSettings = async (req, res, next) => {
     let settings = await SiteSettings.findById('site-settings');
     if (!settings) {
       settings = await SiteSettings.create(defaultSettings);
+    } else {
+      settings = settings.toObject();
+      settings.homepageSections = mergeHomepageSections(settings.homepageSections);
     }
     res.status(200).json(settings);
   } catch (error) {
@@ -266,8 +315,11 @@ const getSiteSettings = async (req, res, next) => {
     let settings = await SiteSettings.findById('site-settings');
     if (!settings) {
       settings = await SiteSettings.create(defaultSettings);
+    } else {
+      settings = settings.toObject();
+      settings.homepageSections = mergeHomepageSections(settings.homepageSections);
     }
-    res.status(200).json(settings.payment || {});
+    res.status(200).json(settings);
   } catch (error) {
     next(error);
   }

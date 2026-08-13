@@ -794,12 +794,32 @@ const getAdminBrands = async (req, res, next) => {
 
 const createBrand = async (req, res, next) => {
   try {
-    const { name, logo } = req.body;
+    const { name, logo, tagline } = req.body;
     if (!name) return res.status(400).json({ message: 'Brand name is required' });
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-    const brand = new Brand({ name, slug, logo: logo || '' });
+    const brand = new Brand({ name, slug, logo: logo || '', tagline: tagline || '' });
     await brand.save();
     res.status(201).json(brand);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateBrand = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { name, logo, tagline } = req.body;
+    const updateData = {};
+    if (name) {
+      updateData.name = name;
+      updateData.slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    }
+    if (logo !== undefined) updateData.logo = logo;
+    if (tagline !== undefined) updateData.tagline = tagline;
+
+    const brand = await Brand.findByIdAndUpdate(id, updateData, { new: true });
+    if (!brand) return res.status(404).json({ message: 'Brand not found' });
+    res.status(200).json(brand);
   } catch (error) {
     next(error);
   }
@@ -898,6 +918,7 @@ module.exports = {
   deleteCategory,
   getAdminBrands,
   createBrand,
+  updateBrand,
   deleteBrand,
   generateProduct3D
 };

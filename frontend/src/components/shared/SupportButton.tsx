@@ -32,7 +32,7 @@ export function SupportButton() {
   ];
 
   return (
-    <div className="fixed bottom-24 right-6 z-40 md:bottom-6">
+    <div className="fixed bottom-32 right-4 z-40 md:bottom-24 md:right-8">
       <AnimatePresence>
         {open && (
           <motion.div

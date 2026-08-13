@@ -37,10 +37,6 @@ const navLinks: NavLink[] = [
   { label: "Home", path: "/" },
   {
     label: "Eyeglasses", path: "/shop/eyeglasses",
-    megaImages: [
-      "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1591076482161-42ce6da69f67?w=400&h=400&fit=crop",
-    ],
     mega: [
       { title: "Category", links: [
         { label: "Prescription Glasses", path: "/shop/eyeglasses" },
@@ -65,10 +61,6 @@ const navLinks: NavLink[] = [
   },
   {
     label: "Sunglasses", path: "/shop/sunglasses",
-    megaImages: [
-      "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1508296695146-257a814070b4?w=400&h=400&fit=crop",
-    ],
     mega: [
       { title: "Category", links: [
         { label: "Polarized Shades", path: "/shop/sunglasses" },
@@ -113,11 +105,6 @@ const navLinks: NavLink[] = [
   },
   {
     label: "Contact Lenses", path: "/shop/contact-lenses",
-    megaImages: [
-      "https://images.unsplash.com/photo-1585314062340-f1a5a7c9328d?w=400&h=400&fit=crop",
-    ],
-    megaImageLabel: "Bella Lenses",
-    megaImageLink: "/shop/contact-lenses/colored",
     mega: [
       { title: "Shop by Type", links: [
         { label: "Daily", path: "/shop/contact-lenses/daily" },
@@ -303,7 +290,15 @@ function MegaPanel({ columns, images, imageLabel, imageLink, onEnter, onLeave }:
 }
 
 // ─── Brands Mega Menu ────────────────────────────────────────────────
-function BrandsMegaPanel({ onEnter, onLeave }: { onEnter: () => void; onLeave: () => void }) {
+function BrandsMegaPanel({
+  brands,
+  onEnter,
+  onLeave
+}: {
+  brands: { name: string; initials?: string; color?: string; logo?: string }[];
+  onEnter: () => void;
+  onLeave: () => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}
@@ -324,17 +319,26 @@ function BrandsMegaPanel({ onEnter, onLeave }: { onEnter: () => void; onLeave: (
           Premium Brands
         </p>
         <div className="grid grid-cols-4 gap-4 md:grid-cols-8">
-          {brandLogos.map((brand) => (
+          {brands.map((brand) => (
             <motion.div
               key={brand.name}
               variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
               transition={{ duration: 0.28 }}
             >
               <Link
-                to={`/brands/${brand.name.toLowerCase().replace(/\s+/g, "-")}`}
+                to={`/shop?brand=${encodeURIComponent(brand.name)}`}
+                onClick={onLeave}
                 className="group flex flex-col items-center gap-3 rounded-[18px] p-4 transition-all hover:bg-[color:var(--color-surface-muted)] hover:shadow-[var(--shadow-soft)]"
               >
-                <BrandLogoSvg initials={brand.initials} color={brand.color} />
+                {brand.logo ? (
+                  <img
+                    src={brand.logo}
+                    alt={brand.name}
+                    className="h-10 w-10 rounded-xl object-cover ring-1 ring-[color:var(--color-border)] transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <BrandLogoSvg initials={brand.initials || brand.name.substring(0, 2).toUpperCase()} color={brand.color || "#19130D"} />
+                )}
                 <span className="text-center text-[10px] font-medium text-[color:var(--color-text-tertiary)] transition-colors group-hover:text-[color:var(--color-text-primary)]">
                   {brand.name}
                 </span>
@@ -351,6 +355,17 @@ import { getCategories, type Category } from "@/lib/api/categories";
 import { getBrands } from "@/lib/api/products";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useWishlistStore } from "@/lib/stores/wishlist-store";
+import axios from "@/lib/api/axios";
+
+// Mega-menu promo images now come from the Banner collection via placement
+// (ERP.md §11). Empty results render no promo image card — they start empty
+// until an admin uploads real banner images per placement.
+const MEGA_MENU_PLACEMENTS: { label: string; placement: string }[] = [
+  { label: "Eyeglasses", placement: "megamenu-eyeglasses" },
+  { label: "Sunglasses", placement: "megamenu-sunglasses" },
+  { label: "Lenses", placement: "megamenu-lenses" },
+  { label: "Contact Lenses", placement: "megamenu-contact-lenses" },
+];
 
 export function Navbar() {
   const { isScrolled } = useScrollPosition();
@@ -374,15 +389,28 @@ export function Navbar() {
   const navRef = useRef<HTMLElement>(null);
   
   const [navData, setNavData] = useState<NavLink[]>(navLinks);
-  const [, setDynamicBrands] = useState(brandLogos);
+  const [dynamicBrands, setDynamicBrands] = useState<{ name: string; initials: string; color: string; logo?: string }[]>([]);
 
   useEffect(() => {
     async function fetchNavData() {
       try {
-        const [allCategories, brands] = await Promise.all([
+        const [allCategories, brands, ...megaBannerLists] = await Promise.all([
           getCategories(),
-          getBrands()
+          getBrands(),
+          ...MEGA_MENU_PLACEMENTS.map((m) =>
+            axios.get(`/banners?placement=${m.placement}`).then((res) => (Array.isArray(res.data) ? res.data : [])).catch(() => [])
+          )
         ]);
+
+        const megaImagesByLabel: Record<string, { images: string[]; label?: string; link?: string }> = {};
+        MEGA_MENU_PLACEMENTS.forEach((m, i) => {
+          const banners = megaBannerLists[i] || [];
+          megaImagesByLabel[m.label] = {
+            images: banners.map((b: { image?: string }) => b.image).filter(Boolean),
+            label: banners[0]?.title || undefined,
+            link: banners[0]?.link || undefined
+          };
+        });
 
         if (Array.isArray(allCategories) && allCategories.length > 0) {
           const findCat = (slug: string) => allCategories.find((c) => c.slug === slug);
@@ -413,19 +441,28 @@ export function Navbar() {
           const dynamicLensesMega = buildMegaFromSubcategories(lensesCat, '/shop/lenses');
 
           setNavData(prev => prev.map(link => {
+            const megaBanner = megaImagesByLabel[link.label];
+            const base = megaBanner && megaBanner.images.length > 0
+              ? {
+                  ...link,
+                  megaImages: megaBanner.images.slice(0, 2),
+                  megaImageLabel: megaBanner.label,
+                  megaImageLink: megaBanner.link
+                }
+              : { ...link, megaImages: undefined, megaImageLabel: undefined, megaImageLink: undefined };
             if (link.label === "Eyeglasses" && dynamicEyeglassesMega) {
-              return { ...link, mega: dynamicEyeglassesMega };
+              return { ...base, mega: dynamicEyeglassesMega };
             }
             if (link.label === "Sunglasses" && dynamicSunglassesMega) {
-              return { ...link, mega: dynamicSunglassesMega };
+              return { ...base, mega: dynamicSunglassesMega };
             }
             if (link.label === "Contact Lenses" && dynamicContactLensesMega) {
-              return { ...link, mega: dynamicContactLensesMega };
+              return { ...base, mega: dynamicContactLensesMega };
             }
             if (link.label === "Lenses" && dynamicLensesMega) {
-              return { ...link, mega: dynamicLensesMega };
+              return { ...base, mega: dynamicLensesMega };
             }
-            return link;
+            return base;
           }));
         }
 
@@ -629,6 +666,7 @@ export function Navbar() {
         )}
         {megaLabel === "Brands" && (
           <BrandsMegaPanel
+            brands={dynamicBrands}
             onEnter={() => handleEnter("Brands")}
             onLeave={handleLeave}
           />

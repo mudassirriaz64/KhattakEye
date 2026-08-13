@@ -1,10 +1,15 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { validateCouponApi } from "../api/coupons";
+import { getActivePromotionsApi, type Promotion } from "../api/promotions";
+import { useAuthStore } from "./auth-store";
 
 export type CartItem = {
   productId: string;
   name: string;
   brand: string;
+  category?: string;
+  subcategory?: string;
   image: string;
   price: number;
   oldPrice?: number;
@@ -39,14 +44,29 @@ export type CartItem = {
   };
 };
 
-// Memory cache for uploaded files (since File objects cannot be persisted in LocalStorage)
 export const prescriptionFilesCache = new Map<string, File>();
+
+export type CouponInfo = {
+  code: string;
+  discountPercent: number;
+  minOrderValue: number;
+};
+
+type ApplyCouponResult = {
+  success: boolean;
+  message?: string;
+  discountPercent?: number;
+};
 
 type CartState = {
   items: CartItem[];
   savedForLater: CartItem[];
   couponCode: string | null;
   couponDiscount: number;
+  couponDiscountPercent: number;
+  couponInfo: CouponInfo | null;
+  activePromotions: Promotion[];
+  fetchPromotions: () => Promise<void>;
   addItem: (item: CartItem) => void;
   removeItem: (productId: string, color: string, customization?: any) => void;
   updateQuantity: (productId: string, color: string, quantity: number, customization?: any) => void;
@@ -54,9 +74,11 @@ type CartState = {
   moveToCart: (productId: string, color: string) => void;
   removeSaved: (productId: string, color: string) => void;
   clearCart: () => void;
-  applyCoupon: (code: string) => boolean;
+  applyCoupon: (code: string) => Promise<ApplyCouponResult>;
   removeCoupon: () => void;
   getSubtotal: () => number;
+  getPromoDiscount: () => number;
+  getCouponDiscount: () => number;
   getDiscount: () => number;
   getShipping: () => number;
   getTotal: () => number;
@@ -70,6 +92,18 @@ export const useCartStore = create<CartState>()(
       savedForLater: [],
       couponCode: null,
       couponDiscount: 0,
+      couponDiscountPercent: 0,
+      couponInfo: null,
+      activePromotions: [],
+
+      fetchPromotions: async () => {
+        try {
+          const promos = await getActivePromotionsApi();
+          set({ activePromotions: promos });
+        } catch {
+          /* optional */
+        }
+      },
 
       addItem: (item) => {
         const { items } = get();
@@ -82,11 +116,7 @@ export const useCartStore = create<CartState>()(
         if (existing) {
           set({
             items: items.map((i) =>
-              i.productId === item.productId &&
-              i.color === item.color &&
-              JSON.stringify(i.customization) === JSON.stringify(item.customization)
-                ? { ...i, quantity: i.quantity + item.quantity }
-                : i
+              i === existing ? { ...i, quantity: i.quantity + item.quantity } : i
             ),
           });
         } else {
@@ -95,30 +125,30 @@ export const useCartStore = create<CartState>()(
       },
 
       removeItem: (productId, color, customization) => {
+        const { items } = get();
         set({
-          items: get().items.filter(
+          items: items.filter(
             (i) =>
               !(
                 i.productId === productId &&
                 i.color === color &&
-                (customization === undefined ||
-                  JSON.stringify(i.customization) === JSON.stringify(customization))
+                (!customization || JSON.stringify(i.customization) === JSON.stringify(customization))
               )
           ),
         });
       },
 
       updateQuantity: (productId, color, quantity, customization) => {
+        const { items } = get();
         if (quantity <= 0) {
           get().removeItem(productId, color, customization);
           return;
         }
         set({
-          items: get().items.map((i) =>
+          items: items.map((i) =>
             i.productId === productId &&
             i.color === color &&
-            (customization === undefined ||
-              JSON.stringify(i.customization) === JSON.stringify(customization))
+            (!customization || JSON.stringify(i.customization) === JSON.stringify(customization))
               ? { ...i, quantity }
               : i
           ),
@@ -149,26 +179,104 @@ export const useCartStore = create<CartState>()(
         set({ savedForLater: get().savedForLater.filter((i) => !(i.productId === productId && i.color === color)) });
       },
 
-      clearCart: () => set({ items: [], couponCode: null, couponDiscount: 0 }),
+      clearCart: () => set({ items: [], couponCode: null, couponDiscount: 0, couponDiscountPercent: 0, couponInfo: null }),
 
-      applyCoupon: (code) => {
-        if (code.toUpperCase() === "KHATTAK10") {
-          set({ couponCode: "KHATTAK10", couponDiscount: 0.1 });
-          return true;
+      applyCoupon: async (code) => {
+        const subtotal = get().getSubtotal();
+        const promoDiscount = get().getPromoDiscount();
+        const subtotalAfterPromo = Math.max(0, subtotal - promoDiscount);
+        const email = useAuthStore.getState().user?.email;
+        try {
+          const result = await validateCouponApi(code, subtotalAfterPromo, email);
+          if (result.valid && result.coupon) {
+            const c = result.coupon;
+            set({
+              couponCode: c.code,
+              couponDiscount: c.discountPercent / 100,
+              couponDiscountPercent: c.discountPercent,
+              couponInfo: c,
+            });
+            return { success: true, discountPercent: c.discountPercent };
+          }
+          return { success: false, message: result.message || "Invalid coupon code." };
+        } catch (error) {
+          const apiError = error as { response?: { data?: { message?: string } } };
+          return { success: false, message: apiError?.response?.data?.message || "Invalid coupon code." };
         }
-        return false;
       },
 
-      removeCoupon: () => set({ couponCode: null, couponDiscount: 0 }),
+      removeCoupon: () => set({ couponCode: null, couponDiscount: 0, couponDiscountPercent: 0, couponInfo: null }),
 
       getSubtotal: () => {
         const { items } = get();
         return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
       },
 
+      getPromoDiscount: () => {
+        const { items, activePromotions } = get();
+        if (!items || items.length === 0 || !activePromotions || activePromotions.length === 0) return 0;
+        let totalPromoDiscount = 0;
+        const bogoCoveredIndices = new Set<number>();
+
+        const bogoPromos = activePromotions.filter((p) => p.type === "bogo");
+        for (const promo of bogoPromos) {
+          const matchingIndices: number[] = [];
+          let totalMatchingQty = 0;
+
+          items.forEach((item, idx) => {
+            const targetProdId = typeof promo.targetProduct === "object" && promo.targetProduct ? promo.targetProduct._id : promo.targetProduct;
+            const matchesProd = targetProdId && String(item.productId) === String(targetProdId);
+            const matchesCat = promo.targetCategory && String(item.category || "").toLowerCase() === String(promo.targetCategory).toLowerCase();
+            const matchesSubCat = !promo.targetSubCategory || String(item.subcategory || "").toLowerCase() === String(promo.targetSubCategory).toLowerCase();
+            if (matchesProd || (matchesCat && matchesSubCat)) {
+              matchingIndices.push(idx);
+              totalMatchingQty += item.quantity;
+            }
+          });
+
+          if (totalMatchingQty >= 2 && matchingIndices.length > 0) {
+            let lowestPrice = Infinity;
+            matchingIndices.forEach((idx) => {
+              bogoCoveredIndices.add(idx);
+              if (items[idx].price < lowestPrice) {
+                lowestPrice = items[idx].price;
+              }
+            });
+            if (Number.isFinite(lowestPrice) && lowestPrice > 0) {
+              totalPromoDiscount += lowestPrice;
+            }
+          }
+        }
+
+        const catPromos = activePromotions.filter((p) => p.type === "category-percent-off");
+        for (const promo of catPromos) {
+          if (!promo.targetCategory || !promo.discountPercent) continue;
+          let catDiscount = 0;
+          items.forEach((item, idx) => {
+            if (bogoCoveredIndices.has(idx)) return;
+            const matchesCat = String(item.category || "").toLowerCase() === String(promo.targetCategory).toLowerCase();
+            const matchesSubCat = !promo.targetSubCategory || String(item.subcategory || "").toLowerCase() === String(promo.targetSubCategory).toLowerCase();
+            if (matchesCat && matchesSubCat) {
+              catDiscount += Math.round((item.price * item.quantity * promo.discountPercent!) / 100);
+            }
+          });
+          totalPromoDiscount += catDiscount;
+        }
+
+        return totalPromoDiscount;
+      },
+
+      getCouponDiscount: () => {
+        const { couponDiscountPercent, getSubtotal, getPromoDiscount } = get();
+        if (!couponDiscountPercent || couponDiscountPercent <= 0) return 0;
+        const subtotal = getSubtotal();
+        const promoDiscount = getPromoDiscount();
+        const subtotalAfterPromo = Math.max(0, subtotal - promoDiscount);
+        return Math.round((subtotalAfterPromo * couponDiscountPercent) / 100);
+      },
+
       getDiscount: () => {
-        const { couponDiscount, getSubtotal } = get();
-        return getSubtotal() * couponDiscount;
+        return get().getPromoDiscount() + get().getCouponDiscount();
       },
 
       getShipping: () => {
@@ -180,7 +288,7 @@ export const useCartStore = create<CartState>()(
         const subtotal = get().getSubtotal();
         const discount = get().getDiscount();
         const shipping = get().getShipping();
-        return subtotal - discount + shipping;
+        return Math.max(0, subtotal - discount + shipping);
       },
 
       getItemCount: () => {

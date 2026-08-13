@@ -114,6 +114,33 @@ export const ProductCard = React.forwardRef(
           </button>
         </div>
 
+        {/* Top Left Overlay: Dynamic Active Promotion Badge */}
+        {(() => {
+          const activePromos = useCartStore.getState().activePromotions;
+          if (!activePromos || activePromos.length === 0) return null;
+          const now = new Date();
+          const activePromo = activePromos.find((p) => {
+            if (!p.isActive) return false;
+            if (p.startDate && new Date(p.startDate) > now) return false;
+            if (p.endDate && new Date(p.endDate) < now) return false;
+
+            const targetProdId = typeof p.targetProduct === "object" && p.targetProduct ? p.targetProduct._id : p.targetProduct;
+            const matchesProd = targetProdId && (String(targetProdId) === String(product.id) || String(targetProdId) === String((product as any)._id));
+            const matchesCat = p.targetCategory && String(p.targetCategory).toLowerCase() === String(product.category || "").toLowerCase();
+
+            return matchesProd || matchesCat;
+          });
+
+          if (!activePromo) return null;
+          return (
+            <div className="absolute left-3 top-3 z-10">
+              <span className="rounded-full bg-[color:var(--color-brand-primary)] px-2.5 py-1 text-[10px] font-bold text-white uppercase tracking-wider shadow-sm">
+                {activePromo.badgeText || (activePromo.type === "bogo" ? "BOGO" : `${activePromo.discountPercent}% OFF`)}
+              </span>
+            </div>
+          );
+        })()}
+
         {/* Hover Navigation Chevrons & Pagination Dots */}
         {images.length > 1 && (
           <>
