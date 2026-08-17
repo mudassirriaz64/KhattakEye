@@ -52,6 +52,7 @@ export interface ApiProduct {
   eyeWidth?: number;
   bridgeWidth?: number;
   templeLength?: number;
+  tryOnImage?: string;
 }
 
 export interface ProductCard {

@@ -24,7 +24,11 @@ type Step =
   | "compare"
   | "error";
 
-const defaultFrames: Array<{ name: string; image: string; slug: string }> = [];
+const defaultFrames: Array<{ name: string; image: string; slug: string; tryOnImage?: string }> = [];
+
+const FALLBACK_GLASSES_PLACEHOLDER = "data:image/svg+xml;utf8," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 140"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#111827"/><stop offset="100%" stop-color="#374151"/></linearGradient></defs><g fill="none" stroke="url(#g)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="105" cy="70" rx="78" ry="52" fill="rgba(147,197,253,0.25)"/><ellipse cx="295" cy="70" rx="78" ry="52" fill="rgba(147,197,253,0.25)"/><path d="M183 70 L217 70"/><path d="M27 70 C15 70 8 60 8 45 L8 30"/><path d="M373 70 C385 70 392 60 392 45 L392 30"/></g></svg>'
+);
 
 export function VirtualTryOn() {
   const [searchParams] = useSearchParams();
@@ -36,7 +40,7 @@ export function VirtualTryOn() {
   const [errorMsg, setErrorMsg] = useState("");
   const [glassesDataUrl, setGlassesDataUrl] = useState<string>("");
 
-  const [frames, setFrames] = useState<Array<{ name: string; image: string; slug: string }>>(defaultFrames);
+  const [frames, setFrames] = useState<Array<{ name: string; image: string; slug: string; tryOnImage?: string }>>(defaultFrames);
 
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
@@ -75,20 +79,24 @@ export function VirtualTryOn() {
     async function loadFrames() {
       try {
         const res = await getProducts({ limit: 12 });
-        let list: Array<{ name: string; image: string; slug: string }> = [];
+        let list: Array<{ name: string; image: string; slug: string; tryOnImage?: string }> = [];
         if (res && res.items && res.items.length > 0) {
-          list = res.items.map((p) => ({
-            name: p.name,
-            image: typeof p.images?.[0] === "string" ? p.images[0] : "/hero-sunglasses.png",
-            slug: p.slug || p.id || ""
-          }));
+          list = res.items.map((p) => {
+            const firstImg = typeof p.images?.[0] === "string" ? p.images[0] : "";
+            const tryOn = (p as any).tryOnImage || "";
+            return {
+              name: p.name,
+              image: firstImg || tryOn || FALLBACK_GLASSES_PLACEHOLDER,
+              tryOnImage: tryOn || firstImg || FALLBACK_GLASSES_PLACEHOLDER,
+              slug: p.slug || p.id || ""
+            };
+          });
         }
 
         const rawProductParam = searchParams.get("product");
         if (rawProductParam) {
           const productParam = decodeURIComponent(rawProductParam).toLowerCase().trim();
           
-          // Check if passed product is already in list or defaultFrames
           let matchIdx = list.findIndex(f => 
             f.slug.toLowerCase() === productParam || 
             f.name.toLowerCase() === productParam ||
@@ -97,23 +105,25 @@ export function VirtualTryOn() {
           );
 
           if (matchIdx === -1) {
-            // Fetch single product from API if not in list
             try {
               const p = await getProductBySlug(productParam);
               if (p) {
+                const firstImg = typeof p.images?.[0] === "string" ? p.images[0] : "";
+                const tryOn = (p as any).tryOnImage || "";
                 const single = {
                   name: p.name,
-                  image: typeof p.images?.[0] === "string" ? p.images[0] : "/hero-sunglasses.png",
+                  image: firstImg || tryOn || FALLBACK_GLASSES_PLACEHOLDER,
+                  tryOnImage: tryOn || firstImg || FALLBACK_GLASSES_PLACEHOLDER,
                   slug: p.slug || p.id || productParam
                 };
                 list.unshift(single);
                 matchIdx = 0;
               }
             } catch {
-              // fallback label if product lookup failed
               const customSingle = {
                 name: rawProductParam.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
-                image: "/hero-sunglasses.png",
+                image: FALLBACK_GLASSES_PLACEHOLDER,
+                tryOnImage: FALLBACK_GLASSES_PLACEHOLDER,
                 slug: productParam
               };
               list.unshift(customSingle);
@@ -148,9 +158,15 @@ export function VirtualTryOn() {
 
   useEffect(() => {
     if (!frames[selectedFrame]) return;
-    processGlassesImage(frames[selectedFrame].image).then((canvas) => {
+    const src = frames[selectedFrame].tryOnImage || frames[selectedFrame].image;
+    processGlassesImage(src).then((canvas) => {
       glassesCanvasRef.current = canvas;
       setGlassesDataUrl(canvas.toDataURL("image/png"));
+    }).catch(() => {
+      processGlassesImage(frames[selectedFrame].image || FALLBACK_GLASSES_PLACEHOLDER).then((canvas) => {
+        glassesCanvasRef.current = canvas;
+        setGlassesDataUrl(canvas.toDataURL("image/png"));
+      });
     });
   }, [selectedFrame, frames]);
 
@@ -158,6 +174,15 @@ export function VirtualTryOn() {
     const pose = computeGlassesPose(keypoints);
     if (pose) poseRef.current = pose;
   }, [keypoints]);
+
+  const GLASSES_WIDTH_SCALE = 1.85;
+
+  const computeGlassesDrawSize = (poseOrWidth: { width: number } | number, gCanvas: HTMLCanvasElement | null) => {
+    const widthNum = typeof poseOrWidth === "number" ? poseOrWidth : poseOrWidth.width;
+    const aspect = gCanvas ? (gCanvas.width / (gCanvas.height || 1)) : 2.857;
+    const drawW = widthNum * GLASSES_WIDTH_SCALE;
+    return { width: drawW, height: drawW / aspect };
+  };
 
   const renderLoop = useCallback(() => {
     if (step !== "live") return;
@@ -186,9 +211,7 @@ export function VirtualTryOn() {
     const pose = poseRef.current;
     const gCanvas = glassesCanvasRef.current;
     if (pose && gCanvas) {
-      const frameAspect = gCanvas.width / (gCanvas.height || 1);
-      const drawWidth = pose.width * 1.8;
-      const drawHeight = drawWidth / frameAspect;
+      const { width: drawWidth, height: drawHeight } = computeGlassesDrawSize(pose, gCanvas);
 
       ctx.save();
       ctx.translate(pose.x, pose.y);
@@ -255,30 +278,6 @@ export function VirtualTryOn() {
     const vw = video.videoWidth || 640;
     const vh = video.videoHeight || 480;
 
-    const compCanvas = document.createElement("canvas");
-    compCanvas.width = vw;
-    compCanvas.height = vh;
-    const compCtx = compCanvas.getContext("2d")!;
-    compCtx.drawImage(video, 0, 0);
-
-    const pose = poseRef.current;
-    const gCanvas = glassesCanvasRef.current;
-    if (pose && gCanvas) {
-      compCtx.save();
-      compCtx.translate(pose.x, pose.y);
-      compCtx.rotate(pose.rotation);
-      compCtx.drawImage(
-        gCanvas,
-        -pose.width / 2,
-        -pose.height / 2,
-        pose.width,
-        pose.height,
-      );
-      compCtx.restore();
-    }
-
-    const compUrl = compCanvas.toDataURL("image/png");
-
     const rawCanvas = document.createElement("canvas");
     rawCanvas.width = vw;
     rawCanvas.height = vh;
@@ -286,7 +285,7 @@ export function VirtualTryOn() {
     const rawUrl = rawCanvas.toDataURL("image/jpeg");
 
     setOriginalImage(rawUrl);
-    setImage(compUrl);
+    setImage(rawUrl);
     setPos({ x: 0, y: 0 });
     setScale(1);
     setRotation(0);
@@ -369,8 +368,10 @@ export function VirtualTryOn() {
         ctx.translate(cx, cy);
         ctx.rotate((rotation * Math.PI) / 180);
         ctx.scale(scale, scale);
-        const gw = cw * 0.4;
-        const gh = gw * 0.45;
+        const gAspect = (glassesCanvasRef.current?.width || gImg.naturalWidth || 400) /
+          (glassesCanvasRef.current?.height || gImg.naturalHeight || 140);
+        const gw = cw * 0.42;
+        const gh = gw / gAspect;
         ctx.drawImage(gImg, -gw / 2, -gh / 2, gw, gh);
         ctx.restore();
 
@@ -379,7 +380,8 @@ export function VirtualTryOn() {
         link.href = canvas.toDataURL("image/png");
         link.click();
       };
-      gImg.src = glassesDataUrl || frames[selectedFrame].image;
+      gImg.crossOrigin = "anonymous";
+      gImg.src = glassesDataUrl || frames[selectedFrame].tryOnImage || frames[selectedFrame].image;
     };
     img.src = image;
   };
@@ -596,7 +598,7 @@ export function VirtualTryOn() {
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     {frames.map((frame, i) => (
                       <button
-                        key={frame.name}
+                        key={frame.name + i}
                         type="button"
                         onClick={() => setSelectedFrame(i)}
                         className={cn(
@@ -610,9 +612,9 @@ export function VirtualTryOn() {
                           src={frame.image}
                           alt={frame.name}
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/hero-sunglasses.png";
+                            (e.target as HTMLImageElement).src = FALLBACK_GLASSES_PLACEHOLDER;
                           }}
-                          className="h-12 w-full rounded-lg object-cover bg-neutral-100"
+                          className="h-12 w-full rounded-lg object-contain bg-neutral-100"
                         />
                         <p className="mt-1.5 truncate text-[10px] font-medium text-[color:var(--color-text-primary)]">
                           {frame.name}
@@ -679,8 +681,13 @@ export function VirtualTryOn() {
                       <img
                         src={glassesDataUrl}
                         alt="Glasses"
-                        className="pointer-events-none"
-                        style={{ width: "240px", height: "auto" }}
+                        className="pointer-events-none max-w-none"
+                        style={{
+                          width: "min(42vw, 360px)",
+                          height: "calc(min(42vw, 360px) / " +
+                            ((glassesCanvasRef.current?.width || 400) / (glassesCanvasRef.current?.height || 140)) +
+                            ")",
+                        }}
                         draggable={false}
                       />
                     )}
@@ -689,7 +696,7 @@ export function VirtualTryOn() {
 
                 <div className="absolute left-3 top-3 flex gap-1.5">
                   {[
-                    { icon: ZoomIn, label: "Resize", action: () => setScale((s) => Math.min(2, s + 0.1)) },
+                    { icon: ZoomIn, label: "Resize", action: () => setScale((s) => Math.min(2.5, s + 0.1)) },
                     { icon: RotateCw, label: "Rotate", action: () => setRotation((r) => (r + 15) % 360) },
                     { icon: RefreshCw, label: "Reset", action: () => { setPos({ x: 0, y: 0 }); setScale(1); setRotation(0); } },
                   ].map((ctrl) => (
@@ -724,7 +731,7 @@ export function VirtualTryOn() {
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     {frames.map((frame, i) => (
                       <button
-                        key={frame.name}
+                        key={frame.name + i + "-adj"}
                         type="button"
                         onClick={() => {
                           setSelectedFrame(i);
@@ -742,7 +749,10 @@ export function VirtualTryOn() {
                         <img
                           src={frame.image}
                           alt={frame.name}
-                          className="h-12 w-full rounded-lg object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = FALLBACK_GLASSES_PLACEHOLDER;
+                          }}
+                          className="h-12 w-full rounded-lg object-contain bg-neutral-100"
                         />
                         <p className="mt-1.5 truncate text-[10px] font-medium text-[color:var(--color-text-primary)]">
                           {frame.name}
@@ -844,8 +854,13 @@ export function VirtualTryOn() {
                       <img
                         src={glassesDataUrl}
                         alt=""
-                        className="pointer-events-none"
-                        style={{ width: "240px", height: "auto" }}
+                        className="pointer-events-none max-w-none"
+                        style={{
+                          width: "min(42vw, 360px)",
+                          height: "calc(min(42vw, 360px) / " +
+                            ((glassesCanvasRef.current?.width || 400) / (glassesCanvasRef.current?.height || 140)) +
+                            ")",
+                        }}
                         draggable={false}
                       />
                     )}

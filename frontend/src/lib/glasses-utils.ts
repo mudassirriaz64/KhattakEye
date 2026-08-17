@@ -69,9 +69,75 @@ export function imageToCanvas(img: HTMLImageElement): HTMLCanvasElement {
   return canvas;
 }
 
+function sampleBorderColor(
+  data: Uint8ClampedArray,
+  w: number,
+  h: number,
+): { r: number; g: number; b: number; variance: number; isTransparentBorder: boolean } {
+  const samples: number[][] = [];
+  const border = Math.max(1, Math.min(3, Math.floor(Math.min(w, h) * 0.02)));
+  let alphaCount = 0;
+  let alphaTotal = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const onBorder = x < border || x >= w - border || y < border || y >= h - border;
+      if (!onBorder) continue;
+      const idx = (y * w + x) * 4;
+      const a = data[idx + 3];
+      alphaTotal += a;
+      if (a < 125) alphaCount++;
+      if (a > 250) {
+        samples.push([data[idx], data[idx + 1], data[idx + 2]]);
+      }
+    }
+  }
+  const totalPixels = Math.max(1, 2 * border * (w + h) - 4 * border * border);
+  const isTransparentBorder = alphaCount / totalPixels > 0.3;
+  if (samples.length === 0) {
+    return { r: 255, g: 255, b: 255, variance: 0, isTransparentBorder };
+  }
+  let rSum = 0, gSum = 0, bSum = 0;
+  for (const s of samples) {
+    rSum += s[0]; gSum += s[1]; bSum += s[2];
+  }
+  const n = samples.length;
+  const rMean = rSum / n, gMean = gSum / n, bMean = bSum / n;
+  let v = 0;
+  for (const s of samples) {
+    v += (s[0] - rMean) ** 2 + (s[1] - gMean) ** 2 + (s[2] - bMean) ** 2;
+  }
+  return { r: rMean, g: gMean, b: bMean, variance: v / n, isTransparentBorder };
+}
+
+function applySoftFeather(
+  data: Uint8ClampedArray,
+  w: number,
+  h: number,
+  radius = 1,
+) {
+  const copy = new Uint8ClampedArray(data);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = (y * w + x) * 4;
+      const currentAlpha = data[idx + 3];
+      if (currentAlpha === 0 || currentAlpha === 255) continue;
+      let sum = 0, count = 0;
+      for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+          sum += copy[(ny * w + nx) * 4 + 3];
+          count++;
+        }
+      }
+      data[idx + 3] = count > 0 ? Math.round(sum / count) : currentAlpha;
+    }
+  }
+}
+
 export function removeBackground(
   img: HTMLImageElement,
-  tolerance = 80,
+  tolerance = 90,
 ): HTMLCanvasElement {
   const canvas = imageToCanvas(img);
   const ctx = canvas.getContext("2d")!;
@@ -82,47 +148,68 @@ export function removeBackground(
     const w = canvas.width;
     const h = canvas.height;
 
-    const corners = [
-      [0, 0],
-      [w - 1, 0],
-      [0, h - 1],
-      [w - 1, h - 1],
-    ];
+    const bgSample = sampleBorderColor(data, w, h);
 
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
+    if (!bgSample.isTransparentBorder) {
+      const bgR = bgSample.r, bgG = bgSample.g, bgB = bgSample.b;
+      const bgBrightness = (bgR + bgG + bgB) / 3;
+      const variance = bgSample.variance;
+      const adaptiveTol = variance < 200
+        ? Math.max(55, tolerance - 15)
+        : variance > 1500
+          ? Math.min(140, tolerance + 30)
+          : tolerance;
 
-      // Remove all white, off-white, light grey, and cream studio backgrounds
-      if (r > 210 && g > 205 && b > 200) {
-        data[i + 3] = 0;
-        continue;
-      }
+      const bgIsLight = bgBrightness > 210;
+      const bgIsWhite = bgR > 220 && bgG > 215 && bgB > 208;
+      const bgSaturation = Math.max(bgR, bgG, bgB) - Math.min(bgR, bgG, bgB);
 
-      // Check distance from corner background samples
-      for (const [cx, cy] of corners) {
-        const cIdx = (cy * w + cx) * 4;
-        const bgR = data[cIdx];
-        const bgG = data[cIdx + 1];
-        const bgB = data[cIdx + 2];
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const alpha = data[i + 3];
+        if (alpha === 0) continue;
+
         const dist = Math.sqrt((r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2);
-        if (dist < tolerance) {
+
+        if (bgIsWhite && r > 215 && g > 210 && b > 202) {
+          const closeness = Math.min(1, (r - 210) / 40) * Math.min(1, (g - 208) / 40) * Math.min(1, (b - 200) / 40);
+          if (closeness > 0.2) {
+            data[i + 3] = Math.max(0, Math.round(alpha * (1 - closeness)));
+            continue;
+          }
+        }
+
+        if (bgIsLight && bgSaturation < 30) {
+          const pxLum = (r + g + b) / 3;
+          if (pxLum > bgBrightness - 25 && Math.abs(r - g) < 22 && Math.abs(g - b) < 22 && Math.abs(r - b) < 22) {
+            const near = Math.max(0, (pxLum - (bgBrightness - 25)) / 55);
+            data[i + 3] = Math.max(0, Math.round(alpha * (1 - near * 0.9)));
+            continue;
+          }
+        }
+
+        if (dist < adaptiveTol * 0.65) {
           data[i + 3] = 0;
-          break;
+        } else if (dist < adaptiveTol) {
+          const t = (dist - adaptiveTol * 0.65) / (adaptiveTol * 0.35);
+          data[i + 3] = Math.max(0, Math.round(alpha * t));
         }
       }
+
+      applySoftFeather(data, w, h, 1);
     }
 
     ctx.putImageData(imageData, 0, 0);
 
-    // Tight bounding box crop around frame pixels only
     let minX = w, minY = h, maxX = 0, maxY = 0;
     let hasPixels = false;
+    const alphaThreshold = 35;
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const alpha = data[(y * w + x) * 4 + 3];
-        if (alpha > 30) {
+        if (alpha > alphaThreshold) {
           hasPixels = true;
           if (x < minX) minX = x;
           if (x > maxX) maxX = x;
@@ -133,6 +220,13 @@ export function removeBackground(
     }
 
     if (hasPixels && maxX > minX && maxY > minY) {
+      const padX = Math.max(2, Math.round((maxX - minX) * 0.03));
+      const padY = Math.max(2, Math.round((maxY - minY) * 0.05));
+      minX = Math.max(0, minX - padX);
+      maxX = Math.min(w - 1, maxX + padX);
+      minY = Math.max(0, minY - padY);
+      maxY = Math.min(h - 1, maxY + padY);
+
       const cropW = maxX - minX + 1;
       const cropH = maxY - minY + 1;
       const croppedCanvas = document.createElement("canvas");
