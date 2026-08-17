@@ -246,6 +246,13 @@ export function AdminAddGlassesPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const allFiles = Array.from(e.target.files);
+      const heicFiles = allFiles.filter((file) =>
+        file.type === 'image/heic' || file.type === 'image/heif' ||
+        file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
+      );
+      if (heicFiles.length > 0) {
+        addToast({ title: "HEIC Format Detected", description: `${heicFiles.length} HEIC file(s) will be auto-converted to JPEG on upload.`, type: "info" });
+      }
       const oversized = allFiles.filter((file) => file.size > MAX_PHOTO_SIZE);
       if (oversized.length > 0) {
         addToast({ title: "File Too Large", description: `"${oversized[0].name}" exceeds the 10 MB limit and was skipped.`, type: "error" });

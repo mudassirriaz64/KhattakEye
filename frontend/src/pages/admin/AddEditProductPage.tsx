@@ -142,7 +142,15 @@ export function AddEditProductPage() {
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newImages = Array.from(e.target.files).map(file => ({
+      const allFiles = Array.from(e.target.files);
+      const heicFiles = allFiles.filter((file) =>
+        file.type === 'image/heic' || file.type === 'image/heif' ||
+        file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
+      );
+      if (heicFiles.length > 0) {
+        alert(`${heicFiles.length} HEIC file(s) detected - will be auto-converted to JPEG on upload.`);
+      }
+      const newImages = allFiles.map(file => ({
         file,
         preview: URL.createObjectURL(file)
       }));

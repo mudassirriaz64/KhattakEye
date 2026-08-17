@@ -132,6 +132,13 @@ export function AdminAddLensesPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
+      const heicFiles = filesArray.filter((file) =>
+        file.type === 'image/heic' || file.type === 'image/heif' ||
+        file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
+      );
+      if (heicFiles.length > 0) {
+        addToast({ title: "HEIC Format Detected", description: `${heicFiles.length} HEIC file(s) will be auto-converted to JPEG on upload.`, type: "info" });
+      }
       setImages((prev) => [...prev, ...filesArray]);
       const newPreviews = filesArray.map((file) => URL.createObjectURL(file));
       setImagePreviews((prev) => [...prev, ...newPreviews]);

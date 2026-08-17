@@ -83,6 +83,11 @@ export function ManualPaymentForm() {
         setUploadError("Image exceeds maximum 10MB limit. Please choose a smaller file.");
         return;
       }
+      const isHeic = file.type === 'image/heic' || file.type === 'image/heif' ||
+        file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+      if (isHeic) {
+        setUploadError("HEIC format detected. It will be auto-converted to JPEG on upload.");
+      }
       const reader = new FileReader();
       reader.onload = (ev) => setPaymentScreenshot(ev.target?.result as string);
       reader.readAsDataURL(file);

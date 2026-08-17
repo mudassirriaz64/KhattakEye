@@ -168,13 +168,13 @@ const getFallbackImage = (idStr: string) => {
 export const resolveCloudinaryUrl = (path: string): string => {
   if (!path) return "";
   if (path.startsWith("http") || path.startsWith("/")) return path;
-  return `https://res.cloudinary.com/dng10x82r/image/upload/${path}`;
+  return `https://res.cloudinary.com/lpsv3omw/image/upload/${path}`;
 };
 
 export const resolveCloudinaryVideoUrl = (path: string): string => {
   if (!path) return "";
   if (path.startsWith("http") || path.startsWith("/")) return path;
-  return `https://res.cloudinary.com/yu7gjemi/video/upload/${path}`;
+  return `https://res.cloudinary.com/lpsv3omw/video/upload/${path}`;
 };
 
 export const sanitizeProductImages = (images: (string | { url?: string })[] | undefined): string[] => {

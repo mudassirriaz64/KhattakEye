@@ -47,9 +47,14 @@ export function GenericDragDropUpload({
   };
 
   const validateAndSetFile = (file: File) => {
+    const isHeic = file.type === 'image/heic' || file.type === 'image/heif' ||
+      file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
+    if (isHeic) {
+      console.warn('HEIC format detected - will be auto-converted to JPEG on upload');
+    }
     // Check if image
-    if (!file.type.startsWith("image/")) {
-      alert("Only image files are supported (JPG, PNG, WebP).");
+    if (!file.type.startsWith("image/") && !isHeic) {
+      alert("Only image files are supported (JPG, PNG, WebP, HEIC).");
       return;
     }
     // Check file size

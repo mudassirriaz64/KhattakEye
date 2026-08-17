@@ -39,6 +39,7 @@ import { ForgotPasswordPage } from "@/pages/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { EmailVerificationPage } from "@/pages/auth/EmailVerificationPage";
 import { OTPVerificationPage } from "@/pages/auth/OTPVerificationPage";
+import { GoogleCallbackPage } from "@/pages/auth/GoogleCallbackPage";
 import { DashboardPage } from "@/pages/account/DashboardPage";
 import { MyOrdersPage } from "@/pages/account/MyOrdersPage";
 import { AccountOrderDetailsPage } from "@/pages/account/OrderDetailsPage";
@@ -231,6 +232,7 @@ function AppRoutes() {
         <Route path="/auth/reset-password" element={<PageTransition><ResetPasswordPage /></PageTransition>} />
         <Route path="/auth/email-verification" element={<PageTransition><EmailVerificationPage /></PageTransition>} />
         <Route path="/auth/otp-verification" element={<PageTransition><OTPVerificationPage /></PageTransition>} />
+        <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
         <Route path="/design-system/*" element={<DesignSystemRoutes />} />
         <Route path="/404" element={<PageTransition><NotFoundPage /></PageTransition>} />
         <Route path="/500" element={<PageTransition><ErrorPage /></PageTransition>} />

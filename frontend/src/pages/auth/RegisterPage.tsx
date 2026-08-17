@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Mail, Lock, User, Phone, AlertCircle, LoaderCircle, ChromeIcon } from "lucide-react";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? "http://localhost:5000/api" : "/api");
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { AuthLayout } from "@/components/account/AuthLayout";
 import { cn } from "@/lib/utils";
@@ -130,7 +132,7 @@ export function RegisterPage() {
           <div className="relative flex justify-center"><span className="bg-[color:var(--color-app-bg)] px-4 text-xs text-[color:var(--color-text-tertiary)]">or continue with</span></div>
         </div>
 
-        <button type="button" className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] py-3 text-sm font-medium text-[color:var(--color-text-primary)] transition-all hover:-translate-y-0.5 hover:bg-[color:var(--color-surface-muted)]">
+        <button type="button" onClick={() => { window.location.href = `${API_BASE_URL}/auth/google`; }} className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-panel)] py-3 text-sm font-medium text-[color:var(--color-text-primary)] transition-all hover:-translate-y-0.5 hover:bg-[color:var(--color-surface-muted)]">
           <ChromeIcon className="h-4 w-4" /> Google
         </button>
 

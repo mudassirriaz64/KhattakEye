@@ -17,8 +17,10 @@ const AddressSchema = new Schema({
 const UserSchema = new Schema({
   fullName: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, index: true, trim: true, lowercase: true },
-  phone: { type: String, required: true, trim: true },
-  passwordHash: { type: String, required: true },
+  phone: { type: String, required: false, trim: true },
+  passwordHash: { type: String, required: false },
+  googleId: { type: String, sparse: true },
+  authProvider: { type: String, enum: ['local', 'google'], default: 'local' },
   avatar: { type: String },
   gender: { type: String, trim: true },
   dateOfBirth: { type: Date },
