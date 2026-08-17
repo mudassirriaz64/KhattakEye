@@ -28,7 +28,8 @@ const glassesSchema = new Schema({
   frameSize: { type: String, trim: true },
   weight: { type: String, trim: true },
   uvProtection: { type: Boolean, default: false },
-  warranty: { type: String, trim: true }
+  warranty: { type: String, trim: true },
+  tryOnImage: { type: String, trim: true }
 });
 
 module.exports = Product.discriminator('glasses', glassesSchema);
