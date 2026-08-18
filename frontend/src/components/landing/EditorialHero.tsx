@@ -181,10 +181,13 @@ export function EditorialHero() {
               {/* Bold Serif Headline */}
               <motion.h1
                 variants={item}
-                className="font-display text-5xl sm:text-7xl lg:text-8xl font-bold leading-[1.05] tracking-tight text-[color:var(--color-text-primary)]"
+                className="font-display text-5xl sm:text-7xl lg:text-8xl font-bold leading-[1.05] tracking-tight"
               >
-                The World is<br />
-                <span className="italic font-light">Worth Seeing.</span>
+                <span className="text-[color:var(--color-text-primary)]">The </span>
+                <span className="text-[color:var(--color-brand-primary)]">World </span>
+                <span className="text-[color:var(--color-text-primary)]">is<br /></span>
+                <span className="italic font-light text-[color:var(--color-text-primary)]">Worth </span>
+                <span className="italic font-light text-[color:var(--color-brand-primary)]">Seeing.</span>
               </motion.h1>
 
               {/* Subtitle */}
