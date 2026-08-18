@@ -163,8 +163,6 @@ export const filterGroups: FilterGroup[] = [
       { label: "Rimless", value: "rimless", count: 0 },
       { label: "Half Rim", value: "half-rim", count: 0 },
       { label: "Sports", value: "sports", count: 0 },
-      { label: "Sheet", value: "sheet", count: 0 },
-      { label: "Rim Less", value: "rimless", count: 0 },
     ],
   },
   {

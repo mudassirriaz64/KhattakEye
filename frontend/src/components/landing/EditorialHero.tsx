@@ -181,13 +181,10 @@ export function EditorialHero() {
               {/* Bold Serif Headline */}
               <motion.h1
                 variants={item}
-                className="font-display text-5xl sm:text-7xl lg:text-8xl font-bold leading-[1.05] tracking-tight"
+                className="font-display text-5xl sm:text-7xl lg:text-8xl font-bold leading-[1.05] tracking-tight text-[color:var(--color-text-primary)]"
               >
-                <span className="text-[color:var(--color-text-primary)]">The </span>
-                <span className="text-[color:var(--color-brand-primary)]">World </span>
-                <span className="text-[color:var(--color-text-primary)]">is<br /></span>
-                <span className="italic font-light text-[color:var(--color-text-primary)]">Worth </span>
-                <span className="italic font-light text-[color:var(--color-brand-primary)]">Seeing.</span>
+                The World is<br />
+                <span className="italic font-light">Worth Seeing.</span>
               </motion.h1>
 
               {/* Subtitle */}
@@ -195,8 +192,7 @@ export function EditorialHero() {
                 variants={item}
                 className="max-w-xl text-base leading-relaxed text-[color:var(--color-text-secondary)] sm:text-lg font-normal"
               >
-                See it clearly. Wear it your way.
-                Discover eyeglasses and sunglasses selected for everyday comfort, timeless style, and a look that feels like you.
+                Italian acetates, Japanese titanium, and optics that have earned a following across the country. Handcrafted with uncompromising precision.
               </motion.p>
 
               {/* Sleek Action Buttons */}
