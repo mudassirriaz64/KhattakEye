@@ -70,7 +70,6 @@ const createProduct = async (req, res, next) => {
     const publicIds = [];
     const videoPublicIds = [];
     const variantImageMap = {}; // vIdx -> array of uploaded image publicIds
-    let tryOnImagePublicId = null;
 
     console.log("ADMIN CREATE/UPDATE PRODUCT — ACTUAL HANDLER RUNNING");
     if (req.files && req.files.length > 0) {
@@ -99,8 +98,6 @@ const createProduct = async (req, res, next) => {
             const vIdx = file.fieldname.replace('variant_images_', '');
             if (!variantImageMap[vIdx]) variantImageMap[vIdx] = [];
             variantImageMap[vIdx].push(cloudinaryResult.public_id);
-          } else if (file.fieldname === 'tryOnImage') {
-            tryOnImagePublicId = cloudinaryResult.public_id;
           } else if (isVideo || (file.fieldname && file.fieldname.startsWith('video'))) {
             videoPublicIds.push(cloudinaryResult.public_id);
           } else if (file.fieldname === 'images' || file.fieldname === 'image') {
@@ -193,12 +190,11 @@ const createProduct = async (req, res, next) => {
         lensType: lensType || 'UV400 Protected',
         lensColor: lensColor || 'Standard Tint',
         frameColor: frameColor || 'Black',
-        frameSize: frameSize ? `${lensWidth || 54}-${bridgeWidth || 18}-${templeLength || 145}` : '54-18-145',
+        frameSize: frameWidth ? `${lensWidth || 54}-${bridgeWidth || 18}-${templeLength || 145}` : '54-18-145',
         weight: weight ? `${weight}g` : '32g',
         uvProtection: req.body.uvProtection !== undefined ? (req.body.uvProtection === 'true' || req.body.uvProtection === true) : true,
         warranty: req.body.warranty || '1 Year Warranty',
-        variants: parsedVariants,
-        tryOnImage: tryOnImagePublicId || req.body.tryOnImage || ''
+        variants: parsedVariants
       };
 
       if (req.body.gender) {
@@ -354,7 +350,6 @@ const updateProduct = async (req, res, next) => {
     const publicIds = [];
     const videoPublicIds = [];
     const variantImageMap = {};
-    let tryOnImagePublicId = null;
 
     console.log("ADMIN UPDATE PRODUCT — ACTUAL HANDLER RUNNING");
     if (req.files && req.files.length > 0) {
@@ -383,8 +378,6 @@ const updateProduct = async (req, res, next) => {
             const vIdx = file.fieldname.replace('variant_images_', '');
             if (!variantImageMap[vIdx]) variantImageMap[vIdx] = [];
             variantImageMap[vIdx].push(cloudinaryResult.public_id);
-          } else if (file.fieldname === 'tryOnImage') {
-            tryOnImagePublicId = cloudinaryResult.public_id;
           } else if (isVideo || (file.fieldname && file.fieldname.startsWith('video'))) {
             videoPublicIds.push(cloudinaryResult.public_id);
           } else if (file.fieldname === 'images' || file.fieldname === 'image') {
@@ -463,11 +456,6 @@ const updateProduct = async (req, res, next) => {
       if (lensColor) updateFields.lensColor = lensColor;
       if (frameColor) updateFields.frameColor = frameColor;
       if (weight) updateFields.weight = `${weight}g`;
-      if (tryOnImagePublicId) {
-        updateFields.tryOnImage = tryOnImagePublicId;
-      } else if (req.body.tryOnImage !== undefined) {
-        updateFields.tryOnImage = req.body.tryOnImage || '';
-      }
       if (req.body.gender) {
         try {
           updateFields.gender = typeof req.body.gender === 'string' ? JSON.parse(req.body.gender) : req.body.gender;

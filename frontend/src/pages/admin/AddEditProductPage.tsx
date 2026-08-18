@@ -79,9 +79,6 @@ export function AddEditProductPage() {
           if (Array.isArray(product.variants)) {
             setVariants(product.variants);
           }
-          if (product.tryOnImage) {
-            setTryOnImagePreview(product.tryOnImage);
-          }
         }
       }).catch((err) => console.error("Failed to fetch product details for edit:", err));
     }
@@ -128,10 +125,7 @@ export function AddEditProductPage() {
 
   const [variants, setVariants] = useState<{ color: string; colorName: string; stock: number }[]>([]);
   const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
-  const [tryOnImageFile, setTryOnImageFile] = useState<File | null>(null);
-  const [tryOnImagePreview, setTryOnImagePreview] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const tryOnInputRef = useRef<HTMLInputElement>(null);
 
   const set = (key: keyof typeof form, value: string | boolean) => setForm((p) => ({ ...p, [key]: value }));
 
@@ -171,23 +165,6 @@ export function AddEditProductPage() {
       newArr.splice(index, 1);
       return newArr;
     });
-  };
-
-  const handleTryOnImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const heic = file.type === 'image/heic' || file.type === 'image/heif' ||
-      file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
-    if (heic) {
-      alert("HEIC file detected - will be auto-converted to JPEG on upload.");
-    }
-    setTryOnImageFile(file);
-    setTryOnImagePreview(URL.createObjectURL(file));
-  };
-
-  const removeTryOnImage = () => {
-    setTryOnImageFile(null);
-    setTryOnImagePreview("");
   };
 
   const handleSave = async () => {
@@ -236,12 +213,6 @@ export function AddEditProductPage() {
       formData.append("variants", JSON.stringify(variants));
       
       images.forEach(img => formData.append("images", img.file));
-
-      if (tryOnImageFile) {
-        formData.append("tryOnImage", tryOnImageFile);
-      } else if (tryOnImagePreview && !tryOnImagePreview.startsWith("blob:")) {
-        formData.append("tryOnImage", tryOnImagePreview);
-      }
 
       await createProductApi(formData);
       addToast({ title: "Product created", description: "Product has been successfully saved.", type: "success" });
@@ -381,65 +352,23 @@ export function AddEditProductPage() {
           )}
 
           {activeSection === "images" && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
-              <div>
-                <label className={labelClass}>Product Gallery Images</label>
-                <input type="file" multiple accept="image/*" ref={fileInputRef} onChange={handleImageSelect} className="hidden" />
-                <div className="mt-2 grid grid-cols-4 gap-4">
-                  {images.map((img, i) => (
-                    <div key={i} className="relative aspect-square rounded-xl bg-[color:var(--color-surface-muted)]">
-                      <img src={img.preview} alt="" className="h-full w-full rounded-xl object-cover" />
-                      <button type="button" onClick={() => handleRemoveImage(i)} className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--color-danger)] text-white shadow-[var(--shadow-soft)]">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-[color:var(--color-border)] transition-colors hover:border-[color:var(--color-accent-teal)]">
-                    <div className="text-center">
-                      <ImagePlus className="mx-auto h-8 w-8 text-[color:var(--color-text-tertiary)]" />
-                      <p className="mt-2 text-xs text-[color:var(--color-text-tertiary)]">Add Image</p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border-2 border-dashed border-teal-400/40 bg-teal-500/5 dark:bg-teal-500/10 p-6 space-y-4">
-                <div>
-                  <label className="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-teal-700 dark:text-teal-300">
-                    Virtual Try-On Overlay (Recommended)
-                  </label>
-                  <p className="text-xs text-[color:var(--color-text-secondary)] mb-3">
-                    Upload a transparent PNG of the glasses — used as the overlay for Virtual Try-On. Auto background-removal for white/light studio backgrounds.
-                  </p>
-                </div>
-                <div className="flex flex-col sm:flex-row items-start gap-4">
-                  <div className="group relative w-40 h-40 shrink-0 overflow-hidden rounded-xl border-2 border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)]">
-                    {tryOnImagePreview ? (
-                      <>
-                        <img src={tryOnImagePreview} alt="Try-On Overlay Preview" className="h-full w-full object-contain" />
-                        <button type="button" onClick={removeTryOnImage} className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100 shadow">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </>
-                    ) : (
-                      <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-[color:var(--color-text-tertiary)]">
-                        <ImagePlus className="h-7 w-7" />
-                        <span className="text-[10px] font-semibold text-center px-2">No try-on image</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <input type="file" accept="image/*" ref={tryOnInputRef} onChange={handleTryOnImageChange} className="hidden" />
-                    <button type="button" onClick={() => tryOnInputRef.current?.click()} className="flex items-center gap-2 rounded-xl bg-[color:var(--color-accent-teal)] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 transition-opacity">
-                      <ImagePlus className="h-4 w-4" /> {tryOnImagePreview ? "Replace Try-On Image" : "Upload Try-On Image"}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <input type="file" multiple accept="image/*" ref={fileInputRef} onChange={handleImageSelect} className="hidden" />
+              <div className="grid grid-cols-4 gap-4">
+                {images.map((img, i) => (
+                  <div key={i} className="relative aspect-square rounded-xl bg-[color:var(--color-surface-muted)]">
+                    <img src={img.preview} alt="" className="h-full w-full rounded-xl object-cover" />
+                    <button type="button" onClick={() => handleRemoveImage(i)} className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--color-danger)] text-white shadow-[var(--shadow-soft)]">
+                      <X className="h-3 w-3" />
                     </button>
-                    <div className="space-y-1 text-[11px] text-[color:var(--color-text-secondary)]">
-                      <p>• Transparent PNG works best (glasses only)</p>
-                      <p>• White/studio backgrounds are auto-removed by the try-on engine</p>
-                      <p>• Max size: 10 MB</p>
-                    </div>
                   </div>
-                </div>
+                ))}
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="flex aspect-square items-center justify-center rounded-xl border-2 border-dashed border-[color:var(--color-border)] transition-colors hover:border-[color:var(--color-accent-teal)]">
+                  <div className="text-center">
+                    <ImagePlus className="mx-auto h-8 w-8 text-[color:var(--color-text-tertiary)]" />
+                    <p className="mt-2 text-xs text-[color:var(--color-text-tertiary)]">Add Image</p>
+                  </div>
+                </button>
               </div>
             </motion.div>
           )}

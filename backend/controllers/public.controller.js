@@ -28,9 +28,6 @@ const formatProduct = (product) => {
       return v;
     });
   }
-  if (p.tryOnImage) {
-    p.tryOnImage = resolveImageUrl(p.tryOnImage) || p.tryOnImage;
-  }
   return p;
 };
 

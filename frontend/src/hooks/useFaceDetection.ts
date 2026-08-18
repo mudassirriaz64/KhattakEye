@@ -69,7 +69,7 @@ export function useFaceDetection() {
     try {
       const faces = await detector.estimateFaces(video, {
         flipHorizontal: false,
-        staticImageMode: false,
+        staticImageMode: true,
       });
       if (faces.length > 0) {
         setDetected(true);

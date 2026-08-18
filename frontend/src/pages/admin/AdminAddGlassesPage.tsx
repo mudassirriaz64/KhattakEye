@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, X, ImagePlus, LoaderCircle, Glasses, Plus, Video, AlertCircle, ScanFace } from "lucide-react";
+import { ArrowLeft, Save, X, ImagePlus, LoaderCircle, Glasses, Plus, Video, AlertCircle } from "lucide-react";
 import { Button } from "@/components/primitives/Button";
 import { BrandSelect } from "@/components/admin/BrandSelect";
 import { cn } from "@/lib/utils";
@@ -82,11 +82,8 @@ export function AdminAddGlassesPage() {
   const [videos, setVideos] = useState<File[]>([]);
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const [variants, setVariants] = useState<VariantItem[]>([]);
-  const [tryOnImageFile, setTryOnImageFile] = useState<File | null>(null);
-  const [tryOnImagePreview, setTryOnImagePreview] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
-  const tryOnInputRef = useRef<HTMLInputElement>(null);
 
   const [originalPrice, setOriginalPrice] = useState("");
   const [hasDiscount, setHasDiscount] = useState(false);
@@ -157,9 +154,6 @@ export function AdminAddGlassesPage() {
               frameMaterial: v.frameMaterial || "",
               imagePreviews: v.images || (v.image ? [v.image] : [])
             })));
-          }
-          if (product.tryOnImage) {
-            setTryOnImagePreview(product.tryOnImage);
           }
         }
       }).catch((err) => console.error("Failed to fetch glasses details for edit:", err));
@@ -331,27 +325,6 @@ export function AdminAddGlassesPage() {
     setVideoPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleTryOnImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > MAX_PHOTO_SIZE) {
-      addToast({ title: "File Too Large", description: `"${file.name}" exceeds the 10 MB limit.`, type: "error" });
-      return;
-    }
-    const heic = file.type === 'image/heic' || file.type === 'image/heif' ||
-      file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif');
-    if (heic) {
-      addToast({ title: "HEIC Format Detected", description: "HEIC file will be auto-converted to JPEG on upload.", type: "info" });
-    }
-    setTryOnImageFile(file);
-    setTryOnImagePreview(URL.createObjectURL(file));
-  };
-
-  const removeTryOnImage = () => {
-    setTryOnImageFile(null);
-    setTryOnImagePreview("");
-  };
-
   const toggleGender = (g: string) => {
     setForm((prev) => ({
       ...prev,
@@ -479,12 +452,6 @@ export function AdminAddGlassesPage() {
           });
         }
       });
-
-      if (tryOnImageFile) {
-        formData.append("tryOnImage", tryOnImageFile);
-      } else if (tryOnImagePreview && !tryOnImagePreview.startsWith("blob:")) {
-        formData.append("tryOnImage", tryOnImagePreview);
-      }
 
       if (id) {
         await updateProductApi(id, formData);
@@ -624,48 +591,6 @@ export function AdminAddGlassesPage() {
                 <span className="text-[10px] font-semibold">Add Main Photo</span>
               </button>
               <input ref={fileInputRef} type="file" multiple accept="image/*" onChange={handleImageChange} className="hidden" />
-            </div>
-          </div>
-
-          {/* Virtual Try-On Overlay Image */}
-          <div className="rounded-2xl border-2 border-dashed border-teal-400/40 bg-teal-500/5 dark:bg-teal-500/10 p-6 space-y-4">
-            <div className="border-b border-[color:var(--color-border)] pb-3 flex items-center justify-between">
-              <div>
-                <h2 className="font-display text-lg font-bold text-[color:var(--color-text-primary)] flex items-center gap-2">
-                  <ScanFace className="h-5 w-5 text-teal-600 dark:text-teal-400" /> Virtual Try-On Overlay <span className="rounded-md bg-teal-500/10 text-teal-700 dark:text-teal-300 text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">Recommended</span>
-                </h2>
-                <p className="text-xs text-[color:var(--color-text-secondary)] mt-0.5">
-                  Upload a transparent PNG of these glasses against a plain white background — this image is used as the overlay for the Virtual Try-On feature.
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row items-start gap-4">
-              <div className="group relative w-40 h-40 shrink-0 overflow-hidden rounded-xl border-2 border-[color:var(--color-border)] bg-[color:var(--color-surface-muted)]">
-                {tryOnImagePreview ? (
-                  <>
-                    <img src={tryOnImagePreview} alt="Try-On Overlay Preview" className="h-full w-full object-contain" />
-                    <button type="button" onClick={removeTryOnImage} className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white opacity-0 transition-opacity group-hover:opacity-100 shadow">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </>
-                ) : (
-                  <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-[color:var(--color-text-tertiary)]">
-                    <ImagePlus className="h-7 w-7" />
-                    <span className="text-[10px] font-semibold text-center px-2">No try-on image</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 space-y-3">
-                <button type="button" onClick={() => tryOnInputRef.current?.click()} className="flex items-center gap-2 rounded-xl bg-[color:var(--color-brand-primary)] px-4 py-2 text-xs font-semibold text-white hover:opacity-95 transition-opacity">
-                  <ImagePlus className="h-4 w-4" /> {tryOnImagePreview ? "Replace Try-On Image" : "Upload Try-On Image"}
-                </button>
-                <input ref={tryOnInputRef} type="file" accept="image/*" onChange={handleTryOnImageChange} className="hidden" />
-                <div className="space-y-1 text-[11px] text-[color:var(--color-text-secondary)]">
-                  <p>• Best results with transparent PNG (glasses only, no background)</p>
-                  <p>• If you upload a photo with white background, the system will auto-remove it</p>
-                  <p>• Max file size: 10 MB</p>
-                </div>
-              </div>
             </div>
           </div>
 
