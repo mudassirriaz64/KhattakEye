@@ -705,6 +705,8 @@ export function AdminAddGlassesPage() {
                   <option value="Full Rim">Full Rim</option>
                   <option value="Cat-Eye">Cat-Eye</option>
                   <option value="Rectangle">Rectangle</option>
+                  <option value="Sheet">Sheet</option>
+                  <option value="Rim Less">Rim Less</option>
                 </select>
               </div>
               <div>

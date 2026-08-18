@@ -418,6 +418,8 @@ export function AddEditProductPage() {
                   <option value="rimless">Rimless</option>
                   <option value="half-rim">Half Rim</option>
                   <option value="sports">Sports</option>
+                  <option value="sheet">Sheet</option>
+                  <option value="rimless">Rim Less</option>
                 </select>
               </div>
               <div><label className={labelClass}>Frame Material</label><input type="text" value={form.frameMaterial} onChange={(e) => set("frameMaterial", e.target.value)} placeholder="e.g. Japanese Titanium, Acetate" className={inputClass} /></div>

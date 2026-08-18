@@ -192,7 +192,8 @@ export function EditorialHero() {
                 variants={item}
                 className="max-w-xl text-base leading-relaxed text-[color:var(--color-text-secondary)] sm:text-lg font-normal"
               >
-                Italian acetates, Japanese titanium, and optics that have earned a following across the country. Handcrafted with uncompromising precision.
+                See it clearly. Wear it your way.
+                Discover eyeglasses and sunglasses selected for everyday comfort, timeless style, and a look that feels like you.
               </motion.p>
 
               {/* Sleek Action Buttons */}
