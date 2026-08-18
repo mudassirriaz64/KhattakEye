@@ -701,6 +701,8 @@ export function AdminAddGlassesPage() {
                   <option value="Wayfarer">Wayfarer</option>
                   <option value="Round">Round</option>
                   <option value="Square">Square</option>
+                  <option value="Oversized Square">Oversized Square</option>
+                  <option value="Full Rim">Full Rim</option>
                   <option value="Cat-Eye">Cat-Eye</option>
                   <option value="Rectangle">Rectangle</option>
                 </select>
@@ -711,6 +713,7 @@ export function AdminAddGlassesPage() {
                   <option value="Metal">Metal</option>
                   <option value="Acetate">Acetate</option>
                   <option value="Titanium">Titanium</option>
+                  <option value="Premium Metal">Premium Metal</option>
                   <option value="TR90">TR90 Flexible</option>
                   <option value="Stainless Steel">Stainless Steel</option>
                 </select>
