@@ -988,7 +988,8 @@ const updateBlog = async (req, res, next) => {
     const existing = await Blog.findById(id);
     if (!existing) return res.status(404).json({ message: 'Blog not found' });
 
-    const { title, excerpt, content, tags, author, status, featured } = req.body;
+    const { title, excerpt, content, tags, author, status, featured, removeImage } = req.body;
+    const shouldRemoveImage = removeImage === 'true' || removeImage === true;
     const updateData = {};
     if (title) { updateData.title = title; updateData.slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''); }
     if (excerpt !== undefined) updateData.excerpt = excerpt;
@@ -1003,11 +1004,31 @@ const updateBlog = async (req, res, next) => {
       updateData.tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : tags;
     }
 
+    if (shouldRemoveImage) {
+      if (existing.image) {
+        try {
+          await cloudinary.uploader.destroy(existing.image, { resource_type: 'image' });
+        } catch (error) {
+          console.error('Failed to delete blog image from Cloudinary:', error.message);
+        }
+      }
+      updateData.image = '';
+    }
+
     if (req.files && req.files.length > 0) {
       const file = req.files[0];
       const tempPath = await writeTempFile(file.buffer, file.originalname);
       const compressedPath = await compressMedia(tempPath, 'image');
       const result = await uploadMedia(compressedPath, 'khattak-eye/blogs');
+
+      if (existing.image && existing.image !== result.public_id) {
+        try {
+          await cloudinary.uploader.destroy(existing.image, { resource_type: 'image' });
+        } catch (error) {
+          console.error('Failed to remove old blog image from Cloudinary:', error.message);
+        }
+      }
+
       updateData.image = result.public_id;
       if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
       if (compressedPath && fs.existsSync(compressedPath)) fs.unlinkSync(compressedPath);

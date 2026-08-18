@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { BookOpen, Plus, Edit3, Trash2, X, AlertCircle, Eye, Calendar, Tag as TagIcon, Image as ImageIcon } from "lucide-react";
 import type { BlogPost } from "@/lib/api/blog";
 import { adminGetBlogsApi, adminGetBlogByIdApi, adminCreateBlogApi, adminUpdateBlogApi, adminDeleteBlogApi } from "@/lib/api/admin";
+import { resolveCloudinaryUrl } from "@/lib/api/products";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmModal } from "@/components/admin/ConfirmModal";
 import { Button } from "@/components/primitives/Button";
@@ -18,6 +19,7 @@ interface BlogForm {
   featured: boolean;
   image?: File;
   imagePreview?: string;
+  imageRemoved?: boolean;
 }
 
 export function AdminBlogPage() {
@@ -79,6 +81,7 @@ export function AdminBlogPage() {
       author: "Khattak Eyewear",
       status: "draft",
       featured: false,
+      imageRemoved: false,
     });
     setFormError(null);
   };
@@ -94,7 +97,8 @@ export function AdminBlogPage() {
         author: data.author,
         status: data.status,
         featured: data.featured,
-        imagePreview: data.image,
+        imagePreview: data.image ? resolveCloudinaryUrl(data.image) : undefined,
+        imageRemoved: false,
       });
       setEditing(data);
       setFormError(null);
@@ -139,6 +143,10 @@ export function AdminBlogPage() {
 
       if (form.image) {
         formData.append("image", form.image);
+      }
+
+      if (editing && form.imageRemoved && !form.image) {
+        formData.append("removeImage", "true");
       }
 
       if (editing) {
@@ -202,10 +210,10 @@ export function AdminBlogPage() {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setForm((p) => ({ ...p, image: file }));
+      setForm((p) => ({ ...p, image: file, imageRemoved: false }));
       const reader = new FileReader();
       reader.onloadend = () => {
-        setForm((p) => ({ ...p, imagePreview: reader.result as string }));
+        setForm((p) => ({ ...p, imagePreview: reader.result as string, imageRemoved: false }));
       };
       reader.readAsDataURL(file);
     }
@@ -329,12 +337,20 @@ export function AdminBlogPage() {
                     <p className="mt-1 text-xs text-[color:var(--color-text-tertiary)]">JPG, PNG, WebP (recommended: 1200x600px)</p>
                   </div>
                   {form.imagePreview && (
-                    <div className="flex-shrink-0">
+                    <div className="relative flex-shrink-0">
                       <img
                         src={form.imagePreview}
                         alt="Preview"
                         className="h-20 w-32 rounded-lg object-cover border border-[color:var(--color-border)]"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setForm((p) => ({ ...p, image: undefined, imagePreview: undefined, imageRemoved: true }))}
+                        className="absolute -top-2 -right-2 rounded-full bg-red-500 hover:bg-red-600 p-1.5 text-white shadow-md transition-colors"
+                        title="Remove image"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </div>
                   )}
                 </div>
@@ -422,7 +438,7 @@ export function AdminBlogPage() {
                   {blog.image && (
                     <div className="flex-shrink-0">
                       <img
-                        src={blog.image}
+                        src={resolveCloudinaryUrl(blog.image)}
                         alt={blog.title}
                         className="h-24 w-40 rounded-lg object-cover"
                       />
