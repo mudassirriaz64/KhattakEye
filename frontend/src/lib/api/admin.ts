@@ -194,3 +194,35 @@ export const adminGetUsersApi = async (page = 1, limit = 50) => {
   const response = await api.get(`/admin/users?page=${page}&limit=${limit}`);
   return response.data;
 };
+
+export const adminGetBlogsApi = async (page = 1, limit = 20, filters: { search?: string; status?: string } = {}) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (filters.search) params.set('search', filters.search);
+  if (filters.status) params.set('status', filters.status);
+  const response = await api.get(`/admin/blogs?${params.toString()}`);
+  return response.data;
+};
+
+export const adminGetBlogByIdApi = async (id: string) => {
+  const response = await api.get(`/admin/blogs/${id}`);
+  return response.data;
+};
+
+export const adminCreateBlogApi = async (formData: FormData) => {
+  const response = await api.post('/admin/blogs', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const adminUpdateBlogApi = async (id: string, formData: FormData) => {
+  const response = await api.put(`/admin/blogs/${id}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const adminDeleteBlogApi = async (id: string) => {
+  const response = await api.delete(`/admin/blogs/${id}`);
+  return response.data;
+};

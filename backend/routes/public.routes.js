@@ -4,7 +4,9 @@ const {
   getCategories,
   getBrands,
   getProducts,
-  getProductBySlug
+  getProductBySlug,
+  getBlogs,
+  getBlogBySlug
 } = require('../controllers/public.controller');
 
 const { getCMSPage, getBanners, getSettings, getSiteSettings, getFAQs } = require('../controllers/cms.controller');
@@ -23,5 +25,7 @@ router.get('/site-settings', getSiteSettings);
 router.get('/testimonials', getPublicTestimonials);
 router.get('/lens-options', getLensOptions);
 router.get('/faqs', getFAQs);
+router.get('/blogs', getBlogs);
+router.get('/blogs/:slug', getBlogBySlug);
 
 module.exports = router;

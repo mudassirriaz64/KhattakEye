@@ -1,6 +1,7 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Brand = require('../models/Brand');
+const Blog = require('../models/Blog');
 const { resolveImageUrl } = require('../utils/cloudinary');
 
 const escapeRegex = (text) => text ? String(text).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') : '';
@@ -249,4 +250,33 @@ exports.getProductBySlug = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+exports.getBlogs = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 12, tag } = req.query;
+    const filter = { status: 'published' };
+    if (tag) filter.tags = tag;
+    const total = await Blog.countDocuments(filter);
+    const blogs = await Blog.find(filter)
+      .sort({ publishedAt: -1, createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit))
+      .lean();
+    const formatted = blogs.map(b => {
+      if (b.image) b.image = resolveImageUrl(b.image) || b.image;
+      return b;
+    });
+    res.status(200).json({ blogs: formatted, total, page: Number(page), pages: Math.ceil(total / limit) });
+  } catch (error) { next(error); }
+};
+
+exports.getBlogBySlug = async (req, res, next) => {
+  try {
+    const blog = await Blog.findOne({ slug: req.params.slug, status: 'published' }).lean();
+    if (!blog) return res.status(404).json({ message: 'Blog not found' });
+    await Blog.findByIdAndUpdate(blog._id, { $inc: { views: 1 } });
+    if (blog.image) blog.image = resolveImageUrl(blog.image) || blog.image;
+    res.status(200).json(blog);
+  } catch (error) { next(error); }
 };

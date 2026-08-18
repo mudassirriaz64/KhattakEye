@@ -4,6 +4,7 @@ const path = require('path');
 const Product = require('../models/Product');
 const Glasses = require('../models/Glasses');
 const Lenses = require('../models/Lenses');
+const Blog = require('../models/Blog');
 const Order = require('../models/Order');
 const Category = require('../models/Category');
 const Brand = require('../models/Brand');
@@ -922,6 +923,109 @@ const setOrderItemPrice = async (req, res, next) => {
   }
 };
 
+const getAdminBlogs = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 20, search, status } = req.query;
+    const filter = {};
+    if (search) filter.title = { $regex: search, $options: 'i' };
+    if (status) filter.status = status;
+    const total = await Blog.countDocuments(filter);
+    const blogs = await Blog.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+    res.status(200).json({ blogs, total, page: Number(page), pages: Math.ceil(total / limit) });
+  } catch (error) { next(error); }
+};
+
+const adminGetBlogById = async (req, res, next) => {
+  try {
+    const blog = await Blog.findById(req.params.id);
+    if (!blog) return res.status(404).json({ message: 'Blog not found' });
+    res.status(200).json(blog);
+  } catch (error) { next(error); }
+};
+
+const createBlog = async (req, res, next) => {
+  try {
+    const { title, excerpt, content, tags, author, status, featured } = req.body;
+    if (!title || !content) return res.status(400).json({ message: 'Title and content are required' });
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+
+    let imagePublicId = null;
+    if (req.files && req.files.length > 0) {
+      const file = req.files[0];
+      const tempPath = await writeTempFile(file.buffer, file.originalname);
+      const compressedPath = await compressMedia(tempPath, 'image');
+      const result = await uploadMedia(compressedPath, 'khattak-eye/blogs');
+      imagePublicId = result.public_id;
+      if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+      if (compressedPath && fs.existsSync(compressedPath)) fs.unlinkSync(compressedPath);
+    }
+
+    const parsedTags = tags ? (typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : tags) : [];
+
+    const blog = await Blog.create({
+      title,
+      slug,
+      excerpt: excerpt || '',
+      content,
+      image: imagePublicId || '',
+      tags: parsedTags,
+      author: author || 'Khattak Eyewear',
+      status: status || 'draft',
+      featured: featured === 'true' || featured === true,
+      publishedAt: status === 'published' ? new Date() : null
+    });
+
+    res.status(201).json({ success: true, message: 'Blog created successfully', data: blog });
+  } catch (error) { next(error); }
+};
+
+const updateBlog = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const existing = await Blog.findById(id);
+    if (!existing) return res.status(404).json({ message: 'Blog not found' });
+
+    const { title, excerpt, content, tags, author, status, featured } = req.body;
+    const updateData = {};
+    if (title) { updateData.title = title; updateData.slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''); }
+    if (excerpt !== undefined) updateData.excerpt = excerpt;
+    if (content) updateData.content = content;
+    if (author !== undefined) updateData.author = author;
+    if (featured !== undefined) updateData.featured = featured === 'true' || featured === true;
+    if (status) {
+      updateData.status = status;
+      if (status === 'published' && existing.status !== 'published') updateData.publishedAt = new Date();
+    }
+    if (tags !== undefined) {
+      updateData.tags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : tags;
+    }
+
+    if (req.files && req.files.length > 0) {
+      const file = req.files[0];
+      const tempPath = await writeTempFile(file.buffer, file.originalname);
+      const compressedPath = await compressMedia(tempPath, 'image');
+      const result = await uploadMedia(compressedPath, 'khattak-eye/blogs');
+      updateData.image = result.public_id;
+      if (tempPath && fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+      if (compressedPath && fs.existsSync(compressedPath)) fs.unlinkSync(compressedPath);
+    }
+
+    const blog = await Blog.findByIdAndUpdate(id, { $set: updateData }, { returnDocument: 'after', runValidators: true });
+    res.status(200).json({ success: true, message: 'Blog updated successfully', data: blog });
+  } catch (error) { next(error); }
+};
+
+const deleteBlog = async (req, res, next) => {
+  try {
+    const blog = await Blog.findByIdAndDelete(req.params.id);
+    if (!blog) return res.status(404).json({ message: 'Blog not found' });
+    res.status(200).json({ success: true, message: 'Blog deleted successfully' });
+  } catch (error) { next(error); }
+};
+
 module.exports = {
   createProduct,
   getProducts,
@@ -942,5 +1046,10 @@ module.exports = {
   createBrand,
   updateBrand,
   deleteBrand,
-  generateProduct3D
+  generateProduct3D,
+  getAdminBlogs,
+  adminGetBlogById,
+  createBlog,
+  updateBlog,
+  deleteBlog
 };

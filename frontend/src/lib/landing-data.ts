@@ -303,6 +303,7 @@ export const footerLinks = {
     { label: "About Us", path: "/about" },
     { label: "Our Story", path: "/story" },
     { label: "Craftsmanship", path: "/craftsmanship" },
+    { label: "Blog", path: "/blog" },
     { label: "Careers", path: "/careers" },
     { label: "Press", path: "/press" },
   ],

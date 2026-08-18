@@ -91,6 +91,7 @@ import { AdminActivityLogsPage } from "@/pages/admin/ActivityLogsPage";
 import { AdminSystemNotificationsPage } from "@/pages/admin/SystemNotificationsPage";
 import { AdminSecurityPage } from "@/pages/admin/SecurityPage";
 import { AdminAuditLogsPage } from "@/pages/admin/AuditLogsPage";
+import { AdminBlogPage } from "@/pages/admin/AdminBlogPage";
 import { AboutPage } from "@/pages/AboutPage";
 import { StoryPage } from "@/pages/StoryPage";
 import { CraftsmanshipPage } from "@/pages/CraftsmanshipPage";
@@ -99,6 +100,8 @@ import { PressPage } from "@/pages/PressPage";
 import { ContactPage } from "@/pages/ContactPage";
 import { FAQPage } from "@/pages/FAQPage";
 import { SizeGuidePage } from "@/pages/SizeGuidePage";
+import { BlogPage } from "@/pages/BlogPage";
+import { BlogPostPage } from "@/pages/BlogPostPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ErrorPage } from "@/pages/ErrorPage";
 import { OfflinePage } from "@/pages/OfflinePage";
@@ -164,6 +167,8 @@ function AppRoutes() {
           <Route path="cms/faqs" element={<AdminPagesCMSPage />} />
           <Route path="cms/banners" element={<AdminBannerManagementPage />} />
           <Route path="cms/coupons" element={<AdminCouponsPage />} />
+          <Route path="cms/blogs" element={<AdminBlogPage />} />
+          <Route path="blogs" element={<AdminBlogPage />} />
           <Route path="promotions" element={<AdminPromotionsPage />} />
           <Route path="cms/promotions" element={<AdminPromotionsPage />} />
           <Route path="cms/newsletter" element={<AdminNewsletterPage />} />
@@ -261,6 +266,8 @@ function AppRoutes() {
         <Route path="/eye-care-tips/*" element={<PageTransition><GlobalLayout><EyeCareTipsPage /></GlobalLayout></PageTransition>} />
         <Route path="/eye-care" element={<PageTransition><GlobalLayout><EyeCareTipsPage /></GlobalLayout></PageTransition>} />
         <Route path="/eye-care/*" element={<PageTransition><GlobalLayout><EyeCareTipsPage /></GlobalLayout></PageTransition>} />
+        <Route path="/blog" element={<PageTransition><GlobalLayout><BlogPage /></GlobalLayout></PageTransition>} />
+        <Route path="/blog/:slug" element={<PageTransition><GlobalLayout><BlogPostPage /></GlobalLayout></PageTransition>} />
         <Route path="/shipping-policy" element={<PageTransition><GlobalLayout><ShippingPolicyPage /></GlobalLayout></PageTransition>} />
         <Route path="/shipping-policy/*" element={<PageTransition><GlobalLayout><ShippingPolicyPage /></GlobalLayout></PageTransition>} />
         <Route path="/shipping" element={<PageTransition><GlobalLayout><ShippingPolicyPage /></GlobalLayout></PageTransition>} />

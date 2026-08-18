@@ -282,4 +282,11 @@ router.get('/notifications', auth.protectAdmin, requireRole(['admin', 'manager',
 router.put('/notifications/mark-read', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), markAllNotificationsRead);
 router.put('/notifications/:id/read', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), markNotificationRead);
 
+// Blog admin routes
+router.get('/blogs', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), adminController.getAdminBlogs);
+router.get('/blogs/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), adminController.adminGetBlogById);
+router.post('/blogs', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), upload.array('image', 1), adminController.createBlog);
+router.put('/blogs/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), upload.array('image', 1), adminController.updateBlog);
+router.delete('/blogs/:id', auth.protectAdmin, requireRole(['admin', 'manager', 'super-admin']), adminController.deleteBlog);
+
 module.exports = router;

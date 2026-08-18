@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Package, Grid3X3, Eye, Bookmark, ShoppingCart, Users, FileText, BarChart3, Settings, LogOut, ChevronLeft,
   ShieldCheck, Star, MessageSquare, ClipboardList, Image, Tag, Mail, Globe, Layout, Glasses, Sparkles,
-  TrendingUp, Lock, Bell, Activity, UserCog, ScrollText, Shield, type LucideIcon,
+  TrendingUp, Lock, Bell, Activity, UserCog, ScrollText, Shield, BookOpen, type LucideIcon,
 } from "lucide-react";
 import { useAdminStore } from "@/lib/stores/admin-store";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,7 @@ const cmsSubItems = [
   { to: "/admin/cms/faqs", icon: FileText, label: "FAQs" },
   { to: "/admin/cms/banners", icon: Image, label: "Banners" },
   { to: "/admin/cms/coupons", icon: Tag, label: "Coupons" },
+  { to: "/admin/blogs", icon: BookOpen, label: "Blog Posts" },
   { to: "/admin/cms/promotions", icon: Sparkles, label: "Promotions & Offers" },
   { to: "/admin/cms/newsletter", icon: Mail, label: "Newsletter" },
   { to: "/admin/cms/settings", icon: Settings, label: "Site Settings" },

@@ -87,6 +87,7 @@ const navLinks: NavLink[] = [
     mega: [
       { title: "Company", links: [
         { label: "About Us", path: "/about" },
+        { label: "Blog", path: "/blog" },
         { label: "Contact Us", path: "/contact" },
         { label: "Careers", path: "/careers" },
       ]},
@@ -143,6 +144,7 @@ const navLinks: NavLink[] = [
     ],
   },
   { label: "Brands", path: "/brands" },
+  { label: "Blog", path: "/blog" },
 ];
 
 const brandLogos = [
