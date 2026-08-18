@@ -273,9 +273,15 @@ exports.getBlogs = async (req, res, next) => {
 
 exports.getBlogBySlug = async (req, res, next) => {
   try {
-    const blog = await Blog.findOne({ slug: req.params.slug, status: 'published' }).lean();
-    if (!blog) return res.status(404).json({ message: 'Blog not found' });
-    await Blog.findByIdAndUpdate(blog._id, { $inc: { views: 1 } });
+    const existingBlog = await Blog.findOne({ slug: req.params.slug, status: 'published' }).lean();
+    if (!existingBlog) return res.status(404).json({ message: 'Blog not found' });
+
+    const blog = await Blog.findByIdAndUpdate(
+      existingBlog._id,
+      { $inc: { views: 1 } },
+      { new: true, runValidators: true }
+    ).lean();
+
     if (blog.image) blog.image = resolveImageUrl(blog.image) || blog.image;
     res.status(200).json(blog);
   } catch (error) { next(error); }
